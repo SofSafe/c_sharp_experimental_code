@@ -10,42 +10,38 @@ using OpenTelemetry.Resources;
 class OTSH
 {
     //TODO add to c# programing standards that C_ prefix means constant
-    public static string C_exception_message = "exception";
-    public static string C_error_code = "error_code";
-    public static string C_uid = "entity UID";
-    public static string C_input_value = "Input Value";
-    public static Dictionary<string, Object> C_empty_tags_object = [];
-    public static void passStatusAndEndSpan(Activity parent_activity, Activity child_activity)
+    public static Dictionary<string, Object> C_tag_empty_tags_object = [];
+    public static void passStatusAndEndActivity(Activity parent_activity, Activity child_activity)
     {
         parent_activity.SetStatus(child_activity.Status);
-        if (child_activity.GetTagItem(OTSH.C_error_code) != null)
+        if (child_activity.GetTagItem(ErrorTagsCodes.C_tag_error_code) != null)
         {
-            parent_activity.SetTag(OTSH.C_error_code, child_activity.GetTagItem(OTSH.C_error_code));
+            parent_activity.SetTag(ErrorTagsCodes.C_tag_error_code, child_activity.GetTagItem(ErrorTagsCodes.C_tag_error_code));
         }
         parent_activity.Stop();
         return;
 
     }
 
-    public static bool checkStatusAndEndSpan(Activity parent_activity, Activity child_activity)
+    public static bool checkStatusAndEndActivity(Activity parent_activity, Activity child_activity)
     {
         if (child_activity.Status == ActivityStatusCode.Ok) { return true; }
 
-        OTSH.passStatusAndEndSpan(parent_activity, child_activity);
+        OTSH.passStatusAndEndActivity(parent_activity, child_activity);
         return false;
 
     }
 
 
-    public static void addEventThenEndSpan(Activity activity, string event_summary, int error_code, Dictionary<string, Object> tag_items)
+    public static void addEventThenEndActivity(Activity activity, string event_summary, int error_code, Dictionary<string, Object> tag_items)
     {
-        OTSH.addEventToSpan(activity, event_summary, tag_items);
-        activity.SetTag(OTSH.C_error_code, error_code);
+        OTSH.addEventToActivity(activity, event_summary, tag_items);
+        activity.SetTag(ErrorTagsCodes.C_tag_error_code, error_code);
         activity.SetStatus(ActivityStatusCode.Error);
         activity.Stop();
     }
 
-    public static void addEventToSpan(Activity activity, string event_summary, Dictionary<string, Object> tag_items)
+    public static void addEventToActivity(Activity activity, string event_summary, Dictionary<string, Object> tag_items)
     {
         if (tag_items != null && tag_items.Count > 0)
         {

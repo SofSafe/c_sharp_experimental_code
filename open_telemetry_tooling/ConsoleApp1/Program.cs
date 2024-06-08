@@ -44,8 +44,8 @@ public class Program
         {
             if (activity_entry.Status != ActivityStatusCode.Ok)
             {
-                OTSH.addEventToSpan(ETR, "multi-sequence operation failed at:" + activity_entry.DisplayName, null);
-                OTSH.passStatusAndEndSpan(ETR, activity_entry);
+                OTSH.addEventToActivity(ETR, "multi-sequence operation failed at:" + activity_entry.DisplayName, null);
+                OTSH.passStatusAndEndActivity(ETR, activity_entry);
                 return;
             }
         }

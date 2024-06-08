@@ -18,8 +18,8 @@ class ActivityTesting
         catch (Exception exception_object)
         {
             Dictionary<string, object> event_fields = new Dictionary<string, object>();
-            event_fields.Add(OTSH.C_input_value, test);
-            OTSH.addEventToSpan(ETR, "conversion from int to str failed", event_fields);
+            event_fields.Add(ErrorTagsCodes.C_tag_input_value, test);
+            OTSH.addEventToActivity(ETR, "conversion from int to str failed", event_fields);
             ETR.RecordException(exception_object);
             ETR.Stop();
             return;
@@ -37,7 +37,7 @@ class ActivityTesting
 
 
         this.test2(ot_helper, child_activity_pointer, username, password);
-        if ( OTSH.checkStatusAndEndSpan(ETR, child_activity_pointer.PIV_child_activity_pointer) == false) {
+        if ( OTSH.checkStatusAndEndActivity(ETR, child_activity_pointer.PIV_child_activity_pointer) == false) {
             return;
         }
 
@@ -61,7 +61,7 @@ class ActivityTesting
         if (username != "v5701")
         {
             ETR.AddEvent(new ActivityEvent("user doesn't exist", DateTime.Now));
-            ETR.SetTag(OTSH.C_error_code, 3);
+            ETR.SetTag(ErrorTagsCodes.C_tag_error_code, 3);
             ETR.SetStatus(ActivityStatusCode.Error);
             ETR.SetEndTime(DateTime.Now);
             ETR.Stop();
@@ -91,9 +91,9 @@ class ActivityTesting
         if (username != "v21513")
         {
             Dictionary<string, object> event_fields = new Dictionary<string, object>();
-            event_fields.Add(OTSH.C_uid, field_uid);
-            event_fields.Add(OTSH.C_exception_message, "excaption message from database call");
-            OTSH.addEventThenEndSpan(ETR, "database read failed", 5, event_fields);
+            event_fields.Add(ErrorTagsCodes.C_tag_uid, field_uid);
+            event_fields.Add(ErrorTagsCodes.C_tag_exception_message, "excaption message from database call");
+            OTSH.addEventThenEndActivity(ETR, "database read failed", 5, event_fields);
             return;
         }
         ////</end> call to a method we didn't write

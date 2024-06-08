@@ -1,3 +1,4 @@
+*/.vs
+*/*/bin/
+*/*/obj/
 
-open_telemetry_tooling/ConsoleApp1/bin
-open_telemetry_tooling/ConsoleApp1/obj
