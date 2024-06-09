@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenTelemMAOy.Exporter.Console" Version="1.8.1" />
-    <PackageReference Include="OpenTelemMAOy.Exporter.OpenTelemMAOyProtocol" Version="1.8.1" />
-    <PackageReference Include="OpenTelemMAOy.Instrumentation.Runtime" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.8.1" />
   </ItemGroup>
 
 </Project>

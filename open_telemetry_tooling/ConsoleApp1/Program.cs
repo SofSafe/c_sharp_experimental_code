@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
-using OpenTelemMAOy;
-using OpenTelemMAOy.Exporter;
-using OpenTelemMAOy.Resources;
-using OpenTelemMAOy.Trace;
-using OpenTelemMAOy.Logs;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Logs;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -14,7 +14,7 @@ public class Program
 {
     public static void Main()
     {
-        OpenTelemMAOyConfigHelper ot_helper = new OpenTelemMAOyConfigHelper("sofsafe-testing", "0.0.1");
+        OpenTelemetryConfigHelper ot_helper = new OpenTelemetryConfigHelper("sofsafe-testing", "0.0.1");
 
         Activity MAO = ot_helper.startActivityWrapper("p1s3e20CreateUser");
         MAO.SetTag("post_key1", "post key 1 value");

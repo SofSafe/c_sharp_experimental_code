@@ -1,11 +1,11 @@
-﻿using OpenTelemMAOy.Trace;
+﻿using OpenTelemetry.Trace;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 
 class ActivityTesting
 {
-    public void exceptionTest(OpenTelemMAOyConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public void exceptionTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
         //MAO stands for method activity object
         Activity MAO = ot_helper.startActivityWrapper("ActivityTesting.exceptionTest");
@@ -29,7 +29,7 @@ class ActivityTesting
     }
 
     //// how to handle nested calls to methods we wrote
-    public void test1(OpenTelemMAOyConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
+    public void test1(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
     {
         Activity MAO = ot_helper.startActivityWrapper("ActivityTesting.test1");
         method_activity_pointer.setPointerValue(MAO,MAO.TraceId);
@@ -50,7 +50,7 @@ class ActivityTesting
         return;
     }
 
-    public void test2(OpenTelemMAOyConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
+    public void test2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
     {
         Activity MAO = ot_helper.startActivityWrapper("ActivityTesting.test1");
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
@@ -80,7 +80,7 @@ class ActivityTesting
 
 
     //// how to handle nested calls to methods we didn't write
-    public void test3(OpenTelemMAOyConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
+    public void test3(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
     {
         Activity MAO = ot_helper.startActivityWrapper("ActivityTesting.test3");
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();

@@ -1,9 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
-using OpenTelemMAOy;
-using OpenTelemMAOy.Trace;
-using OpenTelemMAOy.Exporter;
-using OpenTelemMAOy.Resources;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
 using Google.Protobuf.WellKnownTypes;
 
 
@@ -58,14 +58,14 @@ class OTSH
     }
 
 }
-class OpenTelemMAOyConfigHelper
+class OpenTelemetryConfigHelper
 {
     private TracerProvider IV_tracer_provider;
     private ActivitySource IV_activity_source;
 
-    public OpenTelemMAOyConfigHelper(string source_name, string version)
+    public OpenTelemetryConfigHelper(string source_name, string version)
     {
-        this.IV_tracer_provider = Sdk.CreatMAOacerProviderBuilder()
+        this.IV_tracer_provider = Sdk.CreateTracerProviderBuilder()
        .AddSource(source_name)
        .ConfigureResource(res => res.AddService("console-messages"))
        .AddConsoleExporter()
