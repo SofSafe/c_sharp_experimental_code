@@ -12,6 +12,21 @@ class OTSH
 {
     //TODO add to c# programing standards that C_ prefix means constant
     public static Dictionary<string, Object> C_tag_empty_tags_object = [];
+
+
+    public static void setSuccessEndActivity(Activity activity)
+    {
+        activity.SetStatus(ActivityStatusCode.Ok);
+        activity.Stop();
+    }
+
+    public static void setFailureEndActivity(Activity activity, int error_code)
+    {
+        activity.AddTag(ErrorTagsCodes.C_tag_error_code, error_code);
+        activity.SetStatus(ActivityStatusCode.Error);
+        activity.Stop();
+    }
+
     public static void passStatusAndEndActivity(Activity parent_activity, Activity child_activity)
     {
         parent_activity.SetStatus(child_activity.Status);

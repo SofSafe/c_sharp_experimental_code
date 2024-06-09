@@ -22,8 +22,7 @@ class ActivityTesting
             event_fields.Add(ErrorTagsCodes.C_tag_input_value, test);
             OTSH.addEventToActivity(MAO, "conversion from int to str failed", event_fields);
             MAO.RecordException(exception_object);
-            MAO.AddTag(ErrorTagsCodes.C_tag_error_code, ErrorTagsCodes.C_database_read_failed);
-            MAO.Stop();
+            OTSH.setFailureEndActivity(MAO,ErrorTagsCodes.C_input_validation);
             return;
         }
     }
@@ -45,8 +44,7 @@ class ActivityTesting
 
 
         // do stuff
-        MAO.SetStatus(ActivityStatusCode.Ok);
-        MAO.Stop();
+        OTSH.setSuccessEndActivity(MAO);
         return;
     }
 
@@ -63,17 +61,13 @@ class ActivityTesting
         if (username != "v5701")
         {
             MAO.AddEvent(new ActivityEvent("failed to connect to database", DateTime.Now));
-            MAO.SetTag(ErrorTagsCodes.C_tag_error_code, ErrorTagsCodes.C_input_validation);
-            MAO.SetStatus(ActivityStatusCode.Error);
-            MAO.SetEndTime(DateTime.Now);
-            MAO.Stop();
+            OTSH.setFailureEndActivity(MAO, ErrorTagsCodes.C_input_validation); 
             return;
         }
 
 
         //success
-        MAO.SetStatus(ActivityStatusCode.Ok);
-        MAO.Stop();
+        OTSH.setSuccessEndActivity(MAO);
         return;
     }
 
@@ -100,8 +94,7 @@ class ActivityTesting
         }
         ////</end> call to a method we didn't write
         
-        MAO.SetStatus(ActivityStatusCode.Ok);
-        MAO.Stop();
+        OTSH.setSuccessEndActivity(MAO);
         return;
     }
 

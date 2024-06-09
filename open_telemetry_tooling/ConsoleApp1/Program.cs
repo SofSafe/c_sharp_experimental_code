@@ -21,20 +21,24 @@ public class Program
         MAO.SetTag("post_key2", "post key 2 value");
         List<Activity> method_activity_lists = new List<Activity>();
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        string correct_username = "v5701";
         int loop1 = 0;
         while (loop1 < 10)
         {
             loop1++;
             
-            if(loop1 == 3)
-            {
-                correct_username = "this should fail now";
-            }
+ 
 
             ActivityTesting test_class = new ActivityTesting();
 
-            test_class.test1(ot_helper, child_activity_pointer, correct_username, "1234");
+            if (loop1 == 3)
+            {
+                //this will cause the loop to stop safely
+                test_class.exceptionTest(ot_helper, child_activity_pointer);
+                method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
+            }
+
+
+            test_class.test1(ot_helper, child_activity_pointer, "v5701", "1234");
             method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
 
 
@@ -42,9 +46,6 @@ public class Program
             test_class.test3(ot_helper, child_activity_pointer, "user@user.com", "1234");
             method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
 
-
-            test_class.exceptionTest(ot_helper, child_activity_pointer);
-            method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
 
 
 
