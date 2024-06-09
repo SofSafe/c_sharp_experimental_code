@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
@@ -80,7 +80,7 @@ class OpenTelemetryConfigHelper
     {
 
         //these 2 disables have to be done because the StartActivity method returns an Activity instance or null. in this case we know the activity source is good.
-#pragma warning disable 8600
+        #pragma warning disable 8600
         Activity new_activity = this.IV_activity_source.StartActivity(activity_name);
         // "as Activity is used here to make sure the compiler knows this is not null
         #pragma warning disable 8603
@@ -92,6 +92,7 @@ class OpenTelemetryConfigHelper
 
 class ChildActivityPointer
 {
+    #pragma warning disable 8618
     private Activity IV_child_activity_pointer;
     private static Activity CV_default_safe_value = new Activity("ChildActivityPointer default safe value");
 
