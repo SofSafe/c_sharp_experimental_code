@@ -4,6 +4,7 @@ using OpenTelemetry;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
+using Google.Protobuf.WellKnownTypes;
 
 
 //Open Telemetry Sofsafe Helper
@@ -97,6 +98,11 @@ class ChildActivityPointer
     private static Activity CV_default_safe_value = new Activity("ChildActivityPointer default safe value");
 
 
+    public void setPointerValue(Activity child_activity, ActivityTraceId trace_id)
+    {
+        //trace_id argument is here on purpose, see the SBD
+        this.IV_child_activity_pointer = child_activity;
+    }
     public Activity PIV_child_activity_pointer
     {
         get
@@ -109,12 +115,6 @@ class ChildActivityPointer
             {
                 return this.IV_child_activity_pointer;
             }
-        }
-
-        set
-        {
-            //if an existing Activity instance is stored in IV_child_activity_pointer this only overwrites the pointer stored in this class.
-            if (value != null) { this.IV_child_activity_pointer = value; }
-        }
+        }        
     }
 }

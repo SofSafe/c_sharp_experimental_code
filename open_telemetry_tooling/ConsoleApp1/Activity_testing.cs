@@ -8,7 +8,7 @@ class ActivityTesting
     public void exceptionTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
         Activity ETR = ot_helper.startActivityWrapper("ActivityTesting.exceptionTest");
-        method_activity_pointer.PIV_child_activity_pointer = ETR;
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         string test = "123asdfatgsg";
         try
@@ -31,7 +31,7 @@ class ActivityTesting
     public void test1(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string username, string password)
     {
         Activity ETR = ot_helper.startActivityWrapper("ActivityTesting.test1");
-        method_activity_pointer.PIV_child_activity_pointer = ETR;
+        method_activity_pointer.setPointerValue(ETR,ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.SetTag("useranme", username);
         ETR.SetTag("password", password);
@@ -53,7 +53,7 @@ class ActivityTesting
     {
         Activity ETR = ot_helper.startActivityWrapper("ActivityTesting.test1");
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        method_activity_pointer.PIV_child_activity_pointer = ETR;
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ETR.SetTag("useranme", username);
         ETR.SetTag("password", password);
 
@@ -83,7 +83,7 @@ class ActivityTesting
     {
         Activity ETR = ot_helper.startActivityWrapper("ActivityTesting.test3");
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        method_activity_pointer.PIV_child_activity_pointer = ETR;
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ETR.SetTag("useranme", username);
         ETR.SetTag("password", password);
 
