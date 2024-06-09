@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
-using OpenTelemetry;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using OpenTelemetry.Logs;
+using OpenTelemMAOy;
+using OpenTelemMAOy.Exporter;
+using OpenTelemMAOy.Resources;
+using OpenTelemMAOy.Trace;
+using OpenTelemMAOy.Logs;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -14,11 +14,11 @@ public class Program
 {
     public static void Main()
     {
-        OpenTelemetryConfigHelper ot_helper = new OpenTelemetryConfigHelper("sofsafe-testing", "0.0.1");
+        OpenTelemMAOyConfigHelper ot_helper = new OpenTelemMAOyConfigHelper("sofsafe-testing", "0.0.1");
 
-        Activity ETR = ot_helper.startActivityWrapper("p1s3e20CreateUser");
-        ETR.SetTag("post_key1", "post key 1 value");
-        ETR.SetTag("post_key2", "post key 2 value");
+        Activity MAO = ot_helper.startActivityWrapper("p1s3e20CreateUser");
+        MAO.SetTag("post_key1", "post key 1 value");
+        MAO.SetTag("post_key2", "post key 2 value");
         List<Activity> method_activity_lists = new List<Activity>();
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         string correct_username = "v5701";
@@ -53,11 +53,11 @@ public class Program
                 if (activity_entry.Status != ActivityStatusCode.Ok)
                 {
 
-                    OTSH.addEventToActivity(ETR, "multi-sequence operation failed at:" + activity_entry.DisplayName, OTSH.C_tag_empty_tags_object);
+                    OTSH.addEventToActivity(MAO, "multi-sequence operation failed at:" + activity_entry.DisplayName, OTSH.C_tag_empty_tags_object);
                     
-                    if (ErrorTagsCodes.shouldWeRetryOperation(activity_entry, ErrorTagsCodes.C_context_https_request) == false)
+                    if (ErrorTagsCodes.shouldWeRMAOyOperation(activity_entry, ErrorTagsCodes.C_context_https_request) == false)
                     {
-                        OTSH.passStatusAndEndActivity(ETR, activity_entry);
+                        OTSH.passStatusAndEndActivity(MAO, activity_entry);
                         return;
                     }
                 }
@@ -67,6 +67,6 @@ public class Program
         }
 
 
-        ETR.Stop();
+        MAO.Stop();
     }
 }

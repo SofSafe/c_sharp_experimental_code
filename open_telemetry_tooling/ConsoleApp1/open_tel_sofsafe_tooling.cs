@@ -1,13 +1,13 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
-using OpenTelemetry;
-using OpenTelemetry.Trace;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Resources;
+using OpenTelemMAOy;
+using OpenTelemMAOy.Trace;
+using OpenTelemMAOy.Exporter;
+using OpenTelemMAOy.Resources;
 using Google.Protobuf.WellKnownTypes;
 
 
-//Open Telemetry Sofsafe Helper
+//Open TelemMAOy Sofsafe Helper
 class OTSH
 {
     //TODO add to c# programing standards that C_ prefix means constant
@@ -58,14 +58,14 @@ class OTSH
     }
 
 }
-class OpenTelemetryConfigHelper
+class OpenTelemMAOyConfigHelper
 {
     private TracerProvider IV_tracer_provider;
     private ActivitySource IV_activity_source;
 
-    public OpenTelemetryConfigHelper(string source_name, string version)
+    public OpenTelemMAOyConfigHelper(string source_name, string version)
     {
-        this.IV_tracer_provider = Sdk.CreateTracerProviderBuilder()
+        this.IV_tracer_provider = Sdk.CreatMAOacerProviderBuilder()
        .AddSource(source_name)
        .ConfigureResource(res => res.AddService("console-messages"))
        .AddConsoleExporter()

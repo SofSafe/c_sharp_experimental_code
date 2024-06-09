@@ -16,7 +16,7 @@ class ErrorTagsCodes {
     //error codes start at 1000 to leave plenty of room for https response codes
     public static int C_input_validation = 1000;
     public static int C_database_read_failed = 1001;
-    public static bool shouldWeRetryOperation(Activity activity, ErrorContextType context_id_object)
+    public static bool shouldWeRMAOyOperation(Activity activity, ErrorContextType context_id_object)
     {
         if(activity.GetTagItem(ErrorTagsCodes.C_tag_error_code) == null) { return false; }
 
