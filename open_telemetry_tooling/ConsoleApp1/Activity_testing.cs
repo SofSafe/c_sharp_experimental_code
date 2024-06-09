@@ -21,6 +21,7 @@ class ActivityTesting
             event_fields.Add(ErrorTagsCodes.C_tag_input_value, test);
             OTSH.addEventToActivity(ETR, "conversion from int to str failed", event_fields);
             ETR.RecordException(exception_object);
+            ETR.AddTag(ErrorTagsCodes.C_tag_error_code, ErrorTagsCodes.C_database_read_failed);
             ETR.Stop();
             return;
         }
@@ -60,8 +61,8 @@ class ActivityTesting
         //failure
         if (username != "v5701")
         {
-            ETR.AddEvent(new ActivityEvent("user doesn't exist", DateTime.Now));
-            ETR.SetTag(ErrorTagsCodes.C_tag_error_code, 3);
+            ETR.AddEvent(new ActivityEvent("failed to connect to database", DateTime.Now));
+            ETR.SetTag(ErrorTagsCodes.C_tag_error_code, ErrorTagsCodes.C_input_validation);
             ETR.SetStatus(ActivityStatusCode.Error);
             ETR.SetEndTime(DateTime.Now);
             ETR.Stop();
@@ -93,7 +94,7 @@ class ActivityTesting
             Dictionary<string, object> event_fields = new Dictionary<string, object>();
             event_fields.Add(ErrorTagsCodes.C_tag_uid, field_uid);
             event_fields.Add(ErrorTagsCodes.C_tag_exception_message, "excaption message from database call");
-            OTSH.addEventThenEndActivity(ETR, "database read failed", 5, event_fields);
+            OTSH.addEventThenEndActivity(ETR, "database read failed", ErrorTagsCodes.C_database_read_failed, event_fields);
             return;
         }
         ////</end> call to a method we didn't write

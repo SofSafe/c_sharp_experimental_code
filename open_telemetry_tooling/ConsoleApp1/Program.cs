@@ -19,37 +19,52 @@ public class Program
         Activity ETR = ot_helper.startActivityWrapper("p1s3e20CreateUser");
         ETR.SetTag("post_key1", "post key 1 value");
         ETR.SetTag("post_key2", "post key 2 value");
-
-
-
         List<Activity> method_activity_lists = new List<Activity>();
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-
-        ActivityTesting test_class = new ActivityTesting();
-        test_class.test1(ot_helper, child_activity_pointer, "v5701", "1234");
-        method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
-
-
-
-        test_class.test3(ot_helper, child_activity_pointer, "user@user.com", "1234");
-        method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
-
-
-        test_class.exceptionTest(ot_helper, child_activity_pointer);
-        method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
-
-
-
-        foreach (var activity_entry in method_activity_lists)
+        string correct_username = "v5701";
+        int loop1 = 0;
+        while (loop1 < 10)
         {
-            if (activity_entry.Status != ActivityStatusCode.Ok)
+            loop1++;
+            
+            if(loop1 == 3)
             {
-                OTSH.addEventToActivity(ETR, "multi-sequence operation failed at:" + activity_entry.DisplayName, null);
-                OTSH.passStatusAndEndActivity(ETR, activity_entry);
-                return;
+                correct_username = "this should fail now";
             }
-        }
 
+            ActivityTesting test_class = new ActivityTesting();
+
+            test_class.test1(ot_helper, child_activity_pointer, correct_username, "1234");
+            method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
+
+
+
+            test_class.test3(ot_helper, child_activity_pointer, "user@user.com", "1234");
+            method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
+
+
+            test_class.exceptionTest(ot_helper, child_activity_pointer);
+            method_activity_lists.Add(child_activity_pointer.PIV_child_activity_pointer);
+
+
+
+            foreach (var activity_entry in method_activity_lists)
+            {
+                if (activity_entry.Status != ActivityStatusCode.Ok)
+                {
+
+                    OTSH.addEventToActivity(ETR, "multi-sequence operation failed at:" + activity_entry.DisplayName, OTSH.C_tag_empty_tags_object);
+                    
+                    if (ErrorTagsCodes.shouldWeRetryOperation(activity_entry, ErrorTagsCodes.C_context_https_request) == false)
+                    {
+                        OTSH.passStatusAndEndActivity(ETR, activity_entry);
+                        return;
+                    }
+                }
+            }
+
+            Thread.Sleep(5000);
+        }
 
 
         ETR.Stop();
