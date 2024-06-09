@@ -7,7 +7,7 @@ using OpenTelemetry.Resources;
 using Google.Protobuf.WellKnownTypes;
 
 
-//Open TelemMAOy Sofsafe Helper
+//OpenTelemetry Sofsafe Helper
 class OTSH
 {
     //TODO add to c# programing standards that C_ prefix means constant
