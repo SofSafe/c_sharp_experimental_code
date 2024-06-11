@@ -1,4 +1,5 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
 using System.Collections;
 
 class SafeDataObjectBaseClass
@@ -10,9 +11,9 @@ class SafeDataObjectBaseClass
     public bool IV_allow_disabling_validation = false;
     private DateTime IV_last_set = SafeDataObjectBaseClass.C_unset_time;
     private DateTime IV_last_validation_check = SafeDataObjectBaseClass.C_unset_time;
-    private Dictionary<string, string> IV_last_validation_result_details = [];
+    private Dictionary<string, string> IV_last_validation_result_details = new Dictionary<string, string>();
     private bool IV_last_validation_result = false;
-    private List<string> IV_validator_rule_names = [];
+    private List<string> IV_validator_rule_names = new List<string>();
 
 
     public bool PIV_valid_data_flag
@@ -53,6 +54,5 @@ class SafeDataObjectBaseClass
         get { return IV_validator_rule_names; }
     }
 
-    public bool addValidatorRule()
 }
 

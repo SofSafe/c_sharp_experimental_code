@@ -1,17 +1,18 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System;
+using System.Collections.Generic;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
-using Google.Protobuf.WellKnownTypes;
-
 
 //OpenTelemetry Sofsafe Helper
-class OTSH
+static class OTSH
 {
     //TODO add to c# programing standards that C_ prefix means constant
-    public static Dictionary<string, Object> C_tag_empty_tags_object = [];
+    #pragma warning disable 0649
+    public static Dictionary<string, Object> C_empty_tags_object;
 
 
     public static void setSuccessEndActivity(Activity activity)

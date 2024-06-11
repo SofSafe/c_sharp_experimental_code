@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-class ErrorTagsCodes { 
+static class ErrorTagsCodes { 
     public static string C_tag_exception_message = "Exception";
     public static string C_tag_error_code = "Error Code";
     public static string C_tag_uid = "Entity UID";
@@ -34,7 +34,7 @@ class ErrorTagsCodes {
 
 }
 
-class ErrorContextType {
+sealed class ErrorContextType {
 
     private int IV_context_type_id;
     public int PIV_context_id
