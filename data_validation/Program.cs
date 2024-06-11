@@ -18,14 +18,15 @@ namespace data_validation
             List<Activity> method_activity_lists = new List<Activity>();
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
+            SofsafeDataValidators.runtimeSetup(ot_helper, child_activity_pointer);
+
+
             List<SofsafeDataValidationRuleName> rules = new List<SofsafeDataValidationRuleName>();
-            rules.Add(SDVRN.len_greater_0);
+            rules.Add(SDVRN.greater_0);
             List<string> validation_results = new List<string>();
+            
 
-            SofsafeDataValidators.runtimeSetup(ot_helper,child_activity_pointer);
-
-            return;
-            validation_results = SofsafeDataValidators.validateData(ot_helper, child_activity_pointer, "", rules);
+            validation_results = SofsafeDataValidators.validateData(ot_helper, child_activity_pointer, 21, rules);
 
             foreach (var entry in validation_results)
             {

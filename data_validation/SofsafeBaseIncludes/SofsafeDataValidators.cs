@@ -119,9 +119,7 @@ static class SofsafeDataValidators
             }
             ////</end> check each general type to see if it supports this rule
 
-            SofsafeDataValidators.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);
-            Console.WriteLine(rule_name_key);
-            Console.WriteLine(rule_type_compability_list.Count.ToString());            
+            SofsafeDataValidators.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);        
         }
 
         OTSH.setSuccessEndActivity(ETR);
@@ -167,11 +165,38 @@ static class SofsafeDataValidators
             return return_value;
     }
 
-    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check,List<SofsafeDataValidationRuleName> rule_names)
+    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check,List<SofsafeDataValidationRuleName> rule_list)
     {
+        Activity ETR = ot_helper.startActivityWrapper("SofsafeDataValidators.validateData");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ETR.AddTag("value_to_check", value_to_check);
 
+        List<string> return_value = new List<string>();
         //// verify all requested rules are compatible with the type specified
-        
+        List<Type> value_type_and_interfaces = new List<Type>();
+        value_type_and_interfaces.Add(value_to_check.GetType());
+        value_type_and_interfaces.AddRange(value_to_check.GetType().GetInterfaces());
+
+       foreach (SofsafeDataValidationRuleName rule in rule_list) {
+            string rule_name = rule.PIV_rule_name;
+            List<Type> compatible_types;
+            SofsafeDataValidators.CV_rule_type_compability.TryGetValue(rule_name, out compatible_types);
+            
+            bool rule_compatible = false;
+            foreach (Type interface_or_type in value_type_and_interfaces) {                
+                    if (compatible_types.Contains(interface_or_type)) {
+                    Console.WriteLine(interface_or_type.FullName);
+                        rule_compatible = true;
+                        break;
+                    }
+                }
+
+            if (!rule_compatible) {
+                OTSH.addEventThenEndActivity(ETR, "rule: " + rule_name + " is  not compatible with value", ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
+                return return_value;
+            }            
+        }
         ////</end> verify all requested rules are compatible with the type specified
 
         //// build an array of methods to call
@@ -181,14 +206,7 @@ static class SofsafeDataValidators
         ///format and return results
         ///</end> format and return results
 
-        
-
-
-        List<string> return_value = new List<string>();
-
-
-
-
+       OTSH.setSuccessEndActivity(ETR);
         return return_value;
 
     }
