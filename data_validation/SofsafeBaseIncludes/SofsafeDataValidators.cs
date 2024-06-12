@@ -4,75 +4,87 @@ using System.Numerics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OpenTelemetry.Trace;
 
-
+ 
 //Sofsafe Data Validation Class
-static class SDVC
+static class SDC
 {
-
     //TODO add to SBD that all rule names start with R_ , also add to programming standards
-    public static SofsafeDataValidationRuleName R_greater_0 = new SofsafeDataValidationRuleName("greater_0");
-    public static SofsafeDataValidationRuleName R_len_greater_0 = new SofsafeDataValidationRuleName("len_greater_0");
-    public static SofsafeDataValidationRuleName R_us_zip_code = new SofsafeDataValidationRuleName("us_zip_code");
-    private static Array PIV_all_rules_array = new[] { SDVC.R_greater_0, SDVC.R_len_greater_0, SDVC.R_us_zip_code };
+    public static SDR R_greater_0 = new SDR("greater_0");
+    public static SDR R_len_greater_0 = new SDR("len_greater_0");
+    public static SDR R_us_zip_code = new SDR("us_zip_code");
+    private static Array PIV_all_rules_array = new[] { SDC.R_greater_0, SDC.R_len_greater_0, SDC.R_us_zip_code };
 
 
-    private static void initializeDataStructures(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    private static void setupRules(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
 
-        Activity ETR = ot_helper.startActivityWrapper("SDVC.initializeDataStructures");
+        Activity ETR = ot_helper.startActivityWrapper("SDC.setupRules");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        // IEnumerable interfaces
+        //// IEnumerable interface rules
         List<Type> enumerable_interface_types = new List<Type>();
         enumerable_interface_types.Add(typeof(IEnumerable<>));
-        SDVC.CV_general_types_to_language_types.Add("enumerable", enumerable_interface_types);
+        SDC.CV_general_types_to_language_types.Add("enumerable", enumerable_interface_types);
 
         List<string> enumerable_interface_rule_names = new List<string>();
-        enumerable_interface_rule_names.Add(SDVC.R_len_greater_0.PIV_rule_name);
-        SDVC.CV_compatible_rules_by_general_types.Add("enumerable", enumerable_interface_rule_names);
+        enumerable_interface_rule_names.Add(SDC.R_len_greater_0.PIV_rule_name);
+        SDC.CV_compatible_rules_by_general_types.Add("enumerable", enumerable_interface_rule_names);
+        //// IEnumerable interface rules
 
-        //// int specific rules
-        List<Type> int_rules = new List<Type>();
-        int_rules.Add(typeof(int));
-        int_rules.Add(typeof(Int128));
-        int_rules.Add(typeof(Int64));
-        int_rules.Add(typeof(Int32));
-        int_rules.Add(typeof(Int16));
-        SDVC.CV_general_types_to_language_types.Add("int", int_rules);
+
+        //// rules for whole numbers only
+        List<Type> int_rules_types = new List<Type>();
+        int_rules_types.Add(typeof(byte));
+        int_rules_types.Add(typeof(sbyte));
+        int_rules_types.Add(typeof(int));
+        int_rules_types.Add(typeof(uint));
+        int_rules_types.Add(typeof(Int64));
+        int_rules_types.Add(typeof(Int32));
+        int_rules_types.Add(typeof(Int16));
+        int_rules_types.Add(typeof(double));
+        int_rules_types.Add(typeof(long));
+        int_rules_types.Add(typeof(ulong));
+        int_rules_types.Add(typeof(ushort));
+        SDC.CV_general_types_to_language_types.Add("int", int_rules_types);
         List<string> int_rule_names = new List<string>();
-        int_rule_names.Add(SDVC.R_us_zip_code.PIV_rule_name);
-        SDVC.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
+        int_rule_names.Add(SDC.R_us_zip_code.PIV_rule_name);
+        SDC.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
+        ////</end> rules for whole numbers only
 
-        // number types
+
+        //// general number rules
         List<Type> number_langage_types = new List<Type>();
         number_langage_types.Add(typeof(INumber<>));
         number_langage_types.Add(typeof(INumberBase<>));
-        SDVC.CV_general_types_to_language_types.Add("numbers", number_langage_types);
+        SDC.CV_general_types_to_language_types.Add("numbers", number_langage_types);
 
 
         List<string> number_type_rule_names = new List<string>();
-        number_type_rule_names.Add(SDVC.R_greater_0.PIV_rule_name);
-        SDVC.CV_compatible_rules_by_general_types.Add("numbers", number_type_rule_names);
+        number_type_rule_names.Add(SDC.R_greater_0.PIV_rule_name);
+        SDC.CV_compatible_rules_by_general_types.Add("numbers", number_type_rule_names);
+        //// general number rules
 
-        //// text types and rules
+
+        //// text rules
         List<Type> text_langage_types = new List<Type>();
         text_langage_types.Add(typeof(char));
         text_langage_types.Add(typeof(string));
-        SDVC.CV_general_types_to_language_types.Add("text", text_langage_types);
+        SDC.CV_general_types_to_language_types.Add("text", text_langage_types);
 
         List<string> text_type_rule_names = new List<string>();
-        text_type_rule_names.Add(SDVC.R_us_zip_code.PIV_rule_name);
-        text_type_rule_names.Add(SDVC.R_len_greater_0.PIV_rule_name);
-        SDVC.CV_compatible_rules_by_general_types.Add("text", text_type_rule_names);
-        ////</end> text types and rules
+        text_type_rule_names.Add(SDC.R_us_zip_code.PIV_rule_name);
+        text_type_rule_names.Add(SDC.R_len_greater_0.PIV_rule_name);
+        SDC.CV_compatible_rules_by_general_types.Add("text", text_type_rule_names);
+        ////</end> text rules
 
 
         //// associate rule names with methods
-        SDVC.CV_rule_name_to_method.Add(SDVC.R_greater_0.PIV_rule_name, SDVC.numberGreater0);
-        SDVC.CV_rule_name_to_method.Add(SDVC.R_len_greater_0.PIV_rule_name, SDVC.lenGreater0);
-        SDVC.CV_rule_name_to_method.Add(SDVC.R_us_zip_code.PIV_rule_name, SDVC.fiveDigits);
+        SDC.CV_rule_name_to_method.Add(SDC.R_greater_0.PIV_rule_name, SDC.numberGreater0);
+        SDC.CV_rule_name_to_method.Add(SDC.R_len_greater_0.PIV_rule_name, SDC.lenGreater0);
+        SDC.CV_rule_name_to_method.Add(SDC.R_us_zip_code.PIV_rule_name, SDC.fiveDigits);
         ////</end> associate rule names with methods
 
 
@@ -81,80 +93,67 @@ static class SDVC
     }
 
 
-    private static void numberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check)
+    private static void numberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
-        SDVC.baseMethodNumberChecker(ot_helper,method_activity_pointer,(IComparable) value_to_check,1);
+        SDC.baseMethodNumberChecker(ot_helper,method_activity_pointer,(IComparable) value_to_check,value_description, 1);
         return;        
     }
 
-    private static void lenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check)
+    private static void lenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDVC.lenGreater0");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
-        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-
-        ETR.AddTag("value_to_check", value_to_check);
-        SDVC.baseMethodlenChecker(ot_helper, child_activity_pointer,value_to_check,1);
-
-        OTSH.setSuccessEndActivity(ETR);
+        SDC.baseMethodlenChecker(ot_helper, method_activity_pointer, value_to_check, value_description,1);
         return;
     }
 
-    private static void fiveDigits(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check)
+    private static void fiveDigits(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
         if (value_to_check.GetType() == typeof(string) || value_to_check.GetType() == typeof(char)) {
-            SDVC.baseMethodlenChecker(ot_helper, method_activity_pointer, value_to_check, -1, -1, 5);
+            SDC.baseMethodlenChecker(ot_helper, method_activity_pointer, value_to_check, value_description, -1, -1, 5);
+            return;
+        } 
+        
+        if(value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
+        {
+            SDC.baseMethodNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, 11110, 99999);
             return;
         }
 
-        if (value_to_check.GetType() == typeof(int) ) {
-            Activity ETR = ot_helper.startActivityWrapper("SDVC.fiveDigits");
-            method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
-            ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-            
-            ETR.AddTag("value_to_check", value_to_check);
-            
-            int converted_value = (int)value_to_check;
-            if (converted_value < 11110 || converted_value > 99999) {
-                OTSH.addEventThenEndActivity(ETR, "value is not 5 digits", ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
-                return;
-            }
-
-                OTSH.setSuccessEndActivity(ETR);
-                return;            
-        }
-
-        
+        Activity ETR = ot_helper.startActivityWrapper("SDC.fiveDigits");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ETR.AddTag("value_to_check", value_to_check);
+        OTSH.addEventThenEndActivity(ETR, "value_to_check didn't match a type this rule supports", ErrorTagsCodes.C_input_validation);
+        return;
     }
 
 
-    //// don't touch anything below this unless your refactoring how this class works at the fundemental level and you've already read the software blueprint for it
+    //// don't touch anything below this unless your refactoring how this class works at the fundemental level and you've already read and understand the software blueprint for it
     private static Dictionary<string, List<string>> CV_compatible_rules_by_general_types = new Dictionary<string, List<string>>();
     private static Dictionary<string, List<Type>> CV_general_types_to_language_types = new Dictionary<string, List<Type>>();
     private static Dictionary<string, List<string>> CV_rule_type_compability = new Dictionary<string, List<string>>();
 
 
-    private static Dictionary<string, SDVC.CVD_rule_method> CV_rule_name_to_method = new Dictionary<string, SDVC.CVD_rule_method>();
+    private static Dictionary<string, SDC.CVD_rule_method> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method>();
 
     //TODO add D_ as prefix for delegates in SBD, in this case CV means class variable.
-    private delegate void CVD_rule_method(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check);
+    private delegate void CVD_rule_method(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description);
 
-    public static void runtimeSetup(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public static void runOnceAtRunTimeStart(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDVC.runtimeSetup");
+        Activity ETR = ot_helper.startActivityWrapper("SDC.runtimeSetup");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        SDVC.initializeDataStructures(ot_helper, child_activity_pointer);
+        SDC.setupRules(ot_helper, child_activity_pointer);
 
-        foreach (string rule_name_key in SDVC.CV_rule_name_to_method.Keys)
+        foreach (string rule_name_key in SDC.CV_rule_name_to_method.Keys)
         {
             List<string> rule_type_compability_list = new List<string>();
             //// check each general type to see if it supports this rule
-            foreach (string general_type_key in SDVC.CV_compatible_rules_by_general_types.Keys)
+            foreach (string general_type_key in SDC.CV_compatible_rules_by_general_types.Keys)
             {
                 List<string> rules_list_for_general_type;
-                SDVC.CV_compatible_rules_by_general_types.TryGetValue(general_type_key, out rules_list_for_general_type);
+                SDC.CV_compatible_rules_by_general_types.TryGetValue(general_type_key, out rules_list_for_general_type);
                 if (rules_list_for_general_type.Contains(rule_name_key) == false)
                 {
                     continue;
@@ -162,13 +161,13 @@ static class SDVC
 
 
                 ////// check if any language types are associated with the general type and associates those language types with the rule
-                if (SDVC.CV_general_types_to_language_types.ContainsKey(general_type_key) == false)
+                if (SDC.CV_general_types_to_language_types.ContainsKey(general_type_key) == false)
                 {
                     continue;
                 }
 
                 List<Type> types_for_general_type;
-                SDVC.CV_general_types_to_language_types.TryGetValue(general_type_key, out types_for_general_type);
+                SDC.CV_general_types_to_language_types.TryGetValue(general_type_key, out types_for_general_type);
                 foreach (Type type_object in types_for_general_type)
                 {
                     rule_type_compability_list.Add(type_object.Name);
@@ -178,7 +177,7 @@ static class SDVC
             }
             ////</end> check each general type to see if it supports this rule
 
-            SDVC.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);
+            SDC.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);
         }
 
         OTSH.setSuccessEndActivity(ETR);
@@ -186,9 +185,9 @@ static class SDVC
     }
 
 
-    private static void baseMethodlenChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, int min_length = -1,int max_length = -1,int exact_length= -1)
+    private static void baseMethodlenChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description, int min_length = -1,int max_length = -1,int exact_length= -1)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDVC.baseMethodlenChecker");
+        Activity ETR = ot_helper.startActivityWrapper("SDC.baseMethodlenChecker");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
@@ -252,67 +251,99 @@ static class SDVC
         return;
     }
 
-    private static void baseMethodNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null)
+    private static void baseMethodNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, string value_description, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDVC.numberGreater0");
+        Activity ETR = ot_helper.startActivityWrapper("SDC.numberGreater0");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
-        object converted_min_value;
 
-        if(value_to_check.GetType() == typeof(decimal))
+        try
         {
-            decimal converted_min_value = (decimal)min_value;
-            decimal converted_max_value = (decimal)max_value;
-            decimal converted_value_to_check = (decimal)value_to_check;
-        } else
-        {
-            double converted_min_value = (double)min_value;
-            double converted_max_value = (double)max_value;
-            double converted_value_to_check = (double)value_to_check;
-        }
-        
-        if (min_value != null && converted_value_to_check.CompareTo(min_value) < 0)
-        {
-            OTSH.addEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return;
-        }
+            if (value_to_check.GetType() != typeof(decimal))
+            {
+                double converted_value_to_check = new double();
+                converted_value_to_check = Convert.ToDouble(value_to_check);
 
-        if (max_value != null && value_to_check.CompareTo(max_value) > 0)
-        {
-            OTSH.addEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return;
-        }
+                if (min_value != null && converted_value_to_check < (double)Convert.ToDouble(min_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
 
-        if (exact_value != null && value_to_check.CompareTo(exact_value) == 0)
+                if (max_value != null && converted_value_to_check > (double)Convert.ToDouble(max_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
+
+                if (exact_value != null && converted_value_to_check != (double)Convert.ToDouble(exact_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
+            }
+            else
+            {
+                decimal converted_value_to_check = new decimal();
+                converted_value_to_check = Convert.ToDecimal(value_to_check);
+
+                if (min_value != null && converted_value_to_check < (decimal)Convert.ToDecimal(min_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
+
+                if (max_value != null && converted_value_to_check > (decimal)Convert.ToDecimal(max_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
+
+                if (exact_value != null && converted_value_to_check != (decimal)Convert.ToDecimal(exact_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
+            }
+        }
+        catch(Exception exception_object)
         {
-            OTSH.addEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            ETR.RecordException(exception_object);
+            OTSH.addEventThenEndActivity(ETR,"exception while comparing number values",ErrorTagsCodes.C_input_validation);
             return;
         }
 
         OTSH.setSuccessEndActivity(ETR);
         return;
     }
-    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check,List<SofsafeDataValidationRuleName> rule_list)
+    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string value_description = "")
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDVC.validateData");
+        Activity ETR = ot_helper.startActivityWrapper("SDC.validateData");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
 
         List<string> return_value = new List<string>();
 
+        if (value_description.Length != 0) {
+            value_description += " | ";
+        }
+
         //// verify all requested rules are compatible with the type specified
         List<Type> value_type_and_interfaces = new List<Type>();
         value_type_and_interfaces.Add(value_to_check.GetType());
         value_type_and_interfaces.AddRange(value_to_check.GetType().GetInterfaces());
-        foreach (SofsafeDataValidationRuleName rule in rule_list) {
+        foreach (SDR rule in rule_list) {
             string rule_name = rule.PIV_rule_name;
             List<string> compatible_type_names;
-            SDVC.CV_rule_type_compability.TryGetValue(rule_name, out compatible_type_names);
+            SDC.CV_rule_type_compability.TryGetValue(rule_name, out compatible_type_names);
             
             bool rule_compatible = false;
             foreach (Type interface_or_type in value_type_and_interfaces) {                
@@ -323,22 +354,24 @@ static class SDVC
                 }
 
             if (!rule_compatible) {
-                OTSH.addEventThenEndActivity(ETR, "rule: " + rule_name + " is  not compatible with value", ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
+                string error_message = value_description + "rule: " + rule_name + " is  not compatible with value";
+                OTSH.addEventThenEndActivity(ETR, error_message, ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
+                return_value.Add(error_message);
                 return return_value;
             }            
         }
         ////</end> verify all requested rules are compatible with the type specified
 
         //// call all validation rule mehtods and format results
-        foreach (SofsafeDataValidationRuleName rule in rule_list) {         
+        foreach (SDR rule in rule_list) {         
             string rule_name = rule.PIV_rule_name;
-            SDVC.CVD_rule_method method_to_call;
-            SDVC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
-            method_to_call(ot_helper, child_activity_pointer, value_to_check);
+            SDC.CVD_rule_method method_to_call;
+            SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
+            method_to_call(ot_helper, child_activity_pointer, value_to_check,value_description);
             if(child_activity_pointer.PIV_child_activity_pointer.Status != ActivityStatusCode.Ok) {
                 Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.PIV_child_activity_pointer.EnumerateEvents();
                 while (error_events.MoveNext()) {
-                    return_value.Add(rule_name + ": " + error_events.Current.Name);
+                    return_value.Add(value_description + rule_name + ": " + error_events.Current.Name);
                 }
             }
         }
@@ -353,14 +386,15 @@ static class SDVC
         return return_value;
     }
 
-    ////</end> don't touch this unless your refactoring how this class works at the fundemental level and you've already read the software blueprint for it
+    ////</end> don't touch this unless your refactoring how this class works at the fundemental level and you've already read and understand the software blueprint for it
 
 }
 
-sealed class SofsafeDataValidationRuleName
+//sofsafe data validation rule
+sealed class SDR
 {
     private string IV_rule_name;
-    public SofsafeDataValidationRuleName(string rule_name)
+    public SDR(string rule_name)
     {
         IV_rule_name = rule_name;
     }

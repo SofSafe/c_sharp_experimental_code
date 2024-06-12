@@ -50,15 +50,15 @@ static class OTSH
     }
 
 
-    public static void addEventThenEndActivity(Activity activity, string event_summary, int error_code, Dictionary<string, Object> tag_items)
-    {
+    public static void addEventThenEndActivity(Activity activity, string event_summary, int error_code, Dictionary<string, Object> tag_items=null)
+    {   
         OTSH.addEventToActivity(activity, event_summary, tag_items);
         activity.SetTag(ErrorTagsCodes.C_tag_error_code, error_code);
         activity.SetStatus(ActivityStatusCode.Error);
         activity.Stop();
     }
 
-    public static void addEventToActivity(Activity activity, string event_summary, Dictionary<string, Object> tag_items)
+    public static void addEventToActivity(Activity activity, string event_summary, Dictionary<string, Object> tag_items=null)
     {
         if (tag_items != null && tag_items.Count > 0)
         {

@@ -6,7 +6,7 @@ class SafeDataObjectBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     public string IV_data_identifier = "";
-    private bool IV_valid_data_flag = false;
+    private bool IV_validators_passed = false;
     private bool IV_validation_disabled = false;
     public bool IV_allow_disabling_validation = false;
     private DateTime IV_last_set = SafeDataObjectBaseClass.C_unset_time;
@@ -14,11 +14,12 @@ class SafeDataObjectBaseClass
     private Dictionary<string, string> IV_last_validation_result_details = new Dictionary<string, string>();
     private bool IV_last_validation_result = false;
     private List<string> IV_validator_rule_names = new List<string>();
+    private bool IV_value_in_valid_values_list = false;
+    private int IV_valid_value_list_count = 0;
 
-
-    public bool PIV_valid_data_flag
+    public bool PIV_validators_passed
     {
-        get { return this.IV_valid_data_flag; }
+        get { return this.IV_validators_passed; }
     }
 
     public bool PIV_disable_validation_flag
