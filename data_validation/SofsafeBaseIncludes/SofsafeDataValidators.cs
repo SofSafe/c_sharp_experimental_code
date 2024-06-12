@@ -83,7 +83,7 @@ static class SDVC
 
     private static void numberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check)
     {
-        SDVC.baseMethodNumberChecker(ot_helper,method_activity_pointer,value_to_check,1);
+        SDVC.baseMethodNumberChecker(ot_helper,method_activity_pointer,(IComparable) value_to_check,1);
         return;        
     }
 
@@ -252,35 +252,43 @@ static class SDVC
         return;
     }
 
-    private static void baseMethodNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, object min_value=null, object max_value=null, object exact_value=null)
+    private static void baseMethodNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null)
     {
         Activity ETR = ot_helper.startActivityWrapper("SDVC.numberGreater0");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
+        object converted_min_value;
 
-        Type value_type = value_to_check.GetType();
-        if (value_type == typeof(ulong))
+        if(value_to_check.GetType() == typeof(decimal))
         {
-            ulong converted_value = (ulong)value_to_check;
+            decimal converted_min_value = (decimal)min_value;
+            decimal converted_max_value = (decimal)max_value;
+            decimal converted_value_to_check = (decimal)value_to_check;
+        } else
+        {
+            double converted_min_value = (double)min_value;
+            double converted_max_value = (double)max_value;
+            double converted_value_to_check = (double)value_to_check;
         }
-        else if (value_type == typeof(decimal))
+        
+        if (min_value != null && converted_value_to_check.CompareTo(min_value) < 0)
         {
-            decimal converted_value = (decimal)value_to_check;
-        }
-        else if (value_type == typeof(float))
-        {
-            float converted_value = (float)value_to_check;
-        }
-        else
-        {
-            long converted_value = (long)value_to_check;
+            OTSH.addEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return;
         }
 
-
-        if (converted_value < 1)
+        if (max_value != null && value_to_check.CompareTo(max_value) > 0)
         {
-            OTSH.addEventToActivity(ETR, "value is less than 1", OTSH.C_empty_tags_object);
+            OTSH.addEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return;
+        }
+
+        if (exact_value != null && value_to_check.CompareTo(exact_value) == 0)
+        {
+            OTSH.addEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return;
         }
