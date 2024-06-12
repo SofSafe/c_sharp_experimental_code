@@ -18,15 +18,20 @@ namespace data_validation
             List<Activity> method_activity_lists = new List<Activity>();
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-            SofsafeDataValidators.runtimeSetup(ot_helper, child_activity_pointer);
+            SDVC.runtimeSetup(ot_helper, child_activity_pointer);
 
 
             List<SofsafeDataValidationRuleName> rules = new List<SofsafeDataValidationRuleName>();
-            rules.Add(SDVRN.greater_0);
+            rules.Add(SDVC.greater_0);
             List<string> validation_results = new List<string>();
-            
 
-            validation_results = SofsafeDataValidators.validateData(ot_helper, child_activity_pointer, 21, rules);
+            Int128 test = -1;
+            float test3 = 55;
+
+            Type[] test22 = test.GetType().GetInterfaces();
+            Type[] test33 = test3.GetType().GetInterfaces();
+
+            validation_results = SDVC.validateData(ot_helper, child_activity_pointer, test, rules);
 
             foreach (var entry in validation_results)
             {
