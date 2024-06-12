@@ -1,4 +1,4 @@
-﻿
+
 using System.Diagnostics;
 using System.Numerics;
 using System;
@@ -14,7 +14,6 @@ static class SDC
     public static SDR R_greater_0 = new SDR("greater_0");
     public static SDR R_len_greater_0 = new SDR("len_greater_0");
     public static SDR R_us_zip_code = new SDR("us_zip_code");
-    private static Array PIV_all_rules_array = new[] { SDC.R_greater_0, SDC.R_len_greater_0, SDC.R_us_zip_code };
 
 
     private static void setupRules(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
