@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenTelemetry.Trace;
 
- 
+
 //Sofsafe Data Validation Class
 static class SDC
 {
@@ -93,13 +93,13 @@ static class SDC
 
     private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
-        SDC.childRuleNumberChecker(ot_helper,method_activity_pointer,(IComparable) value_to_check,value_description, 1);
-        return;        
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, 1);
+        return;
     }
 
     private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, value_to_check, value_description,1);
+        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, value_to_check, value_description, 1);
         return;
     }
 
@@ -108,9 +108,9 @@ static class SDC
         if (value_to_check.GetType() == typeof(string) || value_to_check.GetType() == typeof(char)) {
             SDC.childRuleLenChecker(ot_helper, method_activity_pointer, value_to_check, value_description, -1, -1, 5);
             return;
-        } 
-        
-        if(value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
+        }
+
+        if (value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
         {
             SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, 11110, 99999);
             return;
@@ -131,10 +131,14 @@ static class SDC
     private static Dictionary<string, List<string>> CV_rule_type_compability = new Dictionary<string, List<string>>();
 
 
-    private static Dictionary<string, SDC.CVD_rule_method> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method>();
+    private static Dictionary<string, SDC.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method_delegate>();
 
     //TODO add D_ as prefix for delegates in SBD, in this case CV means class variable.
-    private delegate void CVD_rule_method(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description);
+    private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description);
+
+    public delegate List<string> CVD_validation_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rules, string value_description);
+
+
 
     public static void runOnceAtRunTimeStart(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
@@ -363,7 +367,7 @@ static class SDC
         //// call all validation rule mehtods and format results
         foreach (SDR rule in rule_list) {         
             string rule_name = rule.PIV_rule_name;
-            SDC.CVD_rule_method method_to_call;
+            SDC.CVD_rule_method_delegate method_to_call;
             SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
             method_to_call(ot_helper, child_activity_pointer, value_to_check,value_description);
             if(child_activity_pointer.PIV_child_activity_pointer.Status != ActivityStatusCode.Ok) {
