@@ -10,10 +10,11 @@ using System.Linq;
 static class SDVC
 {
 
-    public static SofsafeDataValidationRuleName greater_0 = new SofsafeDataValidationRuleName("greater_0");
-    public static SofsafeDataValidationRuleName len_greater_0 = new SofsafeDataValidationRuleName("len_greater_0");
-    public static SofsafeDataValidationRuleName us_zip_code = new SofsafeDataValidationRuleName("us_zip_code");
-    private static Array PIV_all_rules_array = new[] { SDVC.greater_0, SDVC.len_greater_0 };
+    //TODO add to SBD that all rule names start with R_ , also add to programming standards
+    public static SofsafeDataValidationRuleName R_greater_0 = new SofsafeDataValidationRuleName("greater_0");
+    public static SofsafeDataValidationRuleName R_len_greater_0 = new SofsafeDataValidationRuleName("len_greater_0");
+    public static SofsafeDataValidationRuleName R_us_zip_code = new SofsafeDataValidationRuleName("us_zip_code");
+    private static Array PIV_all_rules_array = new[] { SDVC.R_greater_0, SDVC.R_len_greater_0, SDVC.R_us_zip_code };
 
 
     private static void initializeDataStructures(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
@@ -29,7 +30,7 @@ static class SDVC
         SDVC.CV_general_types_to_language_types.Add("enumerable", enumerable_interface_types);
 
         List<string> enumerable_interface_rule_names = new List<string>();
-        enumerable_interface_rule_names.Add(SDVC.len_greater_0.PIV_rule_name);
+        enumerable_interface_rule_names.Add(SDVC.R_len_greater_0.PIV_rule_name);
         SDVC.CV_compatible_rules_by_general_types.Add("enumerable", enumerable_interface_rule_names);
 
         //// int specific rules
@@ -41,7 +42,7 @@ static class SDVC
         int_rules.Add(typeof(Int16));
         SDVC.CV_general_types_to_language_types.Add("int", int_rules);
         List<string> int_rule_names = new List<string>();
-        int_rule_names.Add(SDVC.us_zip_code.PIV_rule_name);
+        int_rule_names.Add(SDVC.R_us_zip_code.PIV_rule_name);
         SDVC.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
 
         // number types
@@ -52,7 +53,7 @@ static class SDVC
 
 
         List<string> number_type_rule_names = new List<string>();
-        number_type_rule_names.Add(SDVC.greater_0.PIV_rule_name);
+        number_type_rule_names.Add(SDVC.R_greater_0.PIV_rule_name);
         SDVC.CV_compatible_rules_by_general_types.Add("numbers", number_type_rule_names);
 
         //// text types and rules
@@ -62,16 +63,16 @@ static class SDVC
         SDVC.CV_general_types_to_language_types.Add("text", text_langage_types);
 
         List<string> text_type_rule_names = new List<string>();
-        text_type_rule_names.Add(SDVC.us_zip_code.PIV_rule_name);
-        text_type_rule_names.Add(SDVC.len_greater_0.PIV_rule_name);
+        text_type_rule_names.Add(SDVC.R_us_zip_code.PIV_rule_name);
+        text_type_rule_names.Add(SDVC.R_len_greater_0.PIV_rule_name);
         SDVC.CV_compatible_rules_by_general_types.Add("text", text_type_rule_names);
         ////</end> text types and rules
 
 
         //// associate rule names with methods
-        SDVC.CV_rule_name_to_method.Add(SDVC.greater_0.PIV_rule_name, SDVC.numberGreater0);
-        SDVC.CV_rule_name_to_method.Add(SDVC.len_greater_0.PIV_rule_name, SDVC.lenGreater0);
-        SDVC.CV_rule_name_to_method.Add(SDVC.us_zip_code.PIV_rule_name, SDVC.fiveDigits);
+        SDVC.CV_rule_name_to_method.Add(SDVC.R_greater_0.PIV_rule_name, SDVC.numberGreater0);
+        SDVC.CV_rule_name_to_method.Add(SDVC.R_len_greater_0.PIV_rule_name, SDVC.lenGreater0);
+        SDVC.CV_rule_name_to_method.Add(SDVC.R_us_zip_code.PIV_rule_name, SDVC.fiveDigits);
         ////</end> associate rule names with methods
 
 

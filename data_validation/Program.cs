@@ -22,7 +22,7 @@ namespace data_validation
 
 
             List<SofsafeDataValidationRuleName> rules = new List<SofsafeDataValidationRuleName>();
-            rules.Add(SDVC.greater_0);
+            rules.Add(SDVC.R_greater_0);
             List<string> validation_results = new List<string>();
 
             Int128 test = -1;
