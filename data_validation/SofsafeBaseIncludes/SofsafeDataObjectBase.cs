@@ -3,37 +3,33 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Numerics;
 
 class SofsafeDataObjectBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     protected string IV_data_identifier = "Data Identifier Not Set";
-    protected bool IV_validators_passed = false;
     protected bool IV_validation_disabled = false;
     protected bool IV_allow_disabling_validation = false;
-    protected DateTime IV_last_set = SofsafeDataObjectBaseClass.C_unset_time;
-    protected DateTime IV_last_validation_check = SofsafeDataObjectBaseClass.C_unset_time;
+    protected DateTime IV_last_set_time = SofsafeDataObjectBaseClass.C_unset_time;
+    protected DateTime IV_last_validation_time = SofsafeDataObjectBaseClass.C_unset_time;
     protected List<string> IV_last_validation_result_details = new List<string>();
     protected bool IV_last_validation_result = false;
     protected bool IV_value_in_valid_values_list = false;
-    protected int IV_valid_value_list_count = 0;
     protected List<SDR> IV_validation_rules_list = new List<SDR>();
     protected SDC.CVD_validation_method_delegate IV_validator_method = SDC.validateData; 
-    //TODO move to right part of SBD and change type
     protected List<object> IV_valid_values_list = new List<object>();
-    //TODO add to SBD
     protected Type IV_data_object_type;
-    //TODO add to SBD
     protected object IV_value_pointer = null;
-    //TODO add to SBD
-    protected delegate bool CV_parent_class_validator_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
+    protected delegate List<string> CV_parent_class_validator_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
     protected CV_parent_class_validator_delegate IV_parent_class_validator_method;
 
 
 
-    public bool PIV_validators_passed
+    public bool PIV_last_validation_result
     {
-        get { return this.IV_validators_passed; }
+        get { return this.IV_last_validation_result; }
     }
 
     public bool PIV_disable_validation_flag
@@ -47,21 +43,17 @@ class SofsafeDataObjectBaseClass
 
     public DateTime PIV_last_set_time
     {
-        get { return this.IV_last_set; }
+        get { return this.IV_last_set_time; }
     }
 
-    public DateTime PIV_last_validation_check_time
+    public DateTime PIV_last_validation_time
     {
-        get { return this.IV_last_validation_check; }
+        get { return this.IV_last_validation_time; }
     }
 
     public List<string> PIV_last_validation_result_details
     {
         get { return IV_last_validation_result_details;}
-    }
-    public bool PIV_last_validation_result
-    {
-        get { return IV_last_validation_result; }
     }
 
     public List<string> PIV_validator_rule_names
@@ -102,7 +94,6 @@ class SofsafeDataObjectBaseClass
 
 
         this.IV_valid_values_list.AddRange(valid_values_list);
-        this.IV_valid_value_list_count = this.IV_valid_values_list.Count;
 
         OTSH.setSuccessEndActivity(ETR);
         return true;
@@ -123,7 +114,7 @@ class SofsafeDataObjectBaseClass
 
     }
 
-    public void setValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDC.CVD_validation_method_delegate method_reference)
+    public void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDC.CVD_validation_method_delegate method_reference)
     {
         Activity ETR = ot_helper.startActivityWrapper("SofsafeDataObjectBaseClass.setValidationMethod");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
@@ -135,36 +126,31 @@ class SofsafeDataObjectBaseClass
         return;
     }
 
-    public void resetValidationState(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
-    {
-        Activity ETR = ot_helper.startActivityWrapper("SofsafeDataObjectBaseClass.resetValidationState");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
-        this.IV_last_validation_check = DateTime.Now;
-        this.IV_last_validation_result_details.Clear();
-
-        //reset to default safe value in case method doesn't finish
-        this.IV_last_validation_result = false;
-        OTSH.setSuccessEndActivity(ETR);
-        return;
-    }
-
-    //TODO move to here on SBD and update description
     public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
         Activity ETR = ot_helper.startActivityWrapper("SofsafeDataObjectBaseClass.runValidationMethod");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
+        ////reset to default safe value in case method doesn't finish
+        this.IV_last_validation_time = DateTime.Now;
+        this.IV_last_validation_result_details.Clear();
+        this.IV_last_validation_result = false;
+        this.IV_value_in_valid_values_list = false;
+        this.IV_last_validation_time = SofsafeDataObjectBaseClass.C_unset_time;
+        ////</end> reset to default safe value in case method doesn't finish
+
         bool failed_flag = false;
 
         //// check valid values list
-        if (this.IV_valid_value_list_count > 0)
+        if (this.IV_valid_values_list.Count > 0)
         {
             bool valid_value_found = false;
             foreach (object valid_value in this.IV_valid_values_list)
-            {
-                if (this.IV_value_pointer == valid_value)
+            {                
+                if (this.IV_value_pointer.Equals(valid_value))
                 {
+                    this.IV_value_in_valid_values_list = true;
                     valid_value_found = true;
                     break;
                 }
@@ -175,13 +161,13 @@ class SofsafeDataObjectBaseClass
                 ETR.SetTag("IV_value", this.IV_value_pointer);
 
                 Dictionary<string, object> tags = new Dictionary<string, object>();
-                
+
                 if (this.IV_data_object_type == typeof(string) ||
-                    this.IV_data_object_type == typeof(char))
+                    this.IV_data_object_type == typeof(char) ||
+                    this.IV_data_object_type.GetInterfaces().Contains(typeof(IFormattable)))
                 {
-                    tags.Add("IV_valid_values_list", String.Join(" | ", this.IV_valid_values_list));
-                } else
-                {
+                    tags.Add("IV_valid_values_list", String.Join(" | ", this.IV_valid_values_list));           
+                } else {
                     tags.Add("IV_valid_values_list", this.IV_valid_values_list);
                 }
 
@@ -189,6 +175,9 @@ class SofsafeDataObjectBaseClass
                 ETR.SetTag("IV_value", this.IV_value_pointer);
                 OTSH.addEventToActivity(ETR, "IV_value not found in IV_valid_values_list ", tags);
                 failed_flag = true;
+            } else
+            {
+                this.IV_value_in_valid_values_list = true;
             }
         }
         ////</end> check valid values list
@@ -205,25 +194,30 @@ class SofsafeDataObjectBaseClass
         ////</end> run sofsafe datavalidation validator or whatever custom method has been set
 
         //// run any custom validaiton logic
-        if(this.IV_parent_class_validator_method(ot_helper,child_activity_pointer) == false)
+        rule_failures.Clear();
+        rule_failures = this.IV_parent_class_validator_method(ot_helper, child_activity_pointer);
+        if (child_activity_pointer.PIV_child_activity_pointer.Status != ActivityStatusCode.Ok)
         {
-            failed_flag= true;
+            foreach (string failure_entry in rule_failures)
+            {
+                this.IV_last_validation_result_details.Add(this.IV_data_identifier + " | " + failure_entry);
+            }
+            failed_flag = true;
         }
-
         ///</end> run any custom validaiton logic
 
 
         if (failed_flag == true)
         {
+            this.IV_last_validation_result = false;
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
 
+        this.IV_last_validation_result = true;
         return true;
     }
 
-
-    //TODO add to SBD
 
     public SofsafeDataObjectBaseClass(string data_identifier, Type object_type)
     {

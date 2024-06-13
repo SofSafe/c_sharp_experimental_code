@@ -133,7 +133,7 @@ static class SDC
 
     private static Dictionary<string, SDC.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method_delegate>();
 
-    //TODO add D_ as prefix for delegates in SBD, in this case CV means class variable.
+    //TODO add D_ as prefix for delegates in programing standards, in this case CV means class variable.
     private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description);
 
     public delegate List<string> CVD_validation_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rules, string value_description);

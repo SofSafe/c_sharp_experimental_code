@@ -70,10 +70,10 @@ namespace data_validation
             List<Activity> method_activity_list = new List<Activity>();
 
             SdoInt test_string = new SdoInt("User Type UID");
-            test_string.PIV_value =5;
+            test_string.PIV_value = 7;
             List<object> valid_values = new List<object>();
             valid_values.Add(1);
-            valid_values.Add(7);
+            valid_values.Add(5);
             valid_values.Add(12);
 
             test_string.addValidValues(ot_helper, child_activity_pointer, valid_values);
