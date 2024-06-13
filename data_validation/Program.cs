@@ -26,8 +26,8 @@ namespace data_validation
             ETR.SetTag("post_key1", "post key 1 value");
             ETR.SetTag("post_key2", "post key 2 value");
 
-            dataObjectTesting(ot_helper, child_activity_pointer);
-
+            //sdoStringTest(ot_helper, child_activity_pointer);
+            sdoIntTest(ot_helper, child_activity_pointer);
             OTSH.setSuccessEndActivity(ETR);
             return;
 
@@ -60,35 +60,54 @@ namespace data_validation
 
         }
 
-        private static void dataObjectTesting(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        private static void sdoIntTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
         {
 
-            Activity ETR = ot_helper.startActivityWrapper("dataObjectTesting");
+            Activity ETR = ot_helper.startActivityWrapper("sdoIntTest");
             method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
             List<Activity> method_activity_list = new List<Activity>();
 
-            SafeDataObjectString test_string = new SafeDataObjectString("zip code");
-            test_string.PIV_value = "42122";
-            List<string> valid_values = new List<string>();
+            SdoInt test_string = new SdoInt("User Type UID");
+            test_string.PIV_value =5;
+            List<object> valid_values = new List<object>();
+            valid_values.Add(1);
+            valid_values.Add(7);
+            valid_values.Add(12);
+
+            test_string.addValidValues(ot_helper, child_activity_pointer, valid_values);
+            test_string.runValidationMethod(ot_helper, child_activity_pointer);
+
+            OTSH.setSuccessEndActivity(ETR);
+            return;
+        }
+
+        private static void sdoStringTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        {
+
+            Activity ETR = ot_helper.startActivityWrapper("sdoStringTest");
+            method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+            ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+            List<Activity> method_activity_list = new List<Activity>();
+
+            SdoString test_string = new SdoString("zip code");
+            test_string.PIV_value = "4212";
+            List<object> valid_values = new List<object>();
             valid_values.Add("22122");
             valid_values.Add("32122");
             valid_values.Add("42122");
 
-            test_string.addValidValue(ot_helper, child_activity_pointer, valid_values);
+            test_string.addValidValues(ot_helper, child_activity_pointer, valid_values);
 
             test_string.addValidatorRule(ot_helper, child_activity_pointer, SDC.R_us_zip_code);
 
-            test_string.setValidationMethod(ot_helper, child_activity_pointer, SDC.validateData);
 
             test_string.runValidationMethod(ot_helper, child_activity_pointer);
 
             OTSH.setSuccessEndActivity(ETR);
             return;
-
-
-
         }
 
     }
