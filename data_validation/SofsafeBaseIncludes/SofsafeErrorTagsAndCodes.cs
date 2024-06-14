@@ -28,7 +28,7 @@ static class ErrorTagsCodes {
 
         int error_code = (int)tag_value;
         if (error_code == ErrorTagsCodes.C_database_read_failed) { return true; }
-        if (error_code == ErrorTagsCodes.C_input_validation && context_id_object.PIV_context_id == ErrorTagsCodes.C_context_gui_operation.PIV_context_id) { return true; }
+        if (error_code == ErrorTagsCodes.C_input_validation && context_id_object.P_context_id == ErrorTagsCodes.C_context_gui_operation.P_context_id) { return true; }
         return false;
     }
 
@@ -37,7 +37,7 @@ static class ErrorTagsCodes {
 sealed class ErrorContextType {
 
     private int IV_context_type_id;
-    public int PIV_context_id
+    public int P_context_id
     {
         get { return IV_context_type_id; }
     }

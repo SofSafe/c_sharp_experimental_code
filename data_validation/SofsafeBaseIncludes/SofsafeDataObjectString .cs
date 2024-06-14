@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-class SdoString : SofsafeDataObjectBaseClass
+class SdoString : SofsafeDataObjectBaseClass, ISdoBaseClassInheritor, ISdoBaseClass
 {
     private string IV_value = "";
 
-    public string PIV_value {
+    public string P_value {
         get { return this.IV_value; }
         set {
             this.IV_last_set_time = DateTime.Now;
@@ -27,7 +27,8 @@ class SdoString : SofsafeDataObjectBaseClass
     }
 
 
-    public SdoString(string data_identifier) : base(data_identifier,typeof(string))
+
+    public SdoString(string data_identifier, bool allow_disabling_instance=false) : base(data_identifier, allow_disabling_instance,typeof(string))
     {        
        this.IV_parent_class_validator_method = this.specialValidationLogic;
     }

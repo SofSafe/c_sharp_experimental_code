@@ -119,7 +119,7 @@ class ChildActivityPointer
         //trace_id argument is here on purpose, see the SBD
         this.IV_child_activity_pointer = child_activity;
     }
-    public Activity PIV_child_activity_pointer
+    public Activity P_child_activity_pointer
     {
         get
         {

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 
-class SdoInt : SofsafeDataObjectBaseClass
+class SdoInt : SofsafeDataObjectBaseClass, ISdoBaseClassInheritor, ISdoBaseClass
 {
     private int IV_value = 0;
 
-    public int PIV_value {
+    public int P_value {
         get { return this.IV_value; }
         set {
             this.IV_last_set_time = DateTime.Now;
@@ -26,8 +27,7 @@ class SdoInt : SofsafeDataObjectBaseClass
         return return_value;
     }
 
-
-    public SdoInt(string data_identifier) : base(data_identifier,typeof(int))
+    public SdoInt(string data_identifier, bool allow_disabling_instance = false) : base(data_identifier, allow_disabling_instance, typeof(int))
     {        
        this.IV_parent_class_validator_method = this.specialValidationLogic;
     }
