@@ -27,29 +27,51 @@ namespace data_validation
             ETR.SetTag("post_key1", "post key 1 value");
             ETR.SetTag("post_key2", "post key 2 value");
 
+            //sdoIntTest(ot_helper, child_activity_pointer);
+            //sdoStringTest(ot_helper, child_activity_pointer);
+            //OTSH.setSuccessEndActivity(ETR);
+            //return;
+
 
             Transaction transaction = new Transaction(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
 
-            transaction.total_amount.P_value = -5;
+            transaction.total_amount.P_value = -12;
             transaction.location_name.P_value = "S3 Solutions";
             transaction.location_uid.P_value = 1252;
             transaction.POS_name.P_value = "register 2";
             transaction.POS_uid.P_value = 5522;
-            transaction.transaction_cloud_uid.P_value_disabled = true;
+            transaction.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
+            transaction.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            transaction.user_uid.P_value = 221;
+            transaction.user_name.P_value = "kevin@sofsafe.cloud";
+            transaction.last_part_scanned.amount.P_value = 2;
 
-            TransactionPartDetail part_detail = new TransactionPartDetail("part 1");
+            TransactionPartDetail purchased_part = new TransactionPartDetail("part 1");
             { };
-            part_detail.part_category_name.P_value = "Engine Part";
-            part_detail.part_category_uid.P_value = 2212;
-            part_detail.amount.P_value = 55;
-            part_detail.part_name.P_value = "Oxygen Sensor";
-            part_detail.part_uid.P_value = 122;       
-
+            purchased_part.part_category_name.P_value = "Engine Part";
+            purchased_part.part_category_uid.P_value = 2212;
+            purchased_part.amount.P_value = 5;
+            purchased_part.part_name.P_value = "Oxygen Sensor";
+            purchased_part.part_uid.P_value = 122;
             
-            transaction.part_details.Add(part_detail);
+            SdoString note1 = new SdoString("","note 1",new List<SDR>() { SDC.R_len_greater_2 });
+            purchased_part.notes.Add(note1);
+
+            TransactionPartDetail returned_part = new TransactionPartDetail("part 1");
+            { };
+            returned_part.part_category_name.P_value = "Engine Part";
+            returned_part.part_category_uid.P_value = 2212;
+            returned_part.amount.P_value = 22;
+            returned_part.part_name.P_value = "Radiator Hose";
+            returned_part.part_uid.P_value = 221;
+
+
+            transaction.purchased_parts_details.Add(purchased_part);
+            transaction.returned_parts_details.Add(returned_part);
             transaction.validateData(ot_helper, child_activity_pointer);
             
-            
+
+            Console.WriteLine(transaction.P_last_validation_result);
             foreach(string data_id_key in transaction.P_last_validation_result_details.Keys)
             {
                 List<string> issues_found;
@@ -61,11 +83,11 @@ namespace data_validation
                 }
 
             }
+
+            OTSH.setSuccessEndActivity(ETR);
             return;
 
-            sdoStringTest(ot_helper, child_activity_pointer);
-            sdoIntTest(ot_helper, child_activity_pointer);
-            OTSH.setSuccessEndActivity(ETR);
+            
 
 
 
@@ -107,12 +129,12 @@ namespace data_validation
 
             SdoInt test_string = new SdoInt("User Type UID");
             test_string.P_value = 7;
-            List<object> valid_values = new List<object>();
+            List<int> valid_values = new List<int>();
             valid_values.Add(1);
             valid_values.Add(5);
             valid_values.Add(12);
 
-            test_string.addValidValues(ot_helper, child_activity_pointer, valid_values);
+            test_string.addValidValues(valid_values);
             test_string.runValidationMethod(ot_helper, child_activity_pointer);
 
             OTSH.setSuccessEndActivity(ETR);
@@ -130,12 +152,12 @@ namespace data_validation
 
             SdoString test_string = new SdoString("zip code");
             test_string.P_value = "4212";
-            List<object> valid_values = new List<object>();
+            List<string> valid_values = new List<string>();
             valid_values.Add("22122");
             valid_values.Add("32122");
             valid_values.Add("42122");
 
-            test_string.addValidValues(ot_helper, child_activity_pointer, valid_values);
+            test_string.addValidValues(valid_values);
 
             test_string.IV_validation_rules_list.Add(SDC.R_us_zip_code);
 

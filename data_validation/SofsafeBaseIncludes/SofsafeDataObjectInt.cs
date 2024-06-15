@@ -10,10 +10,17 @@ class SdoInt : SofsafeDataObjectBaseClass, ISdoBaseClassInheritor, ISdoBaseClass
     public int P_value {
         get { return this.IV_value; }
         set {
-            this.IV_last_set_time = DateTime.Now;
-            this.IV_value = value;
-            this.IV_value_pointer = this.IV_value;
+          this.setValue(value);
         }
+    }
+
+    //TODO add to SBD template
+    private void setValue(int new_value)
+    {
+        if (this.IV_instance_disabled == true) { return; }
+        this.IV_last_set_time = DateTime.Now;
+        this.IV_value = new_value;
+        this.IV_value_pointer = this.IV_value;
     }
 
     public List<string> specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
@@ -27,9 +34,49 @@ class SdoInt : SofsafeDataObjectBaseClass, ISdoBaseClassInheritor, ISdoBaseClass
         return return_value;
     }
 
-    public SdoInt(string data_identifier, bool allow_disabling_instance = false) : base(data_identifier, allow_disabling_instance, typeof(int))
-    {        
-       this.IV_parent_class_validator_method = this.specialValidationLogic;
+    //TODO add to SBD on template
+    public bool addValidValues(List<int> valid_values_list)
+    {
+        List<object> valid_values_as_objects = new List<object>();
+        foreach (int entry in valid_values_list)
+        {
+            valid_values_as_objects.Add(entry as object);
+        }
+        this.IV_valid_values_list.AddRange(valid_values_as_objects);
+        return true;
+    }
+
+    //TODO add to SBD template
+    public SdoInt(int new_value, string data_identifier,
+        List<SDR> rules_list = null, List<int> valid_values_list = null,
+        bool allow_disabling_instance = false) 
+        : base(data_identifier, allow_disabling_instance, typeof(string))
+    {
+        this.setValue(new_value);
+        if (valid_values_list != null)
+        {
+            this.addValidValues(valid_values_list);
+        }
+
+        if (rules_list != null)
+        {
+            this.IV_validation_rules_list.AddRange(rules_list);
+        }
+        this.IV_parent_class_validator_method = this.specialValidationLogic;
+    }
+    public SdoInt(string data_identifier, List<SDR> rules_list = null,
+        List<int> valid_values_list =null, bool allow_disabling_instance = false) 
+        : base(data_identifier, allow_disabling_instance, typeof(int))
+    {
+        if (rules_list != null)
+        {
+            this.IV_validation_rules_list.AddRange(rules_list);
+        }
+        if(valid_values_list != null)
+        {
+            this.addValidValues(valid_values_list);
+        }
+        this.IV_parent_class_validator_method = this.specialValidationLogic;
     }
 
 }

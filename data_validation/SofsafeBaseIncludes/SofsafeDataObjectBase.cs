@@ -6,20 +6,21 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Numerics;
 
-
+//TODO add activity_name_prefix arugment on all methods needed in SBD
 
 //decide if we should keep this and TODO add to SBD if needed
 interface ISdoBaseClassInheritor
 {
     List<string> specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
 }
+//TODO add to SBD
 
 interface ISdoBaseClass
 {
-    bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string issue_item_prefix);
-    bool addValidValues(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, List<object> valid_values_list);
+    bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
-    void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDC.CVD_validation_method_delegate method_reference);
+
+    void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDC.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
     List<string> getLastValidationResultDetails();
 
 }
@@ -50,13 +51,9 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         get { return this.IV_last_validation_result; }
     }
 
-    public bool P_value_disabled
+    public bool P_disable_value
     {
-        get { return this.IV_instance_disabled; }
-        set { 
-            if(this.IV_allow_disabling_instance == false) { return; }
-            this.IV_instance_disabled = value; 
-        }
+        get { return this.IV_instance_disabled; }       
     }
 
     //TODO add to SBD
@@ -99,9 +96,29 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         return IV_last_validation_result_details;
     }
 
-    public bool addValidValues(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, List<object> valid_values_list)
+    //todo add to SBD
+    public bool setInstanceDisable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,bool new_disable_setting,string activity_name_prefix="")
     {
-        Activity ETR = ot_helper.startActivityWrapper("SafeDataObjectString.addValidValue");
+        if(activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ETR.AddTag("new_disable_setting", new_disable_setting);
+
+        if (new_disable_setting == true && this.IV_allow_disabling_instance == false) {
+            OTSH.addEventThenEndActivity(ETR, "can't set instance to disabled when IV_allow_disabling_instance is false",ErrorTagsCodes.C_input_validation);
+            return false; 
+        }
+
+        this.IV_instance_disabled = new_disable_setting;
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
+
+    //TODO update on SBD
+    protected bool addValidValuesAsObject(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, List<object> valid_values_list,string activity_name_prefix = "")
+    {
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable"); 
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("valid_values_list", valid_values_list);
@@ -130,9 +147,11 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
 
 
 
-    public void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDC.CVD_validation_method_delegate method_reference)
+    public void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDC.CVD_validation_method_delegate method_reference,string activity_name_prefix="")
     {
-        Activity ETR = ot_helper.startActivityWrapper("SofsafeDataObjectBaseClass.setValidationMethod");
+
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable"); 
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("Validation Method Reference", method_reference);
@@ -142,9 +161,10 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         return;
     }
 
-    public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string issue_item_prefix="")
+    public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix="")
     {
-        Activity ETR = ot_helper.startActivityWrapper("SofsafeDataObjectBaseClass.runValidationMethod");
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
@@ -156,13 +176,22 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         this.IV_last_validation_time = SofsafeDataObjectBaseClass.C_unset_time;
         ////</end> reset to default safe value in case method doesn't finish
 
+        /// disabled values always fail validation checks
+        if(this.IV_instance_disabled == true)
+        {
+            ETR.SetTag("IV_data_identifier", this.IV_data_identifier);
+            OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "This instance has been set to disabled", ErrorTagsCodes.C_input_validation);
+            this.IV_last_validation_result_details.Add(activity_name_prefix + this.IV_data_identifier + " This instance has been set to disabled");
+            return false;
+        }
+
 
         //can't validate without setting data at least once
         if (this.IV_last_set_time == SofsafeDataObjectBaseClass.C_unset_time)
         {
             ETR.SetTag("IV_data_identifier", this.IV_data_identifier);
-            OTSH.addEventThenEndActivity(ETR, issue_item_prefix + "IV_value has never been set", ErrorTagsCodes.C_input_validation);
-            this.IV_last_validation_result_details.Add(issue_item_prefix + this.IV_data_identifier + " | IV_value has never been set");
+            OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "IV_value has never been set", ErrorTagsCodes.C_input_validation);
+            this.IV_last_validation_result_details.Add(activity_name_prefix + this.IV_data_identifier + " | IV_value has never been set");
             return false;
         }
 
@@ -211,7 +240,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
 
         //// run sofsafe datavalidation validator or whatever custom method has been set
         List<string> rule_failures = new List<string>();
-        rule_failures = this.IV_validator_method(ot_helper, child_activity_pointer, this.IV_value_pointer, this.IV_validation_rules_list, issue_item_prefix + this.IV_data_identifier);
+        rule_failures = this.IV_validator_method(ot_helper, child_activity_pointer, this.IV_value_pointer, this.IV_validation_rules_list, activity_name_prefix + this.IV_data_identifier);
         if (child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok)
         {           
             this.IV_last_validation_result_details.AddRange(rule_failures);
@@ -226,7 +255,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         {
             foreach (string failure_entry in rule_failures)
             {
-                this.IV_last_validation_result_details.Add(issue_item_prefix + ">" + this.IV_data_identifier + " | " + failure_entry);
+                this.IV_last_validation_result_details.Add(activity_name_prefix + ">" + this.IV_data_identifier + " | " + failure_entry);
             }
             failed_flag = true;
         }
