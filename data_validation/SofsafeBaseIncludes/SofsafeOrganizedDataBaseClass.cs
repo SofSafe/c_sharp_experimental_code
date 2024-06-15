@@ -16,6 +16,8 @@ interface IOdcBaseClassInheritor
 class SofsafeOrganizedDataClassBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
+    protected bool IV_allow_disabling_instance = false;
+    protected bool IV_instance_disabled = false;
     protected List<SofsafeDataObjectBaseClass> IV_Sdo_child_objects = new List<SofsafeDataObjectBaseClass>();
     protected List<SofsafeOrganizedDataClassBaseClass> IV_Odc_child_objects = new List<SofsafeOrganizedDataClassBaseClass>();
     protected List<IEnumerable<IOdcBaseClassInheritor>> IV_Odc_child_iterable_objects = new List<IEnumerable<IOdcBaseClassInheritor>>();
@@ -30,10 +32,10 @@ class SofsafeOrganizedDataClassBaseClass
     protected string IV_organized_data_identifier;
 
 
-    //TODO add P_disable_value to SofsafeOrganizedDataClassBaseClass like it exists in Sdo classes
+    //TODO add P_disable_value and all supporting logic to SBD
     public bool P_disable_value
     {
-        get { return false; }
+        get { return this.IV_instance_disabled; }
     }
     public string P_organized_data_identifier
     {
@@ -55,6 +57,23 @@ class SofsafeOrganizedDataClassBaseClass
         get { return IV_last_validation_result_details; }
     }
 
+    public bool setInstanceDisable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
+    {
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ETR.AddTag("new_disable_setting", new_disable_setting);
+
+        if (new_disable_setting == true && this.IV_allow_disabling_instance == false)
+        {
+            OTSH.addEventThenEndActivity(ETR, "can't set instance to disabled when IV_allow_disabling_instance is false", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+
+        this.IV_instance_disabled = new_disable_setting;
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
 
 
     public bool validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string issue_item_prefix="")
@@ -63,7 +82,13 @@ class SofsafeOrganizedDataClassBaseClass
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("Organized Data Id", this.IV_organized_data_identifier);
-       
+
+
+        //set to default safe values
+        this.IV_last_validation_result = false;
+        this.IV_last_validation_result_details.Clear();
+        
+        this.IV_last_validation_time = DateTime.Now;
 
         issue_item_prefix += this.IV_organized_data_identifier + "(" + this.GetType().Name + ") > ";
 
@@ -175,15 +200,17 @@ class SofsafeOrganizedDataClassBaseClass
         }
         ////</end> check all Lists of Odc child objects
 
-        if (failed_flag)
+        if (failed_flag == true)
         {
             if (duplicate_ids.Count > 0)
             {
                 issues_found.Add(issue_item_prefix + "duplicate Data IDs", duplicate_ids);
-            }
+            }            
             this.IV_last_validation_result_details = issues_found;
             return false;
         }
+
+        this.IV_last_validation_result = true;
         return true;
     }
 
@@ -213,8 +240,9 @@ class SofsafeOrganizedDataClassBaseClass
         }
     }
 
-    public SofsafeOrganizedDataClassBaseClass(string organized_data_identifier)
+    public SofsafeOrganizedDataClassBaseClass(string organized_data_identifier, bool allow_disabling_instance = false)
     {
+        this.IV_allow_disabling_instance = allow_disabling_instance;
         this.IV_organized_data_identifier = organized_data_identifier;
         this.registerSdoOdcIndividualVariables();
     }
