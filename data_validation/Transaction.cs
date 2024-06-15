@@ -52,7 +52,7 @@ class TransactionPartDetail: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassIn
         return true;
     }
 
-    public TransactionPartDetail(string organized_data_identifier): base(organized_data_identifier)
+    public TransactionPartDetail(string organized_data_identifier,bool allow_disabling_instance=false): base(organized_data_identifier, allow_disabling_instance)
     {
 
         ///register iterable objects with Odc instances
@@ -89,7 +89,7 @@ class Transaction: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassInheritor
     public SdoString user_name = new SdoString(PDI.POS_username);
     public List<TransactionPartDetail> purchased_parts_details = new List<TransactionPartDetail>();
     public List<TransactionPartDetail> returned_parts_details = new List<TransactionPartDetail>();
-    public TransactionPartDetail last_part_scanned = new TransactionPartDetail("last scanned part");
+    public TransactionPartDetail last_part_scanned = new TransactionPartDetail("last scanned part",true);
 
 
     public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
@@ -97,7 +97,10 @@ class Transaction: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassInheritor
         return true;
     }
 
-    public Transaction(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, string transaction_type): base(organized_data_identifier)
+    public Transaction(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,
+        string organized_data_identifier, string transaction_type,
+        bool allow_disabling_instance=false) 
+        : base(organized_data_identifier,allow_disabling_instance)
     {
         Activity ETR = ot_helper.startActivityWrapper("SafeDataObjectString.addValidValue");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);

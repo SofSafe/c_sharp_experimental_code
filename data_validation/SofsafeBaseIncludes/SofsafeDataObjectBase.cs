@@ -118,7 +118,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
     protected bool addValidValuesAsObject(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, List<object> valid_values_list,string activity_name_prefix = "")
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable"); 
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".addValidValuesAsObject"); 
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("valid_values_list", valid_values_list);
@@ -151,7 +151,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
     {
 
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable"); 
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".addValidValuesAsObject"); 
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("Validation Method Reference", method_reference);
@@ -163,8 +163,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
 
     public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix="")
     {
-        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable");
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".addValidValuesAsObject");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
@@ -229,6 +228,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
                 tags.Add("IV_data_identifier", this.IV_data_identifier);
                 ETR.SetTag("IV_value", this.IV_value_pointer);
                 OTSH.addEventToActivity(ETR, "IV_value not found in IV_valid_values_list ", tags);
+                this.IV_last_validation_result_details.Add(activity_name_prefix + ">" + this.IV_data_identifier + " | " + "IV_value not found in IV_valid_values_list ");
                 failed_flag = true;
             } else
             {

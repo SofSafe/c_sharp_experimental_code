@@ -39,7 +39,7 @@ namespace data_validation
             transaction.location_name.P_value = "S3 Solutions";
             transaction.location_uid.P_value = 1252;
             transaction.POS_name.P_value = "register 2";
-            transaction.POS_uid.P_value = 5522;
+            transaction.POS_uid.P_value = 22;
             transaction.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
             transaction.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
             transaction.user_uid.P_value = 221;
@@ -54,8 +54,9 @@ namespace data_validation
             purchased_part.part_name.P_value = "Oxygen Sensor";
             purchased_part.part_uid.P_value = 122;
             
-            SdoString note1 = new SdoString("","note 1",new List<SDR>() { SDC.R_len_greater_2 });
-            purchased_part.notes.Add(note1);
+            purchased_part.notes.Add(new SdoString("value2", "note 1", 
+                new List<SDR>() { SDC.R_len_greater_2 },
+                new List<string> { "value1","value2","value3"}));
 
             TransactionPartDetail returned_part = new TransactionPartDetail("part 1");
             { };
@@ -66,6 +67,7 @@ namespace data_validation
             returned_part.part_uid.P_value = 221;
 
 
+            transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
             transaction.purchased_parts_details.Add(purchased_part);
             transaction.returned_parts_details.Add(returned_part);
             transaction.validateData(ot_helper, child_activity_pointer);

@@ -53,6 +53,7 @@ class SdoString : SofsafeDataObjectBaseClass, ISdoBaseClassInheritor, ISdoBaseCl
         if (valid_values_list != null)
         {
             this.addValidValues(valid_values_list);
+
         }
 
         if (rules_list != null)
