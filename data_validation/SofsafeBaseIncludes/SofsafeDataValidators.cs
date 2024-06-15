@@ -357,19 +357,18 @@ static class SDC
         OTSH.setSuccessEndActivity(ETR);
         return;
     }
-    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string value_description = "")
+    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string issue_prefix = "")
     {
         Activity ETR = ot_helper.startActivityWrapper("SDC.validateData");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
 
+        if (issue_prefix.Length > 0) {
+            issue_prefix += " > ";
+                }
         List<string> rule_names = new List<string>();
         List<string> return_value = new List<string>();
-
-        if (value_description.Length != 0) {
-            value_description += " | ";
-        }
 
         //// verify all requested rules are compatible with the type specified
         List<Type> value_type_and_interfaces = new List<Type>();
@@ -390,9 +389,9 @@ static class SDC
                 }
             }
 
-            if (!rule_compatible) {
+            if (rule_compatible == false) {
                 rules_compatiblity_failed = true;
-                string error_message = value_description + "rule: " + rule_name + " is  not compatible with value";
+                string error_message = issue_prefix + " rule: " + rule_name + " is  not compatible with value";
                 OTSH.addEventThenEndActivity(ETR, error_message, ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
                 return_value.Add(error_message);
                 continue;
@@ -402,9 +401,10 @@ static class SDC
         //even if this is ever refactored, this list needs to be populated
         ETR.AddTag("Rule Names", rule_names);
 
-        if (!rules_compatiblity_failed)
+        if (rules_compatiblity_failed == true)
         {
-                        
+            OTSH.addEventThenEndActivity(ETR,"rule compatability check failed", ErrorTagsCodes.C_input_validation);
+            return_value.Add(issue_prefix + "rule compatability check failed");
             return return_value;
         } 
         ////</end> verify all requested rules are compatible with the type specified
@@ -414,11 +414,11 @@ static class SDC
             string rule_name = rule.P_rule_name;
             SDC.CVD_rule_method_delegate method_to_call;
             SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
-            method_to_call(ot_helper, child_activity_pointer, value_to_check,value_description);
+            method_to_call(ot_helper, child_activity_pointer, value_to_check,issue_prefix);
             if(child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok) {
                 Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.P_child_activity_pointer.EnumerateEvents();
                 while (error_events.MoveNext()) {
-                    return_value.Add(value_description + rule_name + ": " + error_events.Current.Name);
+                    return_value.Add(issue_prefix + rule_name + ": " + error_events.Current.Name);
                 }
             }
         }

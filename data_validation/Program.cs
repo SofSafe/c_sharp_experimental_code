@@ -28,7 +28,7 @@ namespace data_validation
             ETR.SetTag("post_key2", "post key 2 value");
 
 
-            Transaction transaction = new Transaction(ot_helper,child_activity_pointer,PDCI.transaction_type_purchase_parts);
+            Transaction transaction = new Transaction(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
 
             transaction.total_amount.P_value = -5;
             transaction.location_name.P_value = "S3 Solutions";
@@ -37,10 +37,10 @@ namespace data_validation
             transaction.POS_uid.P_value = 5522;
             transaction.transaction_cloud_uid.P_value_disabled = true;
 
-            TransactionPartDetail part_detail = new TransactionPartDetail();
+            TransactionPartDetail part_detail = new TransactionPartDetail("part 1");
             { };
-            part_detail.part_category_name.P_value = "engine part";
-            part_detail.part_category_uid.P_value = 252;
+            part_detail.part_category_name.P_value = "Engine Part";
+            part_detail.part_category_uid.P_value = 2212;
             part_detail.amount.P_value = 55;
             part_detail.part_name.P_value = "Oxygen Sensor";
             part_detail.part_uid.P_value = 122;       
@@ -55,7 +55,6 @@ namespace data_validation
                 List<string> issues_found;
                 transaction.P_last_validation_result_details.TryGetValue(data_id_key, out issues_found);
                 if(issues_found == null) { continue; }
-
                 foreach (string issue in issues_found)
                 {
                     Console.WriteLine(issue);

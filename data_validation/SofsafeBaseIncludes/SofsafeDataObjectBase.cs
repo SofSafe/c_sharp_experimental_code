@@ -16,7 +16,7 @@ interface ISdoBaseClassInheritor
 
 interface ISdoBaseClass
 {
-    bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
+    bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string issue_item_prefix);
     bool addValidValues(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, List<object> valid_values_list);
 
     void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDC.CVD_validation_method_delegate method_reference);
@@ -142,7 +142,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         return;
     }
 
-    public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string issue_item_prefix="")
     {
         Activity ETR = ot_helper.startActivityWrapper("SofsafeDataObjectBaseClass.runValidationMethod");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
@@ -161,8 +161,8 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         if (this.IV_last_set_time == SofsafeDataObjectBaseClass.C_unset_time)
         {
             ETR.SetTag("IV_data_identifier", this.IV_data_identifier);
-            OTSH.addEventThenEndActivity(ETR,"IV_value has never been set", ErrorTagsCodes.C_input_validation);
-            this.IV_last_validation_result_details.Add(this.IV_data_identifier + " | IV_value has never been set");
+            OTSH.addEventThenEndActivity(ETR, issue_item_prefix + "IV_value has never been set", ErrorTagsCodes.C_input_validation);
+            this.IV_last_validation_result_details.Add(issue_item_prefix + this.IV_data_identifier + " | IV_value has never been set");
             return false;
         }
 
@@ -211,7 +211,7 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
 
         //// run sofsafe datavalidation validator or whatever custom method has been set
         List<string> rule_failures = new List<string>();
-        rule_failures = this.IV_validator_method(ot_helper, child_activity_pointer, this.IV_value_pointer, this.IV_validation_rules_list, this.IV_data_identifier);
+        rule_failures = this.IV_validator_method(ot_helper, child_activity_pointer, this.IV_value_pointer, this.IV_validation_rules_list, issue_item_prefix + this.IV_data_identifier);
         if (child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok)
         {           
             this.IV_last_validation_result_details.AddRange(rule_failures);
@@ -222,11 +222,11 @@ class SofsafeDataObjectBaseClass : ISdoBaseClass
         //// run any custom validaiton logic
         rule_failures.Clear();
         rule_failures = this.IV_parent_class_validator_method(ot_helper, child_activity_pointer);
-        if (child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok)
+        if(rule_failures.Count > 0)
         {
             foreach (string failure_entry in rule_failures)
             {
-                this.IV_last_validation_result_details.Add(this.IV_data_identifier + " | " + failure_entry);
+                this.IV_last_validation_result_details.Add(issue_item_prefix + ">" + this.IV_data_identifier + " | " + failure_entry);
             }
             failed_flag = true;
         }
