@@ -11,11 +11,12 @@ using OpenTelemetry.Trace;
 static class SDC
 {
     //TODO add to SBD that all rule names start with R_ , also add to programming standards
-    public static SDR R_greater_0 = new SDR("value greater than 0");
-    public static SDR R_len_greater_0 = new SDR("length greater than 0");
+    public static SDR R_less_0 = new SDR("value_less_than_zero");
+    public static SDR R_not_zero = new SDR("value not zero");
+    public static SDR R_greater_0 = new SDR("value greater than zero");
+    public static SDR R_len_greater_0 = new SDR("length greater than zero");
     public static SDR R_len_greater_2 = new SDR("length greater than 2");
     public static SDR R_us_zip_code = new SDR("5 digit us zip code");
-    public static SDR R_less_0 = new SDR("value_less_than_0");
 
 
     private static void setupRules(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
@@ -69,6 +70,7 @@ static class SDC
         List<SDR> number_type_rule_names = new List<SDR>();
         number_type_rule_names.Add(SDC.R_greater_0);
         number_type_rule_names.Add(SDC.R_less_0);
+        number_type_rule_names.Add(SDC.R_not_zero);
         SDC.CV_compatible_rules_by_general_types.Add("numbers", number_type_rule_names);
         //// general number rules
 
@@ -90,6 +92,8 @@ static class SDC
 
         //// associate rule names with methods
         SDC.CV_rule_name_to_method.Add(SDC.R_greater_0.P_rule_name, SDC.ruleNumberGreater0);
+        SDC.CV_rule_name_to_method.Add(SDC.R_not_zero.P_rule_name, SDC.ruleNotZero);
+
         SDC.CV_rule_name_to_method.Add(SDC.R_len_greater_0.P_rule_name, SDC.ruleLenGreater0);
         SDC.CV_rule_name_to_method.Add(SDC.R_len_greater_2.P_rule_name, SDC.ruleLenGreater2);
 
@@ -106,6 +110,13 @@ static class SDC
         return;
     }
 
+    private static void ruleNotZero(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    {
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, null,null,null,0);
+        return;
+    }
+
+    
     private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
         SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, 1);
@@ -285,7 +296,7 @@ static class SDC
         return;
     }
 
-    private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, string value_description, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null)
+    private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, string value_description, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null,IComparable not_value= null)
     {
         Activity ETR = ot_helper.startActivityWrapper("SDC.numberGreater0");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
@@ -298,6 +309,13 @@ static class SDC
             {
                 double converted_value_to_check = new double();
                 converted_value_to_check = Convert.ToDouble(value_to_check);
+
+                if (not_value != null && converted_value_to_check == (double)Convert.ToDouble(not_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is  equal to " + not_value.ToString() + " and shouldn't be", OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
 
                 if (min_value != null && converted_value_to_check < (double)Convert.ToDouble(min_value))
                 {
@@ -319,11 +337,19 @@ static class SDC
                     OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
+
             }
             else
             {
                 decimal converted_value_to_check = new decimal();
                 converted_value_to_check = Convert.ToDecimal(value_to_check);
+
+                if (not_value != null && converted_value_to_check == (decimal)Convert.ToDecimal(not_value))
+                {
+                    OTSH.addEventToActivity(ETR, "value is  equal to " + not_value.ToString() + " and shouldn't be", OTSH.C_empty_tags_object);
+                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    return;
+                }
 
                 if (min_value != null && converted_value_to_check < (decimal)Convert.ToDecimal(min_value))
                 {
