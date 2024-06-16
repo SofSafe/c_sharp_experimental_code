@@ -40,12 +40,12 @@ class PDCI {
 
 class TransactionPartDetail: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassInheritor
 {
-    public SdoInt amount = new SdoInt(PDI.part_cost);
-    public SdoInt part_uid = new SdoInt(PDI.part_uid);
-    public SdoString part_name = new SdoString(PDI.part_name);
-    public SdoInt part_category_uid = new SdoInt(PDI.part_category_uid);
-    public SdoString part_category_name = new SdoString(PDI.part_category_name);
-    public List<SdoString> notes = new List<SdoString>();
+    public Sdo<int> amount = new Sdo<int>(PDI.part_cost);
+    public Sdo<int> part_uid = new Sdo<int>(PDI.part_uid);
+    public Sdo<string> part_name = new Sdo<string>(PDI.part_name);
+    public Sdo<int> part_category_uid = new Sdo<int>(PDI.part_category_uid);
+    public Sdo<string> part_category_name = new Sdo<string>(PDI.part_category_name);
+    public List<Sdo<string>> notes = new List<Sdo<string>>();
 
     public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
@@ -76,17 +76,17 @@ class TransactionPartDetail: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassIn
 class Transaction: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassInheritor
 {
 
-    public SdoString transaction_type = new SdoString(PDI.transaction_type);
-    public SdoString transaction_cloud_uid = new SdoString(PDI.transaction_cloud_uid,null,null,true);
-    public SdoInt transaction_lan_uid = new SdoInt(PDI.transaction_LAN_uid,null,null,true);
+    public Sdo<string> transaction_type = new Sdo<string>(PDI.transaction_type);
+    public Sdo<string> transaction_cloud_uid = new Sdo<string>(PDI.transaction_cloud_uid,null,null,true);
+    public Sdo<int> transaction_lan_uid = new Sdo<int>(PDI.transaction_LAN_uid,null,null,true);
 
-    public SdoInt total_amount = new SdoInt(PDI.transaction_total);
-    public SdoInt location_uid = new SdoInt(PDI.recycler_location_uid);
-    public SdoString location_name = new SdoString(PDI.recycler_location_name);
-    public SdoInt POS_uid = new SdoInt(PDI.POS_computer_uid);
-    public SdoString POS_name = new SdoString(PDI.POS_computer_name);
-    public SdoInt user_uid = new SdoInt(PDI.POS_user_uid);
-    public SdoString user_name = new SdoString(PDI.POS_username);
+    public Sdo<int> total_amount = new Sdo<int>(PDI.transaction_total);
+    public Sdo<int> location_uid = new Sdo<int>(PDI.recycler_location_uid);
+    public Sdo<string> location_name = new Sdo<string>(PDI.recycler_location_name);
+    public Sdo<int> POS_uid = new Sdo<int>(PDI.POS_computer_uid);
+    public Sdo<string> POS_name = new Sdo<string>(PDI.POS_computer_name);
+    public Sdo<int> user_uid = new Sdo<int>(PDI.POS_user_uid);
+    public Sdo<string> user_name = new Sdo<string>(PDI.POS_username);
     public List<TransactionPartDetail> purchased_parts_details = new List<TransactionPartDetail>();
     public List<TransactionPartDetail> returned_parts_details = new List<TransactionPartDetail>();
     public TransactionPartDetail last_part_scanned = new TransactionPartDetail("last scanned part",true);
@@ -126,7 +126,7 @@ class Transaction: SofsafeOrganizedDataClassBaseClass, IOdcBaseClassInheritor
         };
 
 
-        this.transaction_type.addValidValues(transaction_types);
+        this.transaction_type.IV_valid_values_list.AddRange(transaction_types);
 
         this.transaction_type.P_value = transaction_type;
 

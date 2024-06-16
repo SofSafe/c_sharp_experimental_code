@@ -27,8 +27,8 @@ namespace data_validation
             ETR.SetTag("post_key1", "post key 1 value");
             ETR.SetTag("post_key2", "post key 2 value");
 
-            //sdoIntTest(ot_helper, child_activity_pointer);
-            //sdoStringTest(ot_helper, child_activity_pointer);
+            //SdoIntTest(ot_helper, child_activity_pointer);
+            //SdoStringTest(ot_helper, child_activity_pointer);
             //OTSH.setSuccessEndActivity(ETR);
             //return;
 
@@ -54,7 +54,7 @@ namespace data_validation
             purchased_part.part_name.P_value = "Oxygen Sensor";
             purchased_part.part_uid.P_value = 122;
             
-            purchased_part.notes.Add(new SdoString("value2", "note 1", 
+            purchased_part.notes.Add(new Sdo<string>("value2", "note 1", 
                 new List<SDR>() { SDC.R_len_greater_2 },
                 new List<string> { "value1","value2","value3"}));
 
@@ -120,46 +120,46 @@ namespace data_validation
 
         }
 
-        private static void sdoIntTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        private static void SdoIntTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
         {
 
-            Activity ETR = ot_helper.startActivityWrapper("sdoIntTest");
+            Activity ETR = ot_helper.startActivityWrapper("Sdo<int>Test");
             method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
             List<Activity> method_activity_list = new List<Activity>();
 
-            SdoInt test_string = new SdoInt("User Type UID");
+            Sdo<int> test_string = new Sdo<int>("User Type UID");
             test_string.P_value = 7;
             List<int> valid_values = new List<int>();
             valid_values.Add(1);
             valid_values.Add(5);
             valid_values.Add(12);
 
-            test_string.addValidValues(valid_values);
+            test_string.IV_valid_values_list.AddRange(valid_values);
             test_string.runValidationMethod(ot_helper, child_activity_pointer);
 
             OTSH.setSuccessEndActivity(ETR);
             return;
         }
 
-        private static void sdoStringTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        private static void SdoStringTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
         {
 
-            Activity ETR = ot_helper.startActivityWrapper("sdoStringTest");
+            Activity ETR = ot_helper.startActivityWrapper("Sdo<string>Test");
             method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
             List<Activity> method_activity_list = new List<Activity>();
 
-            SdoString test_string = new SdoString("zip code");
+            Sdo<string> test_string = new Sdo<string>("zip code");
             test_string.P_value = "4212";
             List<string> valid_values = new List<string>();
             valid_values.Add("22122");
             valid_values.Add("32122");
             valid_values.Add("42122");
 
-            test_string.addValidValues(valid_values);
+            test_string.IV_valid_values_list.AddRange(valid_values);
 
             test_string.IV_validation_rules_list.Add(SDC.R_us_zip_code);
 
