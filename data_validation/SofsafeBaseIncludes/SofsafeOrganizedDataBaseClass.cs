@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +13,7 @@ interface IOdcBaseClassInheritor
     bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
 }
 
-
+//TODO update on SBD
 interface IOdcBaseClass
 {
     bool setInstanceDisable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "");
@@ -21,27 +22,47 @@ interface IOdcBaseClass
     string P_organized_data_identifier { get; }
     DateTime P_last_validation_attempt { get; }
     bool P_last_validation_result { get; }
+
+    List<ISdoBaseClass> P_Sdo_child_objects { get; }
+
+    List<IOdcBaseClass> P_odc_child_objects { get; }
+
     Dictionary<string, List<string>> P_last_validation_result_details { get; }
 }
 
-
-class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
+class SofsafeOrganizedDataBaseClass : IOdcBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     protected bool IV_allow_disabling_instance = false;
     protected bool IV_instance_disabled = false;
     protected List<ISdoBaseClass> IV_Sdo_child_objects = new List<ISdoBaseClass>();
     protected List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
-    protected List<IEnumerable<IOdcBaseClassInheritor>> IV_Odc_child_iterable_objects = new List<IEnumerable<IOdcBaseClassInheritor>>();
-    protected List<IEnumerable<ISdoBaseClass>> IV_Sdo_child_iterable_objects = new List<IEnumerable<ISdoBaseClass>>();
-
+    //TODO add to SBD
+    protected Dictionary<string, IEnumerable<IOdcBaseClass>> IV_named_odc_lists = new Dictionary<string, IEnumerable<IOdcBaseClass>>();
+    //TODO add to SBD
+    protected Dictionary<string, IEnumerable<ISdoBaseClass>> IV_named_sdo_lists = new Dictionary<string, IEnumerable<ISdoBaseClass>>();
 
     protected Dictionary<string, List<string>> IV_last_validation_result_details = new Dictionary<string, List<string>>();
 
-    protected DateTime IV_last_validation_time = SofsafeOrganizedDataClassBaseClass.C_unset_time;
+    protected DateTime IV_last_validation_time = SofsafeOrganizedDataBaseClass.C_unset_time;
     protected bool IV_last_validation_result = false;
 
     protected string IV_organized_data_identifier;
+
+
+
+
+    //TODO add to SBD
+    public List<IOdcBaseClass> P_odc_child_objects
+    {
+        get { return this.IV_Odc_child_objects; }
+    }
+    //TODO add to SBD
+    public List<ISdoBaseClass> P_Sdo_child_objects
+    {
+        get { return this.IV_Sdo_child_objects; }
+    }
+    //TODO add to SBD
 
 
     //TODO add P_disable_value and all supporting logic to SBD
@@ -68,6 +89,7 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
     {
         get { return IV_last_validation_result_details; }
     }
+    
 
     public bool setInstanceDisable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
     {
@@ -134,13 +156,15 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
         ////</end> check all individual Sdo objects        
 
 
-        //// check all Lists of Sdc child objects
+        //// check all named Lists of Sdc child objects
         int loop1 = -1;
-        foreach (IEnumerable<ISdoBaseClass> child_class_list in this.IV_Sdo_child_iterable_objects)
+        foreach (string sdo_list_key in this.IV_named_sdo_lists.Keys)
         {
+            IEnumerable<ISdoBaseClass> child_class_list;
+            this.IV_named_sdo_lists.TryGetValue(sdo_list_key, out child_class_list);
             loop1++;
             int loop2 = -1;
-            string loop_index = "loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
+            string loop_index = sdo_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
 
             foreach (ISdoBaseClass sdo_instance in child_class_list)
             {
@@ -153,7 +177,7 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
                 }
             }
         }
-        ////</end> check all Lists of Sdc child objects
+        ////</end> check all named Lists of Sdc child objects
 
         //// check all Odc child objects
         Dictionary<string, byte> individual_odc_data_ids = new Dictionary<string, byte>();
@@ -170,7 +194,8 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
             individual_odc_data_ids.Add(odc_instance.P_organized_data_identifier, 1);
             ////</end> logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
 
-            if (!odc_instance.validateData(ot_helper, child_activity_pointer, issue_item_prefix))
+            if (odc_instance.validateData(ot_helper, child_activity_pointer, issue_item_prefix) == false)
+            {
                 foreach (string data_id in odc_instance.P_last_validation_result_details.Keys)
                 {
                     List<string> issues_list;
@@ -181,20 +206,23 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
                     }
                     issues_found.Add(odc_instance.P_organized_data_identifier + ">" + data_id, issues_list);
                 }
-            failed_flag = true;
+                failed_flag = true;
+            }
         }
         ////</end> check all Odc child objects
 
-        //// check all Lists of Odc child objects
+        //// check all named Lists of Odc child objects
         loop1 = -1;
-        foreach (IEnumerable<IOdcBaseClass> child_class_list in this.IV_Odc_child_iterable_objects)
+        foreach (string odc_list_key in this.IV_named_odc_lists.Keys)
         {
+            IEnumerable<IOdcBaseClass> child_class_list;
+            this.IV_named_odc_lists.TryGetValue(odc_list_key, out child_class_list);
             loop1++;
             int loop2 = -1;
             foreach(IOdcBaseClass odc_instance in child_class_list)
             {
                 loop2++;
-                string loop_index = "loop index:" + loop1.ToString() + "-" + loop2.ToString() +"> ";
+                string loop_index = odc_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() +"> ";
                 if (!odc_instance.validateData(ot_helper, child_activity_pointer, issue_item_prefix + loop_index))
                 {
                     foreach (string data_id in odc_instance.P_last_validation_result_details.Keys)
@@ -211,7 +239,7 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
                 }
             }
         }
-        ////</end> check all Lists of Odc child objects
+        ////</end> check all named Lists of Odc child objects
 
         if (failed_flag == true)
         {
@@ -220,10 +248,12 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
                 issues_found.Add(issue_item_prefix + "duplicate Data IDs", duplicate_ids);
             }            
             this.IV_last_validation_result_details = issues_found;
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
 
         this.IV_last_validation_result = true;
+        OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
@@ -250,10 +280,13 @@ class SofsafeOrganizedDataClassBaseClass : IOdcBaseClass
                 this.IV_Odc_child_objects.Add(field_value as IOdcBaseClass);
                 continue;
             }
+            ///</end> register individual Odc class instances
+            
+
         }
     }
 
-    public SofsafeOrganizedDataClassBaseClass(string organized_data_identifier, bool allow_disabling_instance = false)
+    public SofsafeOrganizedDataBaseClass(string organized_data_identifier, bool allow_disabling_instance = false)
     {
         this.IV_allow_disabling_instance = allow_disabling_instance;
         this.IV_organized_data_identifier = organized_data_identifier;

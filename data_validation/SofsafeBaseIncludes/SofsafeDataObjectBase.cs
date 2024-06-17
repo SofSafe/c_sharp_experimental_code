@@ -19,8 +19,9 @@ interface ISdoBaseClass
     string P_data_identifier { get; }
     DateTime P_last_set_time { get; }
     DateTime P_last_validation_time { get; }
+    Type P_type { get; }    
 
-}
+    }
 
 //Sofsafe data object
 class Sdo<T> : ISdoBaseClass
@@ -36,14 +37,18 @@ class Sdo<T> : ISdoBaseClass
     protected bool IV_last_validation_result = false;
     protected bool IV_value_in_valid_values_list = false;
     public List<SDR> IV_validation_rules_list = new List<SDR>();
-    protected SDC.CVD_validation_method_delegate IV_validator_method = SDC.validateData; 
+    protected SDC.CVD_validation_method_delegate IV_validator_method = SDC.validateData;
     public List<T> IV_valid_values_list = new List<T>();
     protected Type IV_data_object_type = typeof(T);
-    protected delegate List<string> CV_parent_class_validator_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,Sdo<T> sdo_instance);
+    protected delegate List<string> CV_parent_class_validator_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, Sdo<T> sdo_instance);
     protected CV_parent_class_validator_delegate IV_parent_class_validator_method;
 
 
 
+    public Type P_type {
+        get { return this.IV_data_object_type; }
+        }
+    //add to SBD
     public bool P_null
     {
         get {

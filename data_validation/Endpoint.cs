@@ -13,7 +13,7 @@ internal class EndpointExample
         Activity ETR = ot_helper.startActivityWrapper("EndpointExample.processRequest");
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        Transaction data = new Transaction(ot_helper,child_activity_pointer,"p1s3e20", transaction_type);        
+        TransactionDto data = new TransactionDto(ot_helper,child_activity_pointer,"p1s3e20", transaction_type);        
     }
 
 }

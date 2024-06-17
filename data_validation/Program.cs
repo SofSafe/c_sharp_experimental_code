@@ -33,7 +33,7 @@ namespace data_validation
             //return;
 
 
-            Transaction transaction = new Transaction(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
+            TransactionDto transaction = new TransactionDto(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
 
             transaction.total_amount.P_value = -12;
             transaction.location_name.P_value = "S3 Solutions";
@@ -46,7 +46,7 @@ namespace data_validation
             transaction.user_name.P_value = "kevin@sofsafe.cloud";
             transaction.last_part_scanned.amount.P_value = 2;
 
-            TransactionPartDetail purchased_part = new TransactionPartDetail("part 1");
+            TransactionDtoPartDetail purchased_part = new TransactionDtoPartDetail("part 1");
             { };
             purchased_part.part_category_name.P_value = "Engine Part";
             purchased_part.part_category_uid.P_value = 2212;
@@ -58,27 +58,39 @@ namespace data_validation
                 new List<SDR>() { SDC.R_len_greater_2 },
                 new List<string> { "value1","value2","value3"}));
 
-            TransactionPartDetail returned_part = new TransactionPartDetail("part 1");
+            TransactionDtoPartDetail returned_part = new TransactionDtoPartDetail("part 1");
             { };
             returned_part.part_category_name.P_value = "Engine Part";
             returned_part.part_category_uid.P_value = 2212;
             returned_part.amount.P_value = 22;
-            returned_part.part_name.P_value = "Radiator Hose";
+            returned_part.part_name.P_value = "test";
             returned_part.part_uid.P_value = 221;
 
 
-            transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
+            transaction.last_part_scanned.part_category_name.P_value = "Engine Part";
+            transaction.last_part_scanned.part_category_uid.P_value = 2212;
+            transaction.last_part_scanned.amount.P_value = 22;
+            transaction.last_part_scanned.part_name.P_value = "tst";
+            transaction.last_part_scanned.part_uid.P_value = 221;
+
+            //transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
             transaction.purchased_parts_details.Add(purchased_part);
             transaction.returned_parts_details.Add(returned_part);
-            transaction.validateData(ot_helper, child_activity_pointer);
-            
+           
+
+            DatabaseTableBaseClass dtd_test = new TransactionTable();
+            List<IOdcBaseClass> data_class_list = new List<IOdcBaseClass>();
+            data_class_list.Add(transaction);
+            dtd_test.addOdcList(ot_helper,child_activity_pointer, data_class_list);
+
+
 
             Console.WriteLine(transaction.P_last_validation_result);
-            foreach(string data_id_key in transaction.P_last_validation_result_details.Keys)
+            foreach (string data_id_key in transaction.P_last_validation_result_details.Keys)
             {
                 List<string> issues_found;
                 transaction.P_last_validation_result_details.TryGetValue(data_id_key, out issues_found);
-                if(issues_found == null) { continue; }
+                if (issues_found == null) { continue; }
                 foreach (string issue in issues_found)
                 {
                     Console.WriteLine(issue);
@@ -86,7 +98,7 @@ namespace data_validation
 
             }
 
-            OTSH.setSuccessEndActivity(ETR);
+            OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_child_activity_pointer);
             return;
 
             
