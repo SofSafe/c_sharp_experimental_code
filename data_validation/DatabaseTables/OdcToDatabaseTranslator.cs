@@ -69,14 +69,17 @@ class OdcToDatabaseTranslator
     private Dictionary<string, byte> IV_single_entity_odc_id_lookup = new Dictionary<string, byte>();
     private List<IOdcBaseClass> IV_single_entity_odc_instances = new List<IOdcBaseClass>();
     private Dictionary<string, byte> IV_single_entity_table_name_lookup = new Dictionary<string, byte>();
-
-    protected List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };    
+    List<List<int>> IV_single_entity_map;
+    object IV_build_entity_map_thread_lock = new object();
+    protected List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };
     
     protected Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>>();
     protected Dictionary<string, Dictionary<string,ISofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, Dictionary<string, ISofsafeDatabaseTable>> { };
     protected Dictionary<string,byte> IV_multi_entity_ids = new Dictionary<string, byte>();
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
+
+    private DateTime IV_last_mapped_fields = DateTime.MinValue;
 
     public bool registerSingleEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SofsafeDatabaseTable table_instance, string activity_name_prefix = "")
     {
@@ -162,9 +165,6 @@ class OdcToDatabaseTranslator
         return true;
     }
 
-
-
-
     public bool registerMultiEntityDestinationPointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, ISofsafeDatabaseTable table_instance, string activity_name_prefix = "")
     {
     if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -214,8 +214,6 @@ class OdcToDatabaseTranslator
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
-
-
 
     public bool registerMultiEntitySourcePointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, IEnumerable<IOdcBaseClassInheritor> odc_instances_lists, string activity_name_prefix = "")
     {
@@ -267,7 +265,64 @@ class OdcToDatabaseTranslator
         return true;
     }
 
+    private bool rebuildMap ()
+    {
 
+        //// build map for single entity table to data associations
+        List<List<int>> single_entity_map = new List<List<int>>();
+        int odc_instance_index;
+        int sdo_instance_index;
+        int table_instance_index;
+        odc_instance_index = -1;
+        foreach (IOdcBaseClass odc_instance in this.IV_single_entity_odc_instances)
+        {
+            odc_instance_index++;
+            sdo_instance_index = -1;
+            foreach (ISdoBaseClass sdo_instance in odc_instance.P_Sdo_child_objects)
+            {
+                sdo_instance_index++;
+                table_instance_index = -1;
+                foreach (ISofsafeDatabaseTable table in this.IV_single_entity_table_list)
+                {
+                    table_instance_index++;
+                    if (table.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
+                    {
+                        single_entity_map.Add(new List<int>() {
+                            odc_instance_index, sdo_instance_index, table_instance_index 
+                        });
+                    }                    
+                }
+            }
+        }
+
+        lock (this.IV_build_entity_map_thread_lock)
+        {
+            if (this.IV_single_entity_map == null)
+            {
+                this.IV_single_entity_map = single_entity_map;
+            }
+            else
+            {
+                this.IV_single_entity_map.Clear();
+                this.IV_single_entity_map.AddRange(single_entity_map);
+            }
+        }
+        ////</end> build map for single entity table to data associations
+
+
+
+
+        //// build map for multi entity table to data associations
+        
+        ////</end> build map for multi entity table to data associations
+
+
+
+
+
+        this.IV_last_mapped_fields = DateTime.Now;
+        return true;
+    }
 
 
     public bool populateDatabaseFields(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
@@ -306,6 +361,7 @@ class OdcToDatabaseTranslator
         ///</end> validate data that will be used during the operation
 
 
+        this.rebuildMap();
         /// put references to matching data objects in all the fields
         bool fail_flag = false;
         ChildActivityPointer first_failed_activity = new ChildActivityPointer();

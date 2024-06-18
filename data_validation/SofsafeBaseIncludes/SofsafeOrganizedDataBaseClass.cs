@@ -35,8 +35,8 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
     public static DateTime C_unset_time = DateTime.MinValue;
     protected bool IV_allow_disabling_instance = false;
     protected bool IV_instance_disabled = false;
-    protected List<ISdoBaseClass> IV_Sdo_child_objects = new List<ISdoBaseClass>();
-    protected List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
+    protected readonly List<ISdoBaseClass> IV_Sdo_child_objects = new List<ISdoBaseClass>();
+    protected readonly List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
     //TODO add to SBD
     protected Dictionary<string, IEnumerable<IOdcBaseClass>> IV_named_odc_lists = new Dictionary<string, IEnumerable<IOdcBaseClass>>();
     //TODO add to SBD
