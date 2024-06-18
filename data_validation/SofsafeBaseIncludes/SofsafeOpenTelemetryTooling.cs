@@ -133,4 +133,10 @@ class ChildActivityPointer
             }
         }        
     }
+
+    //TODO add to SBD
+    public void equals(ChildActivityPointer other)
+    {
+        this.IV_child_activity_pointer = other.IV_child_activity_pointer;
+    }
 }
