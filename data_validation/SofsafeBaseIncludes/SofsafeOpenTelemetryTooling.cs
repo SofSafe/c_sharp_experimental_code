@@ -176,6 +176,7 @@ class LogErrorsToConsole : BaseProcessor<Activity>
             {
                 Console.WriteLine(event_entry.Name);
             }
+            Console.WriteLine("");
         }
     }
 }

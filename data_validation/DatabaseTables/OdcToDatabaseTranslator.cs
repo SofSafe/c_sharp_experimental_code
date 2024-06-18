@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Data;
 using System.Collections;
+using System.Reflection;
 
 
 
@@ -71,8 +72,8 @@ class OdcToDatabaseTranslator
 
     protected List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };    
     
-    protected Dictionary<string,List<List<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<List<IOdcBaseClassInheritor>>>();
-    protected Dictionary<string,List<ISofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, List<ISofsafeDatabaseTable>> { };
+    protected Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>>();
+    protected Dictionary<string, Dictionary<string,ISofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, Dictionary<string, ISofsafeDatabaseTable>> { };
     protected Dictionary<string,byte> IV_multi_entity_ids = new Dictionary<string, byte>();
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
@@ -163,12 +164,60 @@ class OdcToDatabaseTranslator
 
 
 
-    public bool registerMultiEntityDestinationPointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, List<ISofsafeDatabaseTable> table_list, string activity_name_prefix = "")
+
+    public bool registerMultiEntityDestinationPointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, ISofsafeDatabaseTable table_instance, string activity_name_prefix = "")
     {
+    if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " > "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerMultiEntitySourcePointer");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+        /// input validation
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
+        validator.addEntry(new DataVR(multi_entity_id, activity_name_prefix + "multi_entity_id").
+            addRule(SDC.R_len_greater_0));
+        validator.addEntry(new DataVR(table_instance, activity_name_prefix + "table_list").
+            addRule(SDC.R_not_null));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        if (this.IV_multi_entity_ids.ContainsKey(multi_entity_id) == false)
+        {
+            OTSH.addEventThenEndActivity(ETR, "multi entity join: " + multi_entity_id + " has not been registered", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        ///</end> input validation
+
+        if (this.IV_multi_entity_table_list.ContainsKey(multi_entity_id) == false)
+        {
+            this.IV_multi_entity_table_list[multi_entity_id] = new Dictionary<string, ISofsafeDatabaseTable>() { };
+
+        }
+        else
+        {
+            //make sure we aren't adding a duplicate reference
+            foreach (string schema_name in this.IV_multi_entity_table_list[multi_entity_id].Keys)
+            {
+
+                if (Object.ReferenceEquals(this.IV_multi_entity_table_list[multi_entity_id][schema_name], table_instance) == true)
+                {
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "instance specified by table_instance has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
+                    return false;
+                }
+            }
+        }
+
+        this.IV_multi_entity_table_list[multi_entity_id][table_instance.P_schema_name] = table_instance;
+        OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
-    public bool registerMultiEntitySourcePointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, object odc_instances_lists, string activity_name_prefix = "")
+
+
+    public bool registerMultiEntitySourcePointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, IEnumerable<IOdcBaseClassInheritor> odc_instances_lists, string activity_name_prefix = "")
     {
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " > "; }
@@ -197,23 +246,23 @@ class OdcToDatabaseTranslator
 
         if (this.IV_multi_entity_odc_lists.ContainsKey(multi_entity_id) == false)
         {
-            this.IV_multi_entity_odc_lists.Add(multi_entity_id,new List<List<IOdcBaseClassInheritor>>() { });
-        } 
+            this.IV_multi_entity_odc_lists.Add(multi_entity_id,new List<IEnumerable<IOdcBaseClassInheritor>>() { });
+        }
         else
         {
             //make sure we aren't adding a duplicate reference
-            foreach (List<IOdcBaseClassInheritor> list_to_check in this.IV_multi_entity_odc_lists[multi_entity_id])
-            {
+            foreach (object list_to_check in this.IV_multi_entity_odc_lists[multi_entity_id])
+            {                 
                 if(Object.ReferenceEquals(list_to_check, odc_instances_lists) == true)
                 {
-                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "instance specified by odc_instances_lists has already been registered with multi entity id: " + multi_entity_id , ErrorTagsCodes.C_input_validation);
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "instance specified by odc_instances_lists has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
                     return false;
                 }
-            }            
+            }
         }
 
 
-        this.IV_multi_entity_odc_lists[multi_entity_id].Add(odc_instances_lists as List<IOdcBaseClassInheritor>);
+        this.IV_multi_entity_odc_lists[multi_entity_id].Add(odc_instances_lists);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }

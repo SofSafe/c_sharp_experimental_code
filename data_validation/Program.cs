@@ -84,7 +84,6 @@ namespace data_validation
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
 
 
-
             SqlTransactionTable dtd_test = new SqlTransactionTable();
             translator.registerSingleEntityTable(ot_helper, child_activity_pointer, dtd_test);
             method_activity_list.Add(child_activity_pointer.P_pointer);
@@ -92,16 +91,24 @@ namespace data_validation
             translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, transaction);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            List<ISofsafeDatabaseTable> multi_entity_tables = new List<ISofsafeDatabaseTable>();
-            multi_entity_tables.Add(dtd_test);
+
             
             translator.registerMultiEntityJoin(ot_helper, child_activity_pointer, "test");            
             method_activity_list.Add(child_activity_pointer.P_pointer);
+
             
             translator.registerMultiEntitySourcePointer(ot_helper, child_activity_pointer,"test" ,
                 transaction.purchased_parts_details, "transaction.purchased_parts_details");
             method_activity_list.Add(child_activity_pointer.P_pointer);
             
+            translator.registerMultiEntityDestinationPointer(ot_helper, child_activity_pointer, "test",
+                dtd_test, "dtd_test.dtd_test");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+            
+            translator.registerMultiEntityDestinationPointer(ot_helper, child_activity_pointer, "test",
+                dtd_test, "dtd_test.dtd_test");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
             translator.populateDatabaseFields(ot_helper, child_activity_pointer);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
