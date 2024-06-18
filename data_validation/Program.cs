@@ -33,6 +33,7 @@ namespace data_validation
             //return;
 
 
+
             TransactionDto transaction = new TransactionDto(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
 
             transaction.total_amount.P_value = -12;
@@ -76,12 +77,13 @@ namespace data_validation
             //transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
             transaction.purchased_parts_details.Add(purchased_part);
             transaction.returned_parts_details.Add(returned_part);
-           
 
-            DatabaseTableBaseClass dtd_test = new TransactionTable();
-            List<IOdcBaseClass> data_class_list = new List<IOdcBaseClass>();
-            data_class_list.Add(transaction);
-            dtd_test.addOdcList(ot_helper,child_activity_pointer, data_class_list);
+
+            SqlTransactionTable dtd_test = new SqlTransactionTable();
+            dtd_test.registerOdcInstance(ot_helper, child_activity_pointer,transaction);
+            dtd_test.registerOdcInstance(ot_helper, child_activity_pointer, transaction.last_part_scanned);
+
+            dtd_test.populateFieldsFromOdcInstances(ot_helper,child_activity_pointer);
 
 
 
