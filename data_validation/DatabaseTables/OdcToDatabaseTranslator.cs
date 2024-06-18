@@ -62,19 +62,47 @@ class SofsafeDatabaseField : ISofafeDatabaseField
 
 
 
-class SdoToDatabaseConnector
+class OdcToDatabaseTranslator
 {
     private Dictionary<string, byte> IV_single_entity_odc_id_lookup = new Dictionary<string, byte>();
-    private List<IOdcBaseClass> IV_single_entity_odc_instances = new List<IOdcBaseClass>(); 
+    private List<IOdcBaseClass> IV_single_entity_odc_instances = new List<IOdcBaseClass>();
+    private Dictionary<string, byte> IV_single_entity_table_name_lookup = new Dictionary<string, byte>();
+
     protected List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };    
     
-    protected List<List<IOdcBaseClass>> IV_multi_entity_odc_lists = new List<List<IOdcBaseClass>>();
-    protected List<SofsafeDatabaseTable> IV_multi_entity_table_list = new List<SofsafeDatabaseTable> { };
+    protected Dictionary<string,List<List<IOdcBaseClass>>> IV_multi_entity_odc_lists = new Dictionary<string, List<List<IOdcBaseClass>>>();
+    protected Dictionary<string,List<SofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, List<SofsafeDatabaseTable>> { };
     protected List<string> IV_multi_entity_ids = new List<string>();
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
 
-    public bool registerOdcInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,IOdcBaseClass odc_instance, string activity_name_prefix = "")
+    public bool registerSingleEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SofsafeDatabaseTable table_instance, string activity_name_prefix = "")
+    {
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerOdcInstance");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+
+        /// input validation
+        if (table_instance == null)
+        {
+            OTSH.addEventThenEndActivity(ETR, "table_instance is null", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        if (this.IV_single_entity_table_name_lookup.ContainsKey(table_instance.P_schema_name))
+        {
+            OTSH.addEventThenEndActivity(ETR, "table_instance with " + table_instance.P_schema_name + " has already been registered", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        ///</end> input validation
+
+
+        ETR.AddTag("table_instance data identifier", table_instance.P_schema_name);
+        this.IV_single_entity_table_name_lookup.Add(table_instance.P_schema_name, 1);
+        this.IV_single_entity_table_list.Add(table_instance);
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
+    public bool registerSingleEntityOdc(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,IOdcBaseClass odc_instance, string activity_name_prefix = "")
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerOdcInstance");
@@ -96,28 +124,43 @@ class SdoToDatabaseConnector
 
         ETR.AddTag("odc_instance data identifier", odc_instance.P_organized_data_identifier);
         this.IV_single_entity_odc_id_lookup.Add(odc_instance.P_organized_data_identifier, 1);
-        this.IV_odc_instances.Add(odc_instance);
+        this.IV_single_entity_odc_instances.Add(odc_instance);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
-    public bool registerListOfOdcInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, List<IOdcBaseClass> odc_instances_list, string activity_name_prefix = "")
+
+
+    public bool registerMultiEntity(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, List<List<IOdcBaseClass>> odc_instances_lists, List<SofsafeDatabaseTable> table_list, string activity_name_prefix = "")
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerListOfOdcInstances");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        
+
+
+        /// input validation
+        ArgumentValidator validator = new ArgumentValidator();
+        validator.addEntry(new DataVR(multi_entity_id).addRule(SDC.R_len_greater_0));
+        validator.addEntry(new DataVR(table_list).addRule(SDC.R_len_greater_0));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        ///</end> input validation
+
+
+
+        this.IV_multi_entity_ids.Add(multi_entity_id);
+        this.IV_multi_entity_odc_lists.Add(multi_entity_id, odc_instances_lists);
+        this.IV_multi_entity_table_list.Add(multi_entity_id, table_list);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
-    public bool registerDatabaseTable()
-    {
-        return true;
-    }
 
-    public bool populateFieldsFromOdcInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    public bool populateFields(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".populateTableFromOdcInstances");
@@ -200,6 +243,28 @@ class SdoToDatabaseConnector
         return true;
     }
 
+
+
+}
+
+
+interface ISofsafeDatabaseTable
+{
+    string P_schema_name { get; }
+}
+
+
+class SofsafeDatabaseTable: ISofsafeDatabaseTable
+{
+    protected Dictionary<string, SofsafeDatabaseField> IV_field_list = new Dictionary<string, SofsafeDatabaseField>() { };
+    protected string IV_schema_name = "";
+    protected string IV_entity_path = "";
+    protected OdcToDatabaseTranslator.D_entity_populator IV_entity_populator_method;
+
+    public string P_schema_name
+    {
+        get { return this.IV_schema_name; }
+
     private void registerDatabaseFields()
     {
         Type class_type = this.GetType();
@@ -219,21 +284,11 @@ class SdoToDatabaseConnector
         }
     }
 
-    public SdoToDatabaseConnector()
+    public SofsafeDatabaseTable()
     {
         this.registerDatabaseFields();
     }
-}
 
-    
-
-
-class SofsafeDatabaseTable
-{
-    protected List<ISofafeDatabaseField> IV_field_list = new List<ISofafeDatabaseField>() { };
-    protected string IV_schema_name = "";
-    protected string IV_entity_path = "";
-    protected SdoToDatabaseConnector.D_entity_populator IV_entity_populator_method;
 }
 
 
@@ -243,9 +298,8 @@ class MsSqlDatabaseTable : SofsafeDatabaseTable
     protected List<DataSet> IV_datasets = new List<DataSet>() { };
     public bool populateTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer) { 
         
-        foreach(SofsafeDatabaseField field_entry in this.IV_field_list)
+        foreach(string field_entry_key in this.IV_field_list.Keys)
         {
-
         }
         return true;
     }    
@@ -254,8 +308,15 @@ class MsSqlDatabaseTable : SofsafeDatabaseTable
     {
         this.IV_entity_populator_method = this.populateTable;
         this.IV_table = new DataTable(this.IV_schema_name);        
-        foreach(SofsafeDatabaseField field_entry in this.IV_field_list)
+        foreach(string field_entry_key in this.IV_field_list.Keys)
         {
+            SofsafeDatabaseField field_entry;
+            this.IV_field_list.TryGetValue(field_entry_key, out field_entry);
+            if (field_entry == null) 
+            {
+
+                continue;
+            }
             this.IV_table.Columns.Add(field_entry.P_database_field_name, field_entry.P_type);
         }
     }

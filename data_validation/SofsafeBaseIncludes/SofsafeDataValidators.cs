@@ -5,7 +5,84 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenTelemetry.Trace;
+using System.Runtime.CompilerServices;
+using System.Data.Common;
 
+
+
+//Datavalidation Request
+class DataVR
+{
+    private object IV_value;
+    private List<SDR> IV_rules = new List<SDR>();
+    private string IV_identifier = "";
+
+    public object P_value
+    {
+        get {return this.IV_value;}
+    }
+
+    public List<SDR> P_rules
+    {
+        get { return this.IV_rules; }
+    }
+
+    public string P_id
+    {
+        get { return this.IV_identifier; }
+    }
+
+    public DataVR addRule(SDR rule) {
+        if(rule != null )
+        {
+            this.IV_rules.Add(rule);
+        }
+        return this;
+    }
+
+    public DataVR(object value,string identifier="")
+    {
+        this.IV_value = value;
+        this.IV_identifier = identifier;
+    }
+}
+
+class ArgumentValidator
+{
+    private List<DataVR> IV_entries = new List<DataVR>();
+    public void addEntry(DataVR new_entry)
+    {
+        this.IV_entries.Add(new_entry);
+    }
+
+    public bool validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    {
+        Activity ETR = ot_helper.startActivityWrapper("SafeDataObjectString.addValidValue");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+        bool validation_failed = false;
+        foreach(DataVR entry in this.IV_entries)
+        {
+            SDC.validateData(ot_helper, child_activity_pointer, entry.P_value, entry.P_rules, entry.P_id);
+            if(validation_failed == false  && child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok)
+            {
+                validation_failed = true;
+                //don't break so all data gets validated and all failed entries get added to open telemetry logs
+            }
+        }
+
+        if (validation_failed == true)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
+
+}
 
 //Sofsafe Data Validation Class
 static class SDC
