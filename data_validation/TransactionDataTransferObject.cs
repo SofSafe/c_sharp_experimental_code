@@ -86,7 +86,7 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
         }); 
     public Sdo<string> transaction_cloud_uid = new Sdo<string>(PDI.transaction_cloud_uid, PCR.uid, null, true);
     public Sdo<int> transaction_lan_uid = new Sdo<int>(PDI.transaction_LAN_uid,PCR.uid,null,true);
-    public Sdo<int> total_amount = new Sdo<int>(PDI.transaction_total, PCR.not_zero);
+    public Sdo<decimal> total_amount = new Sdo<decimal>(PDI.transaction_total, PCR.not_zero);
     public Sdo<int> location_uid = new Sdo<int>(PDI.recycler_location_uid, PCR.uid);
     public Sdo<string> location_name = new Sdo<string>(PDI.recycler_location_name, PCR.name);
     public Sdo<int> POS_uid = new Sdo<int>(PDI.POS_computer_uid, PCR.uid);

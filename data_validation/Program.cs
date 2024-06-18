@@ -79,11 +79,13 @@ namespace data_validation
             transaction.returned_parts_details.Add(returned_part);
 
 
-            SqlTransactionTable dtd_test = new SqlTransactionTable();
-            dtd_test.registerOdcInstance(ot_helper, child_activity_pointer,transaction);
-            dtd_test.registerOdcInstance(ot_helper, child_activity_pointer, transaction.last_part_scanned);
+            OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
 
-            dtd_test.populateFieldsFromOdcInstances(ot_helper,child_activity_pointer);
+           
+            SqlTransactionTable dtd_test = new SqlTransactionTable();
+            translator.registerSingleEntityTable(ot_helper, child_activity_pointer, dtd_test);
+            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, transaction);
+            translator.populateFields(ot_helper, child_activity_pointer);
 
 
 
