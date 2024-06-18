@@ -107,7 +107,7 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
         bool allow_disabling_instance=false) 
         : base(organized_data_identifier,allow_disabling_instance)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SafeDataObjectString.addValidValue");
+        Activity ETR = ot_helper.startActivityWrapper("TransactionDto.init");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("transaction_type", transaction_type);

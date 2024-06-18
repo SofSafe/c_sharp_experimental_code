@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Data;
+using System.Collections;
 
 
 
@@ -70,17 +71,18 @@ class OdcToDatabaseTranslator
 
     protected List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };    
     
-    protected Dictionary<string,List<List<IOdcBaseClass>>> IV_multi_entity_odc_lists = new Dictionary<string, List<List<IOdcBaseClass>>>();
-    protected Dictionary<string,List<SofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, List<SofsafeDatabaseTable>> { };
-    protected List<string> IV_multi_entity_ids = new List<string>();
+    protected Dictionary<string,List<List<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<List<IOdcBaseClassInheritor>>>();
+    protected Dictionary<string,List<ISofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, List<ISofsafeDatabaseTable>> { };
+    protected Dictionary<string,byte> IV_multi_entity_ids = new Dictionary<string, byte>();
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
 
     public bool registerSingleEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SofsafeDatabaseTable table_instance, string activity_name_prefix = "")
     {
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerOdcInstance");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerSingleEntityTable");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
 
         /// input validation
         if (table_instance == null)
@@ -104,9 +106,10 @@ class OdcToDatabaseTranslator
     }
     public bool registerSingleEntityOdc(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,IOdcBaseClass odc_instance, string activity_name_prefix = "")
     {
+        if(ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default;}
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerOdcInstance");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         
         /// input validation
         if (odc_instance == null)
@@ -130,39 +133,100 @@ class OdcToDatabaseTranslator
     }
 
 
-
-    public bool registerMultiEntity(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, List<List<IOdcBaseClass>> odc_instances_lists, List<SofsafeDatabaseTable> table_list, string activity_name_prefix = "")
+    public bool registerMultiEntityJoin(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, string activity_name_prefix = "")
     {
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerListOfOdcInstances");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerMultiEntityJoin");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
         /// input validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
         validator.addEntry(new DataVR(multi_entity_id).addRule(SDC.R_len_greater_0));
-        validator.addEntry(new DataVR(table_list).addRule(SDC.R_len_greater_0));
-        validator.addEntry(new DataVR(odc_instances_lists).addRule(SDC.R_populated_nested_array));
         if (validator.validateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
+        if (this.IV_multi_entity_ids.ContainsKey(multi_entity_id))
+        {
+            OTSH.addEventThenEndActivity(ETR, "multi_entity_id: " + multi_entity_id + " has already been registered", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
         ///</end> input validation
 
-        this.IV_multi_entity_ids.Add(multi_entity_id);
-        this.IV_multi_entity_odc_lists.Add(multi_entity_id, odc_instances_lists);
-        this.IV_multi_entity_table_list.Add(multi_entity_id, table_list);
+        this.IV_multi_entity_ids.Add(multi_entity_id,1);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
 
-    public bool populateFields(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+
+    public bool registerMultiEntityDestinationPointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, List<ISofsafeDatabaseTable> table_list, string activity_name_prefix = "")
     {
+        return true;
+    }
+
+    public bool registerMultiEntitySourcePointer(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, object odc_instances_lists, string activity_name_prefix = "")
+    {
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " > "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerMultiEntitySourcePointer");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+        /// input validation
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
+        validator.addEntry(new DataVR(multi_entity_id, activity_name_prefix + "multi_entity_id").
+            addRule(SDC.R_len_greater_0));
+        validator.addEntry(new DataVR(odc_instances_lists, activity_name_prefix + "odc_instances_lists").
+            addRule(SDC.R_len_greater_0).
+            addRule(SDC.R_odc_instance_list));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        if (this.IV_multi_entity_ids.ContainsKey(multi_entity_id) == false)
+        {
+            OTSH.addEventThenEndActivity(ETR, "multi entity join: " + multi_entity_id + " has not been registered", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        ///</end> input validation
+
+        if (this.IV_multi_entity_odc_lists.ContainsKey(multi_entity_id) == false)
+        {
+            this.IV_multi_entity_odc_lists.Add(multi_entity_id,new List<List<IOdcBaseClassInheritor>>() { });
+        } 
+        else
+        {
+            //make sure we aren't adding a duplicate reference
+            foreach (List<IOdcBaseClassInheritor> list_to_check in this.IV_multi_entity_odc_lists[multi_entity_id])
+            {
+                if(Object.ReferenceEquals(list_to_check, odc_instances_lists) == true)
+                {
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "instance specified by odc_instances_lists has already been registered with multi entity id: " + multi_entity_id , ErrorTagsCodes.C_input_validation);
+                    return false;
+                }
+            }            
+        }
+
+
+        this.IV_multi_entity_odc_lists[multi_entity_id].Add(odc_instances_lists as List<IOdcBaseClassInheritor>);
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
+
+
+
+
+    public bool populateDatabaseFields(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    {
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".populateTableFromOdcInstances");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".populateDatabaseFields");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
         /// validate data that will be used during the operation
@@ -194,7 +258,8 @@ class OdcToDatabaseTranslator
 
 
         /// put references to matching data objects in all the fields
-        bool fail_flag = true;
+        bool fail_flag = false;
+        ChildActivityPointer first_failed_activity = new ChildActivityPointer();
         foreach (IOdcBaseClass odc_instance in this.IV_single_entity_odc_instances)
         {
             foreach (ISdoBaseClass sdo_instance in odc_instance.P_Sdo_child_objects)
@@ -207,20 +272,26 @@ class OdcToDatabaseTranslator
                     }
                     if(table.setFieldsToSdo(ot_helper, child_activity_pointer, sdo_instance) == false)
                     {
-                        fail_flag = true;
+                        if (fail_flag == true)
+                        {
+                            first_failed_activity = child_activity_pointer;
+                            fail_flag = true;
+                        }
                     }
                 }
             }
         }
         ///</end> put references to matching data objects in all field objects
                 
+        if(fail_flag == true)
+        {
+            OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
+            return false;
+        }
 
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
-
-
-
 }
 
 
@@ -253,13 +324,12 @@ class SofsafeDatabaseTable: ISofsafeDatabaseTable
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-
         ///input validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".setFieldsToSdo");
         validator.addEntry(new DataVR(sdo_instance, "sdo_instance").addRule(SDC.R_not_null));
         if (validator.validateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_child_activity_pointer);
+            OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_pointer);
             return false;
         }
         ///</end>input validation

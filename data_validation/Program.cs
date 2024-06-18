@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -31,6 +32,7 @@ namespace data_validation
             //SdoStringTest(ot_helper, child_activity_pointer);
             //OTSH.setSuccessEndActivity(ETR);
             //return;
+
 
 
 
@@ -81,12 +83,53 @@ namespace data_validation
 
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
 
-           
+
+
             SqlTransactionTable dtd_test = new SqlTransactionTable();
             translator.registerSingleEntityTable(ot_helper, child_activity_pointer, dtd_test);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+            
             translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, transaction);
-            translator.populateFields(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
 
+            List<ISofsafeDatabaseTable> multi_entity_tables = new List<ISofsafeDatabaseTable>();
+            multi_entity_tables.Add(dtd_test);
+            
+            translator.registerMultiEntityJoin(ot_helper, child_activity_pointer, "test");            
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+            
+            translator.registerMultiEntitySourcePointer(ot_helper, child_activity_pointer,"test" ,
+                transaction.purchased_parts_details, "transaction.purchased_parts_details");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+            
+            translator.populateDatabaseFields(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+
+            bool fail_flag = false;
+            ChildActivityPointer first_failed_activity = new ChildActivityPointer();
+            foreach (Activity entry in method_activity_list)
+            {
+                if (entry == null) {
+                    OTSH.addEventThenEndActivity(ETR, "null method_activity_list entry", ErrorTagsCodes.C_input_validation);
+                    continue; 
+                }
+                if(entry.Status != ActivityStatusCode.Ok)
+                {
+                    if(fail_flag == false)
+                    {
+                        first_failed_activity.setPointerValue(entry,entry.TraceId);
+                        fail_flag = true;
+                    }
+
+                }
+            }
+
+            if(fail_flag == true)
+            {
+                OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
+                return;
+            }
 
 
             Console.WriteLine(transaction.P_last_validation_result);
@@ -102,7 +145,7 @@ namespace data_validation
 
             }
 
-            OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_child_activity_pointer);
+            OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_pointer);
             return;
 
             
@@ -122,10 +165,10 @@ namespace data_validation
 
 
             validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer, zip_code_string, validation_rules, "zip_code_string"));
-            method_activity_list.Add(child_activity_pointer.P_child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
 
             validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer, zip_code_number, validation_rules, "zip_code_number"));
-            method_activity_list.Add(child_activity_pointer.P_child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
 
 
             foreach (var entry in validation_results)

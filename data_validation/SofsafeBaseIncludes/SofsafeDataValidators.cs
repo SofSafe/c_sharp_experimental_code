@@ -67,7 +67,7 @@ class ArgumentValidator
 
     public bool validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SafeDataObjectString.addValidValue");
+        Activity ETR = ot_helper.startActivityWrapper("ArgumentValidator.validateData");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
@@ -75,7 +75,7 @@ class ArgumentValidator
         foreach(DataVR entry in this.IV_entries)
         {
             SDC.validateData(ot_helper, child_activity_pointer, entry.P_value, entry.P_rules, this.IV_method_name + " > "+  entry.P_id);
-            if(validation_failed == false  && child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok)
+            if(validation_failed == false  && child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 validation_failed = true;
                 //don't break so all data gets validated and all failed entries get added to open telemetry logs
@@ -104,8 +104,9 @@ static class SDC
     public static SDR R_len_greater_0 = new SDR("length greater than zero");
     public static SDR R_len_greater_2 = new SDR("length greater than 2");
     public static SDR R_us_zip_code = new SDR("5 digit us zip code");
-    public static SDR R_populated_nested_array = new SDR("nested array with atleast 1 entry");
+    public static SDR R_populated_nested_iterable = new SDR("nested array with atleast 1 entry");
     public static SDR R_not_null = new SDR("not null");
+    public static SDR R_odc_instance_list = new SDR("list of Odc Instances");
 
 
 
@@ -124,7 +125,8 @@ static class SDC
         List<SDR> enumerable_interface_rule_names = new List<SDR>();
         enumerable_interface_rule_names.Add(SDC.R_len_greater_0);
         enumerable_interface_rule_names.Add(SDC.R_len_greater_2);
-        enumerable_interface_rule_names.Add(SDC.R_populated_nested_array);
+        enumerable_interface_rule_names.Add(SDC.R_populated_nested_iterable);
+        enumerable_interface_rule_names.Add(SDC.R_odc_instance_list);
 
         SDC.CV_compatible_rules_by_general_types.Add("enumerable", enumerable_interface_rule_names);
         //// IEnumerable interface rules
@@ -200,8 +202,9 @@ static class SDC
         SDC.CV_rule_name_to_method.Add(SDC.R_len_greater_2.P_rule_name, SDC.ruleLenGreater2);
 
         SDC.CV_rule_name_to_method.Add(SDC.R_us_zip_code.P_rule_name, SDC.ruleFiveDigits);
-        SDC.CV_rule_name_to_method.Add(SDC.R_populated_nested_array.P_rule_name, SDC.rulePopulatedNestedArray);
+        SDC.CV_rule_name_to_method.Add(SDC.R_populated_nested_iterable.P_rule_name, SDC.rulePopulatedNestedArray);
         SDC.CV_rule_name_to_method.Add(SDC.R_not_null.P_rule_name, SDC.ruleNotNull);
+        SDC.CV_rule_name_to_method.Add(SDC.R_odc_instance_list.P_rule_name, SDC.ruleOdcList);
         ////</end> associate rule names with methods
 
 
@@ -209,19 +212,53 @@ static class SDC
     }
 
 
-
-    private static void ruleNotNull(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleOdcList(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
     {
+
         Activity ETR = ot_helper.startActivityWrapper("SDC.ruleNotNull");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ETR.AddTag("value_to_check", value_to_check);
 
-        if(value_to_check == null)
+        bool fail_flag = false;
+        bool null_flag = false;
+        bool wrong_type_flag = false;
+        foreach(object iter_entry in value_to_check as IEnumerable<object>)
         {
-            OTSH.addEventThenEndActivity(ETR, "value is null", ErrorTagsCodes.C_input_validation);
+            if(iter_entry == null && null_flag == false){
+                null_flag = true;
+                fail_flag = true;
+                OTSH.addEventToActivity(ETR, "atleast one entry is null");
+                continue;
+            }
+
+            if(iter_entry.GetType().GetInterfaces().Contains(typeof(IOdcBaseClassInheritor)) == false 
+                && wrong_type_flag == false)
+            {                
+                wrong_type_flag = true;
+                fail_flag = true;
+                OTSH.addEventToActivity(ETR, "atleast one entry does not have the IOdcBaseClassInheritor interface");
+                continue;
+            }
+        }
+
+
+        if(fail_flag == true)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return;
         }
-        
+        OTSH.setSuccessEndActivity(ETR);
+        return;
+
+    }
+
+
+    private static void ruleNotNull(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    {
+        //the null check happens in the validateData method itself, if a value is null it will never reach here, however a method must exist for each rule.
+        Activity ETR = ot_helper.startActivityWrapper("SDC.ruleNotNull");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ETR.AddTag("value_to_check", value_to_check);
         OTSH.setSuccessEndActivity(ETR);
         return;
 
@@ -232,7 +269,6 @@ static class SDC
     {
         Activity ETR = ot_helper.startActivityWrapper("SDC.rulePopulatedNestedArray");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
-        ETR.AddTag("value_to_check", value_to_check);
 
         bool enumerable_child_found = true;
         IEnumerable<object> deepest_child = value_to_check as IEnumerable<object>;
@@ -485,11 +521,12 @@ static class SDC
     }
 
     private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, string value_description, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null,IComparable not_value= null)
-    {
+    {        
         Activity ETR = ot_helper.startActivityWrapper("SDC.numberGreater0");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
+
 
         try
         {
@@ -573,6 +610,7 @@ static class SDC
     }
     public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string issue_prefix = "")
     {
+        
         Activity ETR = ot_helper.startActivityWrapper("SDC.validateData");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
@@ -581,8 +619,19 @@ static class SDC
         if (issue_prefix.Length > 0) {
             issue_prefix += " > ";
                 }
-        List<string> rule_names = new List<string>();
+
+
         List<string> return_value = new List<string>();
+        if (value_to_check == null)
+        {
+            string error_message = issue_prefix + "value is null";
+            return_value.Add(error_message);
+            OTSH.addEventThenEndActivity(ETR, "value is null", ErrorTagsCodes.C_input_validation);
+            return return_value;
+        }
+
+
+        List<string> rule_names = new List<string>();     
 
         //// verify all requested rules are compatible with the type specified
         List<Type> value_type_and_interfaces = new List<Type>();
@@ -632,8 +681,8 @@ static class SDC
             SDC.CVD_rule_method_delegate method_to_call;
             SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
             method_to_call(ot_helper, child_activity_pointer, value_to_check,issue_prefix);
-            if(child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok) {
-                Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.P_child_activity_pointer.EnumerateEvents();
+            if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok) {
+                Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.P_pointer.EnumerateEvents();
                 while (error_events.MoveNext()) {
                     return_value.Add(issue_prefix + rule_name + ": " + error_events.Current.Name);
                 }

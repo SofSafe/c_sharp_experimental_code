@@ -78,16 +78,33 @@ class OpenTelemetryConfigHelper
 {
     private TracerProvider IV_tracer_provider;
     private ActivitySource IV_activity_source;
+    //todo add to SBD
+    private static OpenTelemetryConfigHelper IV_default_instance;
+    //todo add to SBD
+    private static readonly object IV_lock_object = new object();
+
+    public static OpenTelemetryConfigHelper P_default
+    {
+        get { return OpenTelemetryConfigHelper.IV_default_instance; }
+    }
+        
 
     public OpenTelemetryConfigHelper(string source_name, string version)
     {
         this.IV_tracer_provider = Sdk.CreateTracerProviderBuilder()
-       .AddSource(source_name)
-       .ConfigureResource(res => res.AddService("console-messages"))
-       .AddConsoleExporter()
-       .Build();
+        .AddSource(source_name)
+        //.ConfigureResource(res => res.AddService("console-messages"))
+        //.AddConsoleExporter()
+        .AddProcessor(new LogErrorsToConsole())
+        .Build();
 
-         this.IV_activity_source = new ActivitySource(source_name, version);
+        this.IV_activity_source = new ActivitySource(source_name, version);
+        if(OpenTelemetryConfigHelper.IV_default_instance == null)
+        {
+            lock (OpenTelemetryConfigHelper.IV_lock_object) {
+                    OpenTelemetryConfigHelper.IV_default_instance = this;
+                }
+        }
 
     }
 
@@ -119,7 +136,7 @@ class ChildActivityPointer
         //trace_id argument is here on purpose, see the SBD
         this.IV_child_activity_pointer = child_activity;
     }
-    public Activity P_child_activity_pointer
+    public Activity P_pointer
     {
         get
         {
@@ -138,5 +155,27 @@ class ChildActivityPointer
     public void equals(ChildActivityPointer other)
     {
         this.IV_child_activity_pointer = other.IV_child_activity_pointer;
+    }
+}
+
+
+
+class LogErrorsToConsole : BaseProcessor<Activity>
+{
+
+    public override void OnEnd(Activity value)
+    {
+        if(value == null) { return; }
+        if (value.Status != ActivityStatusCode.Ok)
+        {
+            Console.WriteLine("\n" + value.DisplayName + " failed");
+            object test = value.GetTagItem(ErrorTagsCodes.C_tag_error_code);
+            Console.WriteLine("error code: " + value.GetTagItem(ErrorTagsCodes.C_tag_error_code));
+
+            foreach (ActivityEvent event_entry in value.Events)
+            {
+                Console.WriteLine(event_entry.Name);
+            }
+        }
     }
 }

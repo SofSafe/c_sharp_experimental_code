@@ -141,7 +141,7 @@ class Sdo<T> : ISdoBaseClass
     {
 
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".addValidValuesAsObject"); 
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".overrideValidationMethod"); 
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("Validation Method Reference", method_reference);
@@ -153,7 +153,7 @@ class Sdo<T> : ISdoBaseClass
 
     public bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix="")
     {
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".addValidValuesAsObject");
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".runValidationMethod");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
@@ -223,7 +223,7 @@ class Sdo<T> : ISdoBaseClass
 
             List<string> rule_failures = new List<string>();
             rule_failures = this.IV_validator_method(ot_helper, child_activity_pointer, this.IV_value, this.IV_validation_rules_list, activity_name_prefix + this.IV_data_identifier);
-            if (child_activity_pointer.P_child_activity_pointer.Status != ActivityStatusCode.Ok)
+            if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 this.IV_last_validation_result_details.AddRange(rule_failures);
                 failed_flag = true;
