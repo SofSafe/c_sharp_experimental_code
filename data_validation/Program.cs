@@ -36,18 +36,18 @@ namespace data_validation
 
 
 
-            TransactionDto transaction = new TransactionDto(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
+            TransactionDto purchase = new TransactionDto(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
 
-            transaction.total_amount.P_value = -12;
-            transaction.location_name.P_value = "S3 Solutions";
-            transaction.location_uid.P_value = 1252;
-            transaction.POS_name.P_value = "register 2";
-            transaction.POS_uid.P_value = 22;
-            transaction.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
-            transaction.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
-            transaction.user_uid.P_value = 221;
-            transaction.user_name.P_value = "kevin@sofsafe.cloud";
-            transaction.last_part_scanned.amount.P_value = 2;
+            purchase.total_amount.P_value = -12;
+            purchase.location_name.P_value = "S3 Solutions";
+            purchase.location_uid.P_value = 1252;
+            purchase.POS_name.P_value = "register 2";
+            purchase.POS_uid.P_value = 22;
+            purchase.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
+            purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            purchase.user_uid.P_value = 221;
+            purchase.user_name.P_value = "kevin@sofsafe.cloud";
+            purchase.last_part_scanned.amount.P_value = 2;
 
             TransactionDtoPartDetail purchased_part = new TransactionDtoPartDetail("part 1");
             { };
@@ -70,25 +70,26 @@ namespace data_validation
             returned_part.part_uid.P_value = 221;
 
 
-            transaction.last_part_scanned.part_category_name.P_value = "Engine Part";
-            transaction.last_part_scanned.part_category_uid.P_value = 2212;
-            transaction.last_part_scanned.amount.P_value = 22;
-            transaction.last_part_scanned.part_name.P_value = "tst";
-            transaction.last_part_scanned.part_uid.P_value = 221;
+            purchase.last_part_scanned.part_category_name.P_value = "Engine Part";
+            purchase.last_part_scanned.part_category_uid.P_value = 2212;
+            purchase.last_part_scanned.amount.P_value = 22;
+            purchase.last_part_scanned.part_name.P_value = "tst";
+            purchase.last_part_scanned.part_uid.P_value = 221;
 
             //transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
-            transaction.purchased_parts_details.Add(purchased_part);
-            transaction.returned_parts_details.Add(returned_part);
+            purchase.purchased_parts_details.Add(purchased_part);
+            purchase.returned_parts_details.Add(returned_part);
 
 
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
 
 
-            SqlTransactionTable dtd_test = new SqlTransactionTable();
-            translator.registerSingleEntityTable(ot_helper, child_activity_pointer, dtd_test);
+            SqlTransactionTable t_main = new SqlTransactionTable(ot_helper,child_activity_pointer,"pos purchase");
+            SqlTransactionDetail t_details = new SqlTransactionDetail(ot_helper, child_activity_pointer, "pos purchase");
+            translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
             method_activity_list.Add(child_activity_pointer.P_pointer);
             
-            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, transaction);
+            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
 
@@ -98,16 +99,13 @@ namespace data_validation
 
             
             translator.registerMultiEntitySourcePointer(ot_helper, child_activity_pointer,"test" ,
-                transaction.purchased_parts_details, "transaction.purchased_parts_details");
+                purchase.purchased_parts_details, "transaction.purchased_parts_details");
             method_activity_list.Add(child_activity_pointer.P_pointer);
             
             translator.registerMultiEntityDestinationPointer(ot_helper, child_activity_pointer, "test",
-                dtd_test, "dtd_test.dtd_test");
+                t_details, "pos");
             method_activity_list.Add(child_activity_pointer.P_pointer);
             
-            translator.registerMultiEntityDestinationPointer(ot_helper, child_activity_pointer, "test",
-                dtd_test, "dtd_test.dtd_test");
-            method_activity_list.Add(child_activity_pointer.P_pointer);
 
             translator.populateDatabaseFields(ot_helper, child_activity_pointer);
             method_activity_list.Add(child_activity_pointer.P_pointer);
@@ -139,11 +137,11 @@ namespace data_validation
             }
 
 
-            Console.WriteLine(transaction.P_last_validation_result);
-            foreach (string data_id_key in transaction.P_last_validation_result_details.Keys)
+            Console.WriteLine(purchase.P_last_validation_result);
+            foreach (string data_id_key in purchase.P_last_validation_result_details.Keys)
             {
                 List<string> issues_found;
-                transaction.P_last_validation_result_details.TryGetValue(data_id_key, out issues_found);
+                purchase.P_last_validation_result_details.TryGetValue(data_id_key, out issues_found);
                 if (issues_found == null) { continue; }
                 foreach (string issue in issues_found)
                 {

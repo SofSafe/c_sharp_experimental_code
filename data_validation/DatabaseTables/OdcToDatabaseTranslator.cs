@@ -66,20 +66,27 @@ class SofsafeDatabaseField : ISofafeDatabaseField
 
 class OdcToDatabaseTranslator
 {
-    private Dictionary<string, byte> IV_single_entity_odc_id_lookup = new Dictionary<string, byte>();
+    private Dictionary<string, byte> IV_registered_single_entity_odc_ids = new Dictionary<string, byte>();
     private List<IOdcBaseClass> IV_single_entity_odc_instances = new List<IOdcBaseClass>();
-    private Dictionary<string, byte> IV_single_entity_table_name_lookup = new Dictionary<string, byte>();
-    List<List<int>> IV_single_entity_map;
-    object IV_build_entity_map_thread_lock = new object();
-    protected List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };
+    private Dictionary<string, byte> IV_registered_single_entity_table_names = new Dictionary<string, byte>();
+    List<List<int>> IV_single_entity_mapping_index;
+    private object IV_build_entity_map_thread_lock = new object();
+    private List<SofsafeDatabaseTable> IV_single_entity_table_list = new List<SofsafeDatabaseTable>() { };
+
     
+    protected Dictionary<string, byte> IV_multi_entity_ids = new Dictionary<string, byte>();
+    private Dictionary<string, byte> IV_registered_multi_entity_tables = new Dictionary<string, byte> { };
     protected Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>>();
-    protected Dictionary<string, Dictionary<string,ISofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, Dictionary<string, ISofsafeDatabaseTable>> { };
-    protected Dictionary<string,byte> IV_multi_entity_ids = new Dictionary<string, byte>();
+    private Dictionary<string, List<ISofsafeDatabaseTable>> IV_multi_entity_table_list = new Dictionary<string, List<ISofsafeDatabaseTable>> { };
+    List<List<int>> IV_multi_entity_mapping_index;
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
 
     private DateTime IV_last_mapped_fields = DateTime.MinValue;
+    private DateTime IV_last_schema_change = DateTime.MinValue;
+    private DateTime IV_last_db_to_data_object_transfer = DateTime.MinValue;
+    private DateTime IV_last_data_object_to_db_transfer = DateTime.MinValue;
+
 
     public bool registerSingleEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SofsafeDatabaseTable table_instance, string activity_name_prefix = "")
     {
@@ -94,7 +101,7 @@ class OdcToDatabaseTranslator
             OTSH.addEventThenEndActivity(ETR, "table_instance is null", ErrorTagsCodes.C_input_validation);
             return false;
         }
-        if (this.IV_single_entity_table_name_lookup.ContainsKey(table_instance.P_schema_name))
+        if (this.IV_registered_single_entity_table_names.ContainsKey(table_instance.P_schema_name))
         {
             OTSH.addEventThenEndActivity(ETR, "table_instance with " + table_instance.P_schema_name + " has already been registered", ErrorTagsCodes.C_input_validation);
             return false;
@@ -103,7 +110,7 @@ class OdcToDatabaseTranslator
 
 
         ETR.AddTag("table_instance data identifier", table_instance.P_schema_name);
-        this.IV_single_entity_table_name_lookup.Add(table_instance.P_schema_name, 1);
+        this.IV_registered_single_entity_table_names.Add(table_instance.P_schema_name, 1);
         this.IV_single_entity_table_list.Add(table_instance);
         OTSH.setSuccessEndActivity(ETR);
         return true;
@@ -121,7 +128,7 @@ class OdcToDatabaseTranslator
             OTSH.addEventThenEndActivity(ETR, "odc_instance is null", ErrorTagsCodes.C_input_validation);   
             return false;
         }
-        if(this.IV_single_entity_odc_id_lookup.ContainsKey(odc_instance.P_organized_data_identifier))
+        if(this.IV_registered_single_entity_odc_ids.ContainsKey(odc_instance.P_organized_data_identifier))
         {
             OTSH.addEventThenEndActivity(ETR, "odc_instance with " + odc_instance.P_organized_data_identifier + " has already been registered", ErrorTagsCodes.C_input_validation);
             return false;
@@ -130,7 +137,7 @@ class OdcToDatabaseTranslator
 
 
         ETR.AddTag("odc_instance data identifier", odc_instance.P_organized_data_identifier);
-        this.IV_single_entity_odc_id_lookup.Add(odc_instance.P_organized_data_identifier, 1);
+        this.IV_registered_single_entity_odc_ids.Add(odc_instance.P_organized_data_identifier, 1);
         this.IV_single_entity_odc_instances.Add(odc_instance);
         OTSH.setSuccessEndActivity(ETR);
         return true;
@@ -189,28 +196,37 @@ class OdcToDatabaseTranslator
             OTSH.addEventThenEndActivity(ETR, "multi entity join: " + multi_entity_id + " has not been registered", ErrorTagsCodes.C_input_validation);
             return false;
         }
+
+        /////make sure we aren't adding a duplicate reference
+        if (this.IV_multi_entity_table_list.ContainsKey(multi_entity_id) == true)
+        {
+            foreach (ISofsafeDatabaseTable table_entity in this.IV_multi_entity_table_list[multi_entity_id])
+            {
+                if (table_instance.P_schema_name == table_entity.P_schema_name)
+                {
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "an instance with the schema name: " + table_entity.P_schema_name + " has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
+                    return false;
+                }
+
+                if (Object.ReferenceEquals(table_entity, table_instance) == true)
+                {
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + table_entity.P_schema_name + " instance has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
+                    return false;
+                }
+
+            }
+            
+        }
+        /////</end>make sure we aren't adding a duplicate reference
+
         ///</end> input validation
+
 
         if (this.IV_multi_entity_table_list.ContainsKey(multi_entity_id) == false)
         {
-            this.IV_multi_entity_table_list[multi_entity_id] = new Dictionary<string, ISofsafeDatabaseTable>() { };
-
+            this.IV_multi_entity_table_list.Add(multi_entity_id, new List<ISofsafeDatabaseTable>() { });
         }
-        else
-        {
-            //make sure we aren't adding a duplicate reference
-            foreach (string schema_name in this.IV_multi_entity_table_list[multi_entity_id].Keys)
-            {
-
-                if (Object.ReferenceEquals(this.IV_multi_entity_table_list[multi_entity_id][schema_name], table_instance) == true)
-                {
-                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "instance specified by table_instance has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
-                    return false;
-                }
-            }
-        }
-
-        this.IV_multi_entity_table_list[multi_entity_id][table_instance.P_schema_name] = table_instance;
+            this.IV_multi_entity_table_list[multi_entity_id].Add(table_instance);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
@@ -265,7 +281,7 @@ class OdcToDatabaseTranslator
         return true;
     }
 
-    private bool rebuildMap ()
+    private bool rebuildMap()
     {
 
         //// build map for single entity table to data associations
@@ -297,14 +313,14 @@ class OdcToDatabaseTranslator
 
         lock (this.IV_build_entity_map_thread_lock)
         {
-            if (this.IV_single_entity_map == null)
+            if (this.IV_single_entity_mapping_index == null)
             {
-                this.IV_single_entity_map = single_entity_map;
+                this.IV_single_entity_mapping_index = single_entity_map;
             }
             else
             {
-                this.IV_single_entity_map.Clear();
-                this.IV_single_entity_map.AddRange(single_entity_map);
+                this.IV_single_entity_mapping_index.Clear();
+                this.IV_single_entity_mapping_index.AddRange(single_entity_map);
             }
         }
         ////</end> build map for single entity table to data associations
@@ -313,11 +329,51 @@ class OdcToDatabaseTranslator
 
 
         //// build map for multi entity table to data associations
+        List<List<int>> multi_entity_map = new List<List<int>>();
+        int odc_instance_list_index;
+        foreach (string multi_id in this.IV_multi_entity_ids.Keys)
+        {
+            odc_instance_list_index = -1;
+            foreach (IEnumerable<IOdcBaseClass> odc_instance_list in this.IV_multi_entity_odc_lists[multi_id])
+            {
+                odc_instance_list_index++;
+                foreach (IOdcBaseClass odc_instance in odc_instance_list)
+                {
+                    odc_instance_index++;
+                    sdo_instance_index = -1;
+                    foreach (ISdoBaseClass sdo_instance in odc_instance.P_Sdo_child_objects)
+                    {
+                        sdo_instance_index++;
+                        table_instance_index = -1;
+                        foreach (ISofsafeDatabaseTable table_instance in this.IV_multi_entity_table_list[multi_id])
+                        {
+                            table_instance_index++;
+                            if (table_instance.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
+                            {
+                                multi_entity_map.Add(new List<int>() {
+                            odc_instance_list_index,odc_instance_index, sdo_instance_index, table_instance_index
+                        });
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
         
+        lock (this.IV_build_entity_map_thread_lock)
+        {
+            if (this.IV_multi_entity_mapping_index == null)
+            {
+                this.IV_multi_entity_mapping_index = single_entity_map;
+            }
+            else
+            {
+                this.IV_multi_entity_mapping_index.Clear();
+                this.IV_multi_entity_mapping_index.AddRange(multi_entity_map);
+            }
+        }
         ////</end> build map for multi entity table to data associations
-
-
-
 
 
         this.IV_last_mapped_fields = DateTime.Now;
@@ -475,6 +531,10 @@ class SofsafeDatabaseTable: ISofsafeDatabaseTable
             object field_value = class_type.GetField(field_entry.Name).GetValue(this);
             if (field_value == null) { continue; }
 
+
+            /// TODO add data validation for duplicate database field names
+            /// 
+
             /// register individual ISofafeDatabaseField class instances
             if (field_value.GetType() == typeof(SofsafeDatabaseField))
             {
@@ -500,8 +560,9 @@ class SofsafeDatabaseTable: ISofsafeDatabaseTable
         }
     }
 
-    public SofsafeDatabaseTable()
+    public SofsafeDatabaseTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string schema_name, string activity_name_prefix = "")
     {
+        this.IV_schema_name = schema_name;
         this.registerDatabaseFields();
     }
 
@@ -520,7 +581,7 @@ class MsSqlDatabaseTable : SofsafeDatabaseTable
         return true;
     }    
 
-    public MsSqlDatabaseTable() : base()
+    public MsSqlDatabaseTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string schema_name, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, schema_name, activity_name_prefix)
     {
         this.IV_entity_populator_method = this.populateTable;
         this.IV_table = new DataTable(this.IV_schema_name);        
@@ -543,12 +604,18 @@ class SqlTransactionTable : MsSqlDatabaseTable
     public static SofsafeDatabaseField user_uid = new SofsafeDatabaseField(PDI.POS_user_uid, typeof(int), "user_uid");
     public static SofsafeDatabaseField pos_uid = new SofsafeDatabaseField(PDI.POS_computer_uid, typeof(int), "pos_uid");
 
-
-
-    public SqlTransactionTable() : base()
+    public SqlTransactionTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "Transactions", activity_name_prefix)
     {
-        this.IV_schema_name = "transactions";
+    }
+}
 
+class SqlTransactionDetail : MsSqlDatabaseTable
+{
+    public static SofsafeDatabaseField category_uid = new SofsafeDatabaseField(PDI.part_category_uid, typeof(int), "cat_id");
+    public static SofsafeDatabaseField cost = new SofsafeDatabaseField(PDI.part_cost, typeof(decimal), "cost");
+    public static SofsafeDatabaseField item_id = new SofsafeDatabaseField(PDI.part_uid, typeof(int), "id");
 
+    public SqlTransactionDetail(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "TransactionDetail", activity_name_prefix)
+    {
     }
 }

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-interface IOdcBaseClassInheritor
+interface IOdcBaseClassInheritor: IOdcBaseClass
 {
     bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer);
 }
