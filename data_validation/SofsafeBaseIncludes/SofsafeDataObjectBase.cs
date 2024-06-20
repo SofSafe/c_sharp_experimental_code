@@ -20,6 +20,8 @@ interface ISdoBaseClass
     DateTime P_last_set_time { get; }
     DateTime P_last_validation_time { get; }
     Type P_type { get; }    
+    //todo add to SBD
+    object P_value_as_object {  get; }
 
     }
 
@@ -57,6 +59,12 @@ class Sdo<T> : ISdoBaseClass
             return false;
         }
     }
+
+    public object P_value_as_object
+    {
+        get { return this.IV_value; }
+    }
+
     public T P_value
     {
         get { return this.IV_value; }

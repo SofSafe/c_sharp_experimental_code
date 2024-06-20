@@ -49,25 +49,26 @@ namespace data_validation
             purchase.user_name.P_value = "kevin@sofsafe.cloud";
             purchase.last_part_scanned.amount.P_value = 2;
 
-            TransactionDtoPartDetail purchased_part = new TransactionDtoPartDetail("part 1");
+            TransactionDtoPartDetail part_1 = new TransactionDtoPartDetail("part 1");
             { };
-            purchased_part.part_category_name.P_value = "Engine Part";
-            purchased_part.part_category_uid.P_value = 2212;
-            purchased_part.amount.P_value = 5;
-            purchased_part.part_name.P_value = "Oxygen Sensor";
-            purchased_part.part_uid.P_value = 122;
+            part_1.part_category_name.P_value = "Engine Part";
+            part_1.part_category_uid.P_value = 1;
+            part_1.amount.P_value = 3;
+            part_1.part_name.P_value = "Oxygen Sensor";
+            part_1.part_uid.P_value = 2;
             
-            purchased_part.notes.Add(new Sdo<string>("value2", "note 1", 
+            
+            part_1.notes.Add(new Sdo<string>("value2", "note 1", 
                 new List<SDR>() { SDC.R_len_greater_2 },
                 new List<string> { "value1","value2","value3"}));
 
-            TransactionDtoPartDetail returned_part = new TransactionDtoPartDetail("part 1");
+            TransactionDtoPartDetail part_2 = new TransactionDtoPartDetail("part 2");
             { };
-            returned_part.part_category_name.P_value = "Engine Part";
-            returned_part.part_category_uid.P_value = 2212;
-            returned_part.amount.P_value = 22;
-            returned_part.part_name.P_value = "test";
-            returned_part.part_uid.P_value = 221;
+            part_2.part_category_name.P_value = "Transmission Part";
+            part_2.part_category_uid.P_value = 4;
+            part_2.amount.P_value = 6;
+            part_2.part_name.P_value = "test";
+            part_2.part_uid.P_value = 5;
 
 
             purchase.last_part_scanned.part_category_name.P_value = "Engine Part";
@@ -77,24 +78,25 @@ namespace data_validation
             purchase.last_part_scanned.part_uid.P_value = 221;
 
             //transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
-            purchase.purchased_parts_details.Add(purchased_part);
-            purchase.returned_parts_details.Add(returned_part);
+            purchase.purchased_parts_details.Add(part_1);
+            purchase.purchased_parts_details.Add(part_2);
+
 
 
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
 
 
-            SqlTransactionTable t_main = new SqlTransactionTable(ot_helper,child_activity_pointer,"pos purchase");
+            //SqlTransactionTable t_main = new SqlTransactionTable(ot_helper,child_activity_pointer,"pos purchase");
             SqlTransactionDetail t_details = new SqlTransactionDetail(ot_helper, child_activity_pointer, "pos purchase");
-            translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
+            //translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
+            //method_activity_list.Add(child_activity_pointer.P_pointer);
             
-            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
+            //translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase);
+            //method_activity_list.Add(child_activity_pointer.P_pointer);
 
 
             
-            translator.registerMultiEntityJoin(ot_helper, child_activity_pointer, "test");            
+            translator.registerMultiEntityAssociation(ot_helper, child_activity_pointer, "test");            
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             
