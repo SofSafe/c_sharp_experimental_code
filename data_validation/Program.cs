@@ -1,9 +1,13 @@
-﻿using OpenTelemetry.Trace;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using OpenTelemetry.Trace;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 
 namespace data_validation
@@ -28,10 +32,11 @@ namespace data_validation
             ETR.SetTag("post_key1", "post key 1 value");
             ETR.SetTag("post_key2", "post key 2 value");
 
+            SqlServerTest(ot_helper, child_activity_pointer);           
             //SdoIntTest(ot_helper, child_activity_pointer);
             //SdoStringTest(ot_helper, child_activity_pointer);
-            //OTSH.setSuccessEndActivity(ETR);
-            //return;
+            OTSH.setSuccessEndActivity(ETR);
+            return;
 
 
 
@@ -234,6 +239,41 @@ namespace data_validation
 
             OTSH.setSuccessEndActivity(ETR);
             return;
+        }
+        
+        private static void SqlServerTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
+
+            builder.DataSource = "localhost\\SQLEXPRESS";
+            builder.UserID = "sa";
+            builder.Password = "123";            
+            //builder.InitialCatalog = nul;
+            builder.TrustServerCertificate = true;
+
+            SqlConnection connection = new SqlConnection(builder.ConnectionString);
+            connection.Open();
+
+            SqlDataAdapter da = new SqlDataAdapter();
+            SqlCommand cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT name, collation_name FROM sys.databases";
+            da.SelectCommand = cmd;
+            DataSet ds = new DataSet();
+
+            ///conn.Open();
+            da.Fill(ds);
+            ///conn.Close();
+
+            foreach(DataTable table in  ds.Tables)
+            {
+                foreach (DataRow row in table.Rows)
+                {                   
+                    foreach (DataColumn column in table.Columns)                 
+                    {
+                        Console.WriteLine(column.ColumnName + ": " + row[column]);
+                    }
+                }
+            }
         }
 
     }
