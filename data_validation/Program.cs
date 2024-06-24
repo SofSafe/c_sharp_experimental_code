@@ -90,7 +90,7 @@ namespace data_validation
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
 
 
-            //SqlTransactionTable t_main = new SqlTransactionTable(ot_helper,child_activity_pointer,"pos purchase");
+            SqlTransactionTable t_main = new SqlTransactionTable(ot_helper,child_activity_pointer,"pos purchase");
             SqlTransactionDetail t_details = new SqlTransactionDetail(ot_helper, child_activity_pointer, "pos purchase");
             //translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
             //method_activity_list.Add(child_activity_pointer.P_pointer);
@@ -276,10 +276,15 @@ namespace data_validation
                 }
             }
 
+
+
             ///conn.Open();
             //da.Fill(transaction_details_table.P_dataset);
             ///conn.Close();
-            da.Update(transaction_details_table.P_table);
+            SqlDataAdapter da2 = new SqlDataAdapter();
+            SqlCommand cmd2 = transaction_details_table.createInsertStatement(connection);
+            da2.InsertCommand = cmd2;
+            da2.Update(transaction_details_table.P_table);
 
         }
 

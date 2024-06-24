@@ -33,12 +33,14 @@ static class PDI
     public static string transaction_type = "transaction type";
     public static string transaction_LAN_uid = "transaction uid on lan sql server";
     public static string transaction_cloud_uid = "transaction uid in azure";
+    public static string transaction_time = "date and time transaction occured";
     public static string recycler_location_uid = "recylcer location uid";
     public static string recycler_location_name = "recycler location name";
     public static string POS_computer_uid = "POS computer uid";
     public static string POS_computer_name = "POS computer name";
     public static string POS_user_uid = "uid of user logged into POS";
     public static string POS_username = "username of user logged into POS";
+    public static string return_uid = "return uid on lan sql server";
 }
 //project data constant identifiers
 class PDCI {
