@@ -21,7 +21,7 @@ static class OTSH
         activity.Stop();
     }
 
-    public static void setFailureEndActivity(Activity activity, int error_code)
+    public static void setFailureEndActivity(Activity activity, ushort error_code)
     {
         activity.AddTag(ErrorTagsCodes.C_tag_error_code, error_code);
         activity.SetStatus(ActivityStatusCode.Error);
@@ -50,7 +50,7 @@ static class OTSH
     }
 
 
-    public static void addEventThenEndActivity(Activity activity, string event_summary, int error_code, Dictionary<string, Object> tag_items=null)
+    public static void addEventThenEndActivity(Activity activity, string event_summary, ushort error_code, Dictionary<string, Object> tag_items=null)
     {   
         OTSH.addEventToActivity(activity, event_summary, tag_items);
         activity.SetTag(ErrorTagsCodes.C_tag_error_code, error_code);

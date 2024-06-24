@@ -32,11 +32,10 @@ namespace data_validation
             ETR.SetTag("post_key1", "post key 1 value");
             ETR.SetTag("post_key2", "post key 2 value");
 
-            SqlServerTest(ot_helper, child_activity_pointer);           
             //SdoIntTest(ot_helper, child_activity_pointer);
             //SdoStringTest(ot_helper, child_activity_pointer);
-            OTSH.setSuccessEndActivity(ETR);
-            return;
+            //OTSH.setSuccessEndActivity(ETR);
+            //return;
 
 
 
@@ -143,6 +142,9 @@ namespace data_validation
                 return;
             }
 
+            SqlServerTest(ot_helper, child_activity_pointer, t_details);
+
+
 
             Console.WriteLine(purchase.P_last_validation_result);
             foreach (string data_id_key in purchase.P_last_validation_result_details.Keys)
@@ -241,39 +243,44 @@ namespace data_validation
             return;
         }
         
-        private static void SqlServerTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        private static void SqlServerTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SqlTransactionDetail transaction_details_table)
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
 
             builder.DataSource = "localhost\\SQLEXPRESS";
             builder.UserID = "sa";
-            builder.Password = "123";            
-            //builder.InitialCatalog = nul;
+            builder.Password = "123";
+            builder.InitialCatalog = "sofsafeTesting";
             builder.TrustServerCertificate = true;
 
             SqlConnection connection = new SqlConnection(builder.ConnectionString);
             connection.Open();
-
+            
             SqlDataAdapter da = new SqlDataAdapter();
             SqlCommand cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT name, collation_name FROM sys.databases";
-            da.SelectCommand = cmd;
+            //cmd.CommandText = "SELECT name, collation_name FROM sys.databases";
+            //cmd.CommandText = "SELECT * FROM TransactionDetail";
+            //da.SelectCommand = cmd;
             DataSet ds = new DataSet();
+            //ds.AcceptChanges();
+            //da.Fill(ds);
 
-            ///conn.Open();
-            da.Fill(ds);
-            ///conn.Close();
-
-            foreach(DataTable table in  ds.Tables)
+            foreach (DataTable table in ds.Tables)
             {
                 foreach (DataRow row in table.Rows)
-                {                   
-                    foreach (DataColumn column in table.Columns)                 
+                {
+                    foreach (DataColumn column in table.Columns)
                     {
                         Console.WriteLine(column.ColumnName + ": " + row[column]);
                     }
                 }
             }
+
+            ///conn.Open();
+            //da.Fill(transaction_details_table.P_dataset);
+            ///conn.Close();
+            da.Update(transaction_details_table.P_table);
+
         }
 
     }

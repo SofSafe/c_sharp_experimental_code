@@ -22,8 +22,9 @@ interface ISdoBaseClass
     Type P_type { get; }    
     //todo add to SBD
     object P_value_as_object {  get; }
+    bool setValueFromObject(object value);
 
-    }
+}
 
 //Sofsafe data object
 class Sdo<T> : ISdoBaseClass
@@ -118,7 +119,25 @@ class Sdo<T> : ISdoBaseClass
         }
     }
 
+    //todo add to SBD
+    private T convertValue(object value)
+    {
+        return (T)value;
+    }
 
+    //todo add to SBD
+    public bool setValueFromObject(object value)
+    {
+        if (value.GetType() == this.IV_data_object_type)
+        {
+            this.IV_value = this.convertValue(value);
+            return true;
+        }
+
+        return false;
+    }
+
+    //todo add to SBD
     private void setValue(T new_value)
     {
         if (this.IV_instance_disabled == true) { return; }
