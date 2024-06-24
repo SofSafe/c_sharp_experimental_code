@@ -60,6 +60,7 @@ namespace data_validation
             part_1.amount.P_value = 3;
             part_1.part_name.P_value = "Oxygen Sensor";
             part_1.part_uid.P_value = 2;
+            part_1.transaction_uid.P_value = 55;
             
             
             part_1.notes.Add(new Sdo<string>("value2", "note 1", 
@@ -73,6 +74,7 @@ namespace data_validation
             part_2.amount.P_value = 6;
             part_2.part_name.P_value = "test";
             part_2.part_uid.P_value = 5;
+            part_2.transaction_uid.P_value = 55;
 
 
             purchase.last_part_scanned.part_category_name.P_value = "Engine Part";
@@ -80,6 +82,7 @@ namespace data_validation
             purchase.last_part_scanned.amount.P_value = 22;
             purchase.last_part_scanned.part_name.P_value = "tst";
             purchase.last_part_scanned.part_uid.P_value = 221;
+            purchase.last_part_scanned.transaction_uid.P_value = 55;
 
             //transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
             purchase.purchased_parts_details.Add(part_1);

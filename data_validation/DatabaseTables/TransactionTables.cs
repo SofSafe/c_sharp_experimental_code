@@ -27,21 +27,15 @@ class SqlTransactionTable : MsSql2012DbTable
 
 class SqlTransactionDetail : MsSql2012DbTable
 {
-    public static SofsafeMsSqlDbField lan_uid = new SofsafeMsSqlDbField(PDI.part_detail_lan_uid, typeof(int), "uid",
-    0, SqlDbType.BigInt, 8, true);
-    public static SofsafeMsSqlDbField category_uid = new SofsafeMsSqlDbField(PDI.part_category_uid, typeof(int), "category_uid",1, SqlDbType.BigInt, 8);
-    public static SofsafeMsSqlDbField item_id = new SofsafeMsSqlDbField(PDI.part_uid, typeof(int), "part_uid",
-        2, SqlDbType.BigInt, 8);
-    public static SofsafeMsSqlDbField cost = new SofsafeMsSqlDbField(PDI.part_cost, typeof(decimal), "value",
-         3, SqlDbType.BigInt, 8);
-    public static SofsafeMsSqlDbField return_id = new SofsafeMsSqlDbField(PDI.return_uid, typeof(int), "return_uid",
-4, SqlDbType.BigInt, 8);
-    public static SofsafeMsSqlDbField transaction_uid = new SofsafeMsSqlDbField(PDI.transaction_LAN_uid, typeof(int), "transcation_uid",
-5, SqlDbType.BigInt, 8);
+    public static SofsafeMsSqlDbField category_uid = new SofsafeMsSqlDbField(PDI.part_category_uid, typeof(int), "category_uid",0, SqlDbType.BigInt, 8);
+    public static SofsafeMsSqlDbField item_id = new SofsafeMsSqlDbField(PDI.part_uid, typeof(int), "part_uid",1, SqlDbType.BigInt, 8);
+    public static SofsafeMsSqlDbField cost = new SofsafeMsSqlDbField(PDI.part_cost, typeof(decimal), "value", 2, SqlDbType.BigInt, 8);
+    public static SofsafeMsSqlDbField transaction_uid = new SofsafeMsSqlDbField(PDI.transaction_LAN_uid, typeof(int), "transcation_uid",3, SqlDbType.BigInt, 8);
+    public static SofsafeMsSqlDbField return_id = new SofsafeMsSqlDbField(PDI.return_uid, typeof(int), "return_uid", 4, SqlDbType.BigInt, 8);
+    
 
 
     public SqlTransactionDetail(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "TransactionDetail", activity_name_prefix)
     {
-        this.IV_primary_key = SqlTransactionDetail.lan_uid;
     }
 }

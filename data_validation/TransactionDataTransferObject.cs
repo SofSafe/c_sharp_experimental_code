@@ -56,6 +56,7 @@ class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInhe
     public Sdo<string> part_name = new Sdo<string>(PDI.part_name,PCR.name);
     public Sdo<int> part_category_uid = new Sdo<int>(PDI.part_category_uid, PCR.uid);
     public Sdo<string> part_category_name = new Sdo<string>(PDI.part_category_name,PCR.name);
+    public Sdo<int> transaction_uid = new Sdo<int>(PDI.transaction_LAN_uid,PCR.uid);
     public List<Sdo<string>> notes = new List<Sdo<string>>();
 
     public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
@@ -63,36 +64,10 @@ class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInhe
         return true;
     }
 
-    public TransactionDtoPartDetail(string organized_data_identifier,
-        string part_category_name,
-        int part_category_uid,
-        decimal amount,
-        string part_name,
-        int part_uid,
-        bool allow_disabling_instance=false): base(organized_data_identifier, allow_disabling_instance)
-    {
-        this.part_category_name.P_value = "Engine Part";
-        this.part_category_uid.P_value = 2212;
-        this.amount.P_value = 5;
-        this.part_name.P_value = "Oxygen Sensor";
-        this.part_uid.P_value = 122;
-
-        ///register iterable objects with Odc instances
-        ///</end> register iterable objects with Odc instances
-
-        ///register iterable objects that contain only Sdo instances
-        this.IV_named_sdo_lists.Add("notes",notes);
-        ///</end>register iterable objects that contain only Sdo instances
-    }
 
     public TransactionDtoPartDetail(string organized_data_identifier,       
        bool allow_disabling_instance = false) : base(organized_data_identifier, allow_disabling_instance)
     {
-        this.part_category_name.P_value = "Engine Part";
-        this.part_category_uid.P_value = 2212;
-        this.amount.P_value = 5;
-        this.part_name.P_value = "Oxygen Sensor";
-        this.part_uid.P_value = 122;
 
         ///register iterable objects with Odc instances
         ///</end> register iterable objects with Odc instances
