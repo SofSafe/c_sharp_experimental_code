@@ -272,7 +272,6 @@ static class SDC
 
         bool enumerable_child_found = true;
         IEnumerable<object> deepest_child = value_to_check as IEnumerable<object>;
-        bool fail_falg = false;
         ///find the most nested list
         while (enumerable_child_found == true)
         {

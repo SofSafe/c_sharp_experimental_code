@@ -10,10 +10,11 @@ interface ISofafeDbField
     string P_code_data_identifier { get; }
     string P_database_field_name { get; }
 
-   
+    Type P_type { get; }
 
     List<ISdoBaseClass> P_sdo_instances { get; }
-    void addSdoInstance(ISdoBaseClass sdo_instance, int record_position);
+    void addSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,ISdoBaseClass sdo_instance, int record_position);
+    bool removeSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, int sdo_instance_index, string activity_name_prefix = "");
 }
 
 class SofsafeDatabaseField : ISofafeDbField
@@ -45,9 +46,10 @@ class SofsafeDatabaseField : ISofafeDbField
         get { return this.IV_database_field_name; }
     }
 
-    //todo add datavalidation since sdo_instance can be null
-    public void addSdoInstance(ISdoBaseClass sdo_instance, int record_position)
+    public void addSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position)
     {
+        //todo add datavalidation since sdo_instance can be null
+
         if (this.IV_sdo_instances.Count < record_position + 1)
         {
             this.IV_sdo_instances.Add(sdo_instance);
@@ -73,6 +75,8 @@ class SofsafeDatabaseField : ISofafeDbField
             return false;
         }
         ////</end> input validation
+        
+        ////TODO finish this method
 
         return true;
     }
@@ -140,7 +144,12 @@ interface ISofsafeDbTable
 
 class SofsafeDbTable : ISofsafeDbTable
 {
+    //this dictionary can store SofsafeDatabaseField instances or any class derived from the SofsafeDatabaseField
     protected Dictionary<string, SofsafeDatabaseField> IV_field_list = new Dictionary<string, SofsafeDatabaseField>() { };
+    //this should be overwritten with the derivative of SofsafeDatabaseField a class is using.
+    protected Type IV_field_list_type;
+    public readonly Dictionary<string, byte> IV_field_names = new Dictionary<string, byte>() { };
+
     protected Dictionary<string, List<SofsafeDatabaseField>> IV_code_id_to_fields = new Dictionary<string, List<SofsafeDatabaseField>>();
     protected Dictionary<string, byte> IV_usable_code_ids_lookup = new Dictionary<string, byte>();
     protected string IV_schema_name = "";
@@ -182,7 +191,7 @@ class SofsafeDbTable : ISofsafeDbTable
             if (sdo_instance.P_last_set_time != Sdo<int>.C_unset_time)
             {
                 //no break becasuse an sdo_instances value can populate mutliple database fields
-                field_entry.addSdoInstance(sdo_instance, record_position);
+                field_entry.addSdoInstance(ot_helper,child_activity_pointer, sdo_instance, record_position);
             }
         }
         OTSH.setSuccessEndActivity(ETR);
@@ -213,35 +222,42 @@ class SofsafeDbTable : ISofsafeDbTable
             /// 
 
             /// register individual ISofafeDatabaseField class instances
-            if (field_value.GetType().GetInterfaces().Contains(typeof(ISofafeDbField)) == true)
+            if (field_value.GetType() != this.IV_field_list_type)
             {
-                SofsafeDatabaseField db_field = field_value as SofsafeDatabaseField;
-                this.IV_field_list.Add(db_field.P_database_field_name, db_field);
-                //this.IV_field_list.Count;
-                if (this.IV_code_id_to_fields.ContainsKey(db_field.P_code_data_identifier) == true)
-                {
-                    List<SofsafeDatabaseField> existing_list;
-                    this.IV_code_id_to_fields.TryGetValue(db_field.P_code_data_identifier, out existing_list);
-                    existing_list.Add(db_field);
-                }
-                else
-                {
-                    this.IV_usable_code_ids_lookup.Add(db_field.P_code_data_identifier, 1);
-                    this.IV_code_id_to_fields.Add(db_field.P_code_data_identifier,
-                        new List<SofsafeDatabaseField>() { db_field }
-                    );
-                }
                 continue;
             }
+            
+            SofsafeDatabaseField db_field = field_value as SofsafeDatabaseField;
+            this.IV_field_list.Add(db_field.P_database_field_name, db_field);
+
+            this.IV_field_names.Add(db_field.P_database_field_name, 1);                
+                
+            if (this.IV_code_id_to_fields.ContainsKey(db_field.P_code_data_identifier) == true)
+            {
+                List<SofsafeDatabaseField> existing_list;
+                this.IV_code_id_to_fields.TryGetValue(db_field.P_code_data_identifier, out existing_list);
+                existing_list.Add(db_field);
+            }
+            else
+            {
+                this.IV_usable_code_ids_lookup.Add(db_field.P_code_data_identifier, 1);
+                this.IV_code_id_to_fields.Add(db_field.P_code_data_identifier,
+                    new List<SofsafeDatabaseField>() { db_field }
+                );
+            }
+            continue;
+            
             ///</end> register individual ISofafeDatabaseField class instances
 
         }
     }
 
-    public SofsafeDbTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string schema_name, string activity_name_prefix = "")
+    public SofsafeDbTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string schema_name, Type field_type, string activity_name_prefix = "")
     {
         this.IV_schema_name = schema_name;
+        this.IV_field_list_type = field_type;
         this.registerDatabaseFields();
+
     }
 
 }

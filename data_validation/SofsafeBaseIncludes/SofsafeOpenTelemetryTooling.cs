@@ -6,6 +6,7 @@ using OpenTelemetry;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
+using System.Reflection.Metadata.Ecma335;
 
 //OpenTelemetry Sofsafe Helper
 static class OTSH
@@ -73,6 +74,41 @@ static class OTSH
         activity.AddEvent(new ActivityEvent(event_summary, DateTime.Now));
     }
 
+    //TODO add to SBD
+    public static bool checkActivityList(Activity methods_activity_object, List<Activity> activity_list, out ChildActivityPointer first_failed_activity)
+    {
+        bool fail_flag = false;
+        first_failed_activity = new ChildActivityPointer();
+        int entry_count = 0;
+        foreach (Activity entry in activity_list)
+        {
+            if (entry == null)
+            {
+                OTSH.addEventToActivity(methods_activity_object, "checkActivityList > null activity_list entry");
+                fail_flag = true;
+                continue;
+            }
+            entry_count++;
+            if (entry.Status != ActivityStatusCode.Ok)
+            {
+                if (fail_flag == false)
+                {
+                    first_failed_activity.setPointerValue(entry, entry.TraceId);
+                    fail_flag = true;
+                }
+
+            }
+        }
+
+        if (fail_flag == true)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+
 }
 class OpenTelemetryConfigHelper
 {
@@ -128,7 +164,7 @@ class ChildActivityPointer
 {
     #pragma warning disable 8618
     private Activity IV_child_activity_pointer;
-    private static Activity CV_default_safe_value = new Activity("ChildActivityPointer default safe value");
+    public static readonly Activity C_default_safe_value = new Activity("ChildActivityPointer default safe value");
 
 
     public void setPointerValue(Activity child_activity, ActivityTraceId trace_id)
@@ -142,7 +178,7 @@ class ChildActivityPointer
         {
             if (this.IV_child_activity_pointer == null)
             {
-                return ChildActivityPointer.CV_default_safe_value;
+                return ChildActivityPointer.C_default_safe_value;
             }
             else
             {
@@ -155,6 +191,16 @@ class ChildActivityPointer
     public void equals(ChildActivityPointer other)
     {
         this.IV_child_activity_pointer = other.IV_child_activity_pointer;
+    }
+
+
+
+    public ChildActivityPointer()
+    {
+        if (C_default_safe_value.Status != ActivityStatusCode.Error)
+        {
+            C_default_safe_value.SetStatus(ActivityStatusCode.Error);
+        }
     }
 }
 

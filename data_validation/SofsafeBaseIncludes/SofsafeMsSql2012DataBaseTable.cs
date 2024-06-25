@@ -27,7 +27,7 @@ class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField
         {
             get { return this.IV_db_field_type; }
         }
-    public SofsafeMsSqlDbField(string code_data_identifier, Type code_type, string database_field_name, int column_index, SqlDbType db_field_type, int field_size, bool is_primary_key = false)
+    public SofsafeMsSqlDbField(int column_index,string code_data_identifier, Type code_type, string database_field_name, SqlDbType db_field_type, int field_size, bool is_primary_key = false)
         : base(code_data_identifier, code_type, database_field_name,column_index,is_primary_key)
     {
         this.IV_db_field_type = db_field_type;
@@ -41,21 +41,19 @@ class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField
 class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
 {
     protected readonly DataTable IV_table;
-    protected DataSet IV_dataset = new DataSet() { };
     protected SofsafeDatabaseField IV_primary_key;
 
-    public DataSet P_dataset
-    {
-        get { return IV_dataset; }
-    }
+
 
     public DataTable P_table
     {
         get { return IV_table; }
     }
 
+    //todo add observability
     public SqlCommand createInsertStatement(SqlConnection connection)
     {
+        //todo add datavalidaiton
         string statement = @"insert into " + this.IV_table.TableName + " values(";
         int loop1 = 0;
         SqlCommand cmd = connection.CreateCommand();
@@ -70,6 +68,31 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
                 field_entry.P_database_field_name);
         }
         statement += ")";
+        cmd.CommandText = statement;
+        return cmd;
+    }
+
+    //todo add observability
+    public SqlCommand createSelectStatement(SqlConnection connection, List<string> include_fields=null, List<string> exclude_fields=null)
+    {
+        //todo add datavalidaiton
+        SqlCommand cmd = connection.CreateCommand();
+        string statement = @"select ";
+        int loop1 = 0;
+        foreach (ISofsafeMsSqlDbField field_entry in this.IV_field_list.Values)
+        {
+            if(include_fields != null && include_fields.Contains(field_entry.P_database_field_name) == false) { continue; }
+            if(exclude_fields != null && exclude_fields.Contains(field_entry.P_database_field_name))
+            { continue;}
+            loop1++;
+            if (loop1 > 1) { statement += ", "; }
+            statement += field_entry.P_database_field_name;
+            //cmd.Parameters.Add("@" + field_entry.P_database_field_name,
+              //  field_entry.P_db_field_type, field_entry.P_field_size,
+                //field_entry.P_database_field_name);
+
+        }
+        statement += " from " + this.IV_table.TableName + ";";
         cmd.CommandText = statement;
         return cmd;
     }
@@ -227,7 +250,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
             }
         }
 
-        if (fail_flag == false)
+        if (fail_flag == true)
         {
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
@@ -236,15 +259,18 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
         return true;
     }
 
-    public MsSql2012DbTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string schema_name,
-        string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, schema_name, activity_name_prefix)
+    public MsSql2012DbTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,
+        string schema_name,string activity_name_prefix = "") 
+        : base(ot_helper, method_activity_pointer, schema_name, typeof(SofsafeMsSqlDbField), activity_name_prefix)
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".populateDataObjectsFromDb");
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".initilizer");
         if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ///</end> observability template
+
+
 
 
         //// add all database columns to IV_table
@@ -268,16 +294,24 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
 
             if (field_entry.P_is_primary_key == true)
             {
-                primary_key_columns.Append(this.IV_table.Columns[column_index]);
+                if (this.IV_primary_key != null)
+                {
+                    //TODO add error logging
+                }
+                else
+                {
+                    this.IV_primary_key = field_entry;
+                    Array.Resize(ref primary_key_columns, 1);
+                    primary_key_columns.SetValue(this.IV_table.Columns[column_index],0);
+                    //#TODO fix #BUG primary_key_columns array isn't being populated 
+                    IV_table.PrimaryKey = primary_key_columns;
+                }
             }
         }
 
-        //#TODO fix #BUG primary_key_columns array isn't being populated 
-        IV_table.PrimaryKey = primary_key_columns;
+        
         ////</end> add all database columns to IV_table
 
-
-        this.IV_dataset.Tables.Add(IV_table);
 
         if (fail_flag == true)
         {
