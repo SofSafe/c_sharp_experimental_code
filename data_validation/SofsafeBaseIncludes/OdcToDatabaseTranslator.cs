@@ -24,9 +24,17 @@ class OdcToDatabaseTranslator
 
     protected Dictionary<string, byte> IV_multi_entity_ids = new Dictionary<string, byte>();
     private Dictionary<string, byte> IV_registered_multi_entity_tables = new Dictionary<string, byte> { };
-    protected Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>>();
     private Dictionary<string, List<ISofsafeDbTable>> IV_multi_entity_table_list = new Dictionary<string, List<ISofsafeDbTable>> { };
-    Dictionary<string, List<List<int>>> IV_multi_entity_mapping_index = new Dictionary<string, List<List<int>>>() { };
+
+    protected Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>>();
+    Dictionary<string, List<List<int>>> IV_multi_entity_odcs_to_tables_map = new Dictionary<string, List<List<int>>>() { };
+    
+
+    private Dictionary<string, byte> IV_registered_multi_entity_sdo_instances = new Dictionary<string, byte> { };
+    protected Dictionary<string, List<ISdoBaseClass>> IV_multi_entity_sdo_instances = new Dictionary<string, List<ISdoBaseClass>>();
+
+    Dictionary<string, List<List<int>>> IV_multi_entity_sdos_to_tables_map = new Dictionary<string, List<List<int>>>() { };
+
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
@@ -92,6 +100,66 @@ class OdcToDatabaseTranslator
     }
 
 
+    public bool registerSdoWithMultiEntityAssociation(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, ISdoBaseClass sdo_instance_to_add, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".registerSdoWithMultiEntityAssociation");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+
+        /// input validation
+        if (sdo_instance_to_add == null)
+        {
+            OTSH.addEventThenEndActivity(ETR, "sdo_instance is null", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        if (this.IV_multi_entity_ids.ContainsKey(multi_entity_id) == false)
+        {
+            OTSH.addEventThenEndActivity(ETR, "multi entity association: " + multi_entity_id + " has not been registered", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        if (this.IV_registered_multi_entity_sdo_instances.ContainsKey(sdo_instance_to_add.P_data_identifier))
+        {
+            OTSH.addEventThenEndActivity(ETR, "sdo_instance with " + sdo_instance_to_add.P_data_identifier + " has already been registered", ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+
+        /////make sure we aren't adding a duplicate reference
+        if (this.IV_multi_entity_sdo_instances.ContainsKey(multi_entity_id) == true)
+        {
+            foreach (ISdoBaseClass existing_sdo in this.IV_multi_entity_sdo_instances[multi_entity_id])
+            {
+                if (existing_sdo.P_data_identifier == sdo_instance_to_add.P_data_identifier)
+                {
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "an instance with the schema name: " + existing_sdo.P_data_identifier + " has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
+                    return false;
+                }
+
+                if (Object.ReferenceEquals(existing_sdo, sdo_instance_to_add) == true)
+                {
+                    OTSH.addEventThenEndActivity(ETR, activity_name_prefix + existing_sdo.P_data_identifier + " instance has already been registered with multi entity id: " + multi_entity_id + " before", ErrorTagsCodes.C_input_validation);
+                    return false;
+                }
+
+            }
+
+        }
+        /////</end>make sure we aren't adding a duplicate reference
+
+        ///</end> input validation
+
+        if (this.IV_multi_entity_sdo_instances.ContainsKey(multi_entity_id) == false)
+        {
+            this.IV_multi_entity_sdo_instances.Add(multi_entity_id, new List<ISdoBaseClass>() { });
+        }
+        this.IV_multi_entity_sdo_instances[multi_entity_id].Add(sdo_instance_to_add);
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
+
     public bool registerMultiEntityAssociation(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, string activity_name_prefix = "")
     {
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -113,6 +181,7 @@ class OdcToDatabaseTranslator
             OTSH.addEventThenEndActivity(ETR, "multi_entity_id: " + multi_entity_id + " has already been registered", ErrorTagsCodes.C_input_validation);
             return false;
         }
+
         ///</end> input validation
 
         this.IV_multi_entity_ids.Add(multi_entity_id, 1);
@@ -132,7 +201,7 @@ class OdcToDatabaseTranslator
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
         validator.addEntry(new DataVR(multi_entity_id, activity_name_prefix + "multi_entity_id").
             addRule(SDC.R_len_greater_0));
-        validator.addEntry(new DataVR(table_instance, activity_name_prefix + "table_list").
+        validator.addEntry(new DataVR(table_instance, activity_name_prefix + "table_entity").
             addRule(SDC.R_not_null));
         if (validator.validateData(ot_helper, child_activity_pointer) == false)
         {
@@ -276,8 +345,42 @@ class OdcToDatabaseTranslator
 
 
 
-        //// build map for multi entity table to data associations
-        List<List<int>> multi_entity_map = new List<List<int>>();
+
+        //// build map for multi entity table to sdo data associations
+        int sdo_instance_list_index;
+        List<List<int>> multi_entity_sdo_list_map = new List<List<int>>();
+
+        foreach (string multi_id in this.IV_multi_entity_ids.Keys)
+        {
+            sdo_instance_list_index = -1;
+            foreach (ISdoBaseClass sdo_instance in this.IV_multi_entity_sdo_instances[multi_id])
+            {
+                sdo_instance_list_index++;
+                sdo_instance_index = -1;
+
+                sdo_instance_index++;
+                table_instance_index = -1;
+                foreach (ISofsafeDbTable table_instance in this.IV_multi_entity_table_list[multi_id])
+                {
+                    table_instance_index++;
+                    if (table_instance.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
+                    {
+                        multi_entity_sdo_list_map.Add(new List<int>() {
+                        sdo_instance_list_index,sdo_instance_index, table_instance_index
+                    });
+                    }
+                }                
+            }
+            lock (this.IV_build_entity_map_thread_lock)
+            {
+                this.IV_multi_entity_sdos_to_tables_map[multi_id] = multi_entity_sdo_list_map;
+            }
+        }       
+        //// build map for multi entity table to sdo data associations
+
+
+        //// build map for multi entity table to odc list data associations
+        List<List<int>> multi_entity_odc_list_map = new List<List<int>>();
         int odc_instance_list_index;
         foreach (string multi_id in this.IV_multi_entity_ids.Keys)
         {
@@ -298,7 +401,7 @@ class OdcToDatabaseTranslator
                             table_instance_index++;
                             if (table_instance.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
                             {
-                                multi_entity_map.Add(new List<int>() {
+                                multi_entity_odc_list_map.Add(new List<int>() {
                             odc_instance_list_index,odc_instance_index, sdo_instance_index, table_instance_index
                         });
                             }
@@ -309,11 +412,12 @@ class OdcToDatabaseTranslator
             }
             lock (this.IV_build_entity_map_thread_lock)
             {
-                this.IV_multi_entity_mapping_index[multi_id] = multi_entity_map;
+                this.IV_multi_entity_odcs_to_tables_map[multi_id] = multi_entity_odc_list_map;
+                this.IV_multi_entity_sdos_to_tables_map[multi_id] = multi_entity_sdo_list_map;
             }
         }
 
-        ////</end> build map for multi entity table to data associations
+        ////</end> build map for multi entity table to odc list data associations
 
 
         this.IV_last_mapped_fields_time = DateTime.Now;
@@ -371,7 +475,9 @@ class OdcToDatabaseTranslator
 
         foreach (List<int> index_list in this.IV_single_entity_mapping_index)
         {
-            if (this.IV_single_entity_table_list[index_list[2]].addSdoToField(ot_helper, child_activity_pointer,
+            if(this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_disabled == true) { continue; }
+
+            if (this.IV_single_entity_table_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
             this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]]) == false)
             {
                 if (fail_flag == true)
@@ -383,21 +489,54 @@ class OdcToDatabaseTranslator
         }
         ///</end> for single entities put references to data objects in the database fields they match
 
-        /// for multiple entity data associations put references to lists of data objects in the database fields they match
+
+
+        /// for multi entity data associations put the sdo instance many to one associations in first, this way any specific odc_instnaces can overwrite them as if they match too
         int record_position;
-        foreach (string multi_id in this.IV_multi_entity_mapping_index.Keys)
+        foreach (string multi_id in this.IV_multi_entity_sdo_instances.Keys)
         {
-            foreach (List<int> idx in this.IV_multi_entity_mapping_index[multi_id])
+            foreach (List<int> idx in this.IV_multi_entity_sdos_to_tables_map[multi_id])
+            {
+                ISofsafeDbTable table = this.IV_multi_entity_table_list[multi_id][idx[2]];
+                record_position = -1;
+                ISdoBaseClass sdo_instance = this.IV_multi_entity_sdo_instances[multi_id][idx[0]];
+                if (sdo_instance.P_value_disabled == true) { continue; }
+
+
+                record_position++;
+                Console.WriteLine(String.Join(",", idx));
+                Console.WriteLine("sdo_instance:" + sdo_instance.P_data_identifier);
+                //bug I'm pretty sure its calling this twice, but the record_position is preventing it from duplicating data.
+                if (table.assignSdoToAllRecordsField(ot_helper, child_activity_pointer,
+                    sdo_instance) == false)
+                {
+                    if (fail_flag == true)
+                    {
+                        first_failed_activity = child_activity_pointer;
+                        fail_flag = true;
+                    }
+                }                
+            }
+        }
+        ///</end> for multi entity data associations put the sdo instance many to one associations in first, this way any specific odc_instnaces can overwrite them as if they match too
+
+
+
+        /// for multiple entity data associations put references to lists of data objects in the database fields they match
+        foreach (string multi_id in this.IV_multi_entity_odcs_to_tables_map.Keys)
+        {
+            foreach (List<int> idx in this.IV_multi_entity_odcs_to_tables_map[multi_id])
             {
                 ISofsafeDbTable table = this.IV_multi_entity_table_list[multi_id][idx[3]];
                 record_position = -1;
                 foreach (IOdcBaseClass odc_instance in this.IV_multi_entity_odc_lists[multi_id][idx[0]])
                 {
+                    if(odc_instance.P_Sdo_child_objects[idx[2]].P_value_disabled == true) { continue; }
                     record_position++;
-                    Console.WriteLine(String.Join(",", idx));
-                    Console.WriteLine(odc_instance.P_organized_data_identifier);
+                    //Console.WriteLine(String.Join(",", idx));
+                    //Console.WriteLine(odc_instance.P_organized_data_identifier);
                     //bug I'm pretty sure its calling this twice, but the record_position is preventing it from duplicating data.
-                    if (table.addSdoToField(ot_helper, child_activity_pointer,
+                    if (table.assignSdoToRecordField(ot_helper, child_activity_pointer,
                         odc_instance.P_Sdo_child_objects[idx[2]], record_position) == false)
                     {
                         if (fail_flag == true)
@@ -412,7 +551,7 @@ class OdcToDatabaseTranslator
         /// for multiple entity data associations put references to lists of data objects in the database fields they match
 
         //// tell table instances to move data from sdo instances to native database instance types
-        foreach (string multi_id in this.IV_multi_entity_mapping_index.Keys)
+        foreach (string multi_id in this.IV_multi_entity_odcs_to_tables_map.Keys)
         {
             foreach (ISofsafeDatabaseTableInheritor table in this.IV_multi_entity_table_list[multi_id])
             {
@@ -439,3 +578,4 @@ class OdcToDatabaseTranslator
         return true;
     }
 }
+

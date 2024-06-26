@@ -13,7 +13,7 @@ interface ISofafeDbField
     Type P_type { get; }
 
     List<ISdoBaseClass> P_sdo_instances { get; }
-    void addSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,ISdoBaseClass sdo_instance, int record_position);
+    bool assignSdoInstanceToRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,ISdoBaseClass sdo_instance, int record_position);
     bool removeSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, int sdo_instance_index, string activity_name_prefix = "");
 }
 
@@ -25,10 +25,16 @@ class SofsafeDatabaseField : ISofafeDbField
     protected Type IV_code_type = null;
     protected string IV_database_field_name = "";
     private List<ISdoBaseClass> IV_sdo_instances = new List<ISdoBaseClass>();
+    private ISdoBaseClass IV_assigned_sdo_for_all_records = null;
 
     public List<ISdoBaseClass> P_sdo_instances
     {
         get { return this.IV_sdo_instances; }
+    }
+
+    public ISdoBaseClass P_assigned_sdo_for_all_records
+    {
+        get { return this.IV_assigned_sdo_for_all_records; }
     }
 
     public string P_code_data_identifier
@@ -46,7 +52,7 @@ class SofsafeDatabaseField : ISofafeDbField
         get { return this.IV_database_field_name; }
     }
 
-    public void addSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position)
+    public bool assignSdoInstanceToRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position)
     {
         //todo add datavalidation since sdo_instance can be null
 
@@ -58,6 +64,14 @@ class SofsafeDatabaseField : ISofafeDbField
         {
             this.IV_sdo_instances[record_position] = sdo_instance;
         }
+        return true;
+    }
+
+    public bool assignSdoInstanceToAllRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance)
+    {
+        //todo add datavalidation since sdo_instance can be null
+        IV_assigned_sdo_for_all_records = sdo_instance;
+        return true;
     }
 
     public bool removeSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, int sdo_instance_index, string activity_name_prefix = "")
@@ -138,7 +152,8 @@ interface ISofsafeDbTable
 {
     string P_schema_name { get; }
     Dictionary<string, byte> P_usable_code_ids_lookup { get; }
-    bool addSdoToField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "");
+    bool assignSdoToRecordField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "");
+    bool assignSdoToAllRecordsField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, string activity_name_prefix = "");
 }
 
 
@@ -161,7 +176,7 @@ class SofsafeDbTable : ISofsafeDbTable
         get { return IV_usable_code_ids_lookup; }
     }
 
-    public bool addSdoToField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "")
+    public bool assignSdoToRecordField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "")
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setFieldsToSdo");
@@ -191,13 +206,61 @@ class SofsafeDbTable : ISofsafeDbTable
             if (sdo_instance.P_last_set_time != Sdo<int>.C_unset_time)
             {
                 //no break becasuse an sdo_instances value can populate mutliple database fields
-                field_entry.addSdoInstance(ot_helper,child_activity_pointer, sdo_instance, record_position);
+                field_entry.assignSdoInstanceToRecord(ot_helper,child_activity_pointer, sdo_instance, record_position);
             }
         }
         OTSH.setSuccessEndActivity(ETR);
         return true;
 
     }
+
+    public bool assignSdoToAllRecordsField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".assignSdoToAllRecordsField");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+        
+
+        ///input validation
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".setFieldsToSdo");
+        validator.addEntry(new DataVR(sdo_instance, "sdo_instance").addRule(SDC.R_not_null));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return false;
+        }
+        ///</end>input validation
+
+        bool fail_flag = false;
+        List<SofsafeDatabaseField> field_entries;
+        this.IV_code_id_to_fields.TryGetValue(sdo_instance.P_data_identifier, out field_entries);
+        if (field_entries == null)
+        {
+            //this is isn't a failure because fields don't have to exist for every sdo
+            OTSH.setSuccessEndActivity(ETR);
+            return true;
+        }
+        foreach (SofsafeDatabaseField field_entry in field_entries)
+        {
+            if (sdo_instance.P_last_set_time != Sdo<int>.C_unset_time)
+            {
+                //no break becasuse an sdo_instances value can populate mutliple database fields
+                if(field_entry.assignSdoInstanceToAllRecords(ot_helper, child_activity_pointer, sdo_instance) == false)
+                {
+                    OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+                    return false;
+
+                }
+            }
+        }
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+    }
+
 
     public bool populateDbFields()
     {

@@ -50,8 +50,12 @@ namespace data_validation
 
             SqlTransactionDetail t_detail = new SqlTransactionDetail(ot_helper,child_activity_pointer);
             method_activity_list.Add(child_activity_pointer.P_pointer);
-            SqlReadTest(ot_helper, child_activity_pointer, t_detail);
+            
+            SqlInsertTest(ot_helper, child_activity_pointer, ref purchase);
             method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            //SqlReadTest(ot_helper, child_activity_pointer, t_detail);
+            //method_activity_list.Add(child_activity_pointer.P_pointer);
 
 
             Console.WriteLine(purchase.P_last_validation_result);
@@ -113,7 +117,8 @@ namespace data_validation
             purchase.POS_name.P_value = "register 2";
             purchase.POS_uid.P_value = 22;
             purchase.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
-            purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            //purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            purchase.transaction_lan_uid.P_value = 12;
             purchase.user_uid.P_value = 221;
             purchase.user_name.P_value = "kevin@sofsafe.cloud";
             purchase.last_part_scanned.amount.P_value = 2;
@@ -125,7 +130,6 @@ namespace data_validation
             part_1.amount.P_value = 3;
             part_1.part_name.P_value = "Oxygen Sensor";
             part_1.part_uid.P_value = 2;
-            part_1.transaction_uid.P_value = 55;
 
 
             part_1.notes.Add(new Sdo<string>("value2", "note 1",
@@ -139,7 +143,6 @@ namespace data_validation
             part_2.amount.P_value = 6;
             part_2.part_name.P_value = "test";
             part_2.part_uid.P_value = 5;
-            part_2.transaction_uid.P_value = 55;
 
 
             purchase.last_part_scanned.part_category_name.P_value = "Engine Part";
@@ -237,6 +240,11 @@ namespace data_validation
             translator.registerMultiEntityDestinationPointer(ot_helper, child_activity_pointer, "test",
                 t_details, "pos");
             method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            translator.registerSdoWithMultiEntityAssociation(ot_helper, child_activity_pointer, "test",
+                purchase.transaction_lan_uid);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
 
 
             translator.populateDatabaseFields(ot_helper, child_activity_pointer);

@@ -77,6 +77,8 @@ class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInhe
         ///</end>register iterable objects that contain only Sdo instances
     }
 
+
+
 }
 
 class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor

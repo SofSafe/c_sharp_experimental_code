@@ -99,6 +99,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
 
     public bool populateNativeDbFieldsFromSdoInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
+        Console.WriteLine("a1");
 
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -123,19 +124,32 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
                 {
                     OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + field_entry_key);
                     last_fail_code = ErrorTagsCodes.C_input_validation;
+                    continue;
                 }
 
                 SofsafeMsSqlDbField field_entry = field_entry_base as SofsafeMsSqlDbField;
 
-                if (field_entry.P_sdo_instances.Count <= record_position)
+                /// input validation
+                if (field_entry.P_assigned_sdo_for_all_records == null)
                 {
-                    continue;
-                }
+                    if (field_entry.P_sdo_instances.Count <= record_position)
+                    {
+                        continue;
+                    }
 
-                if (field_entry.P_sdo_instances[record_position].P_last_set_time == Sdo<int>.C_unset_time)
+                    if (field_entry.P_sdo_instances[record_position].P_last_set_time == Sdo<int>.C_unset_time)
+                    {
+                        continue;
+                    }
+                } 
+                else
                 {
-                    continue;
+                    if (field_entry.P_assigned_sdo_for_all_records.P_last_set_time == Sdo<int>.C_unset_time)
+                    {
+                        continue;
+                    }
                 }
+                ///</end> input validation
                 if (record_position > existing_row_last_index)
                 {
                     this.IV_table.Rows.Add();
@@ -143,25 +157,41 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
                 }
                 DataRow current_row = this.IV_table.Rows[record_position];
 
+                object value_as_object;
+                Type value_type;
+                if (field_entry.P_assigned_sdo_for_all_records != null)
+                {
+                    value_as_object = field_entry.P_assigned_sdo_for_all_records.P_value_as_object;
+                    value_type = field_entry.P_assigned_sdo_for_all_records.P_type;
+                }
+                else 
+                {
+                    value_as_object = field_entry.P_sdo_instances[record_position].P_value_as_object;
+                    value_type = field_entry.P_sdo_instances[record_position].P_type;
+                    //only keep going if we find an individual field record
+                    data_found = true;
+                }
 
-                object value_as_object = field_entry.P_sdo_instances[record_position].P_value_as_object;
-                Type value_type = field_entry.P_sdo_instances[record_position].P_type;
+                Console.WriteLine(value_type.FullName);
                 if (value_type == typeof(int))
                 {
-                    current_row.SetField(field_entry.P_column_index, (int)field_entry.P_sdo_instances[record_position].P_value_as_object);
+                    Console.WriteLine("field_entry_key: " + field_entry_key);
+                    current_row.SetField(field_entry.P_column_index, (int)value_as_object);
                 }
                 else if (value_type == typeof(string))
                 {
-                    current_row.SetField(field_entry.P_column_index, (string)field_entry.P_sdo_instances[record_position].P_value_as_object);
+                    Console.WriteLine("field_entry_key: " + field_entry_key);
+
+                    current_row.SetField(field_entry.P_column_index, (string)value_as_object);
                 }
                 else if (value_type == typeof(decimal))
                 {
-                    current_row.SetField(field_entry.P_column_index, (decimal)field_entry.P_sdo_instances[record_position].P_value_as_object);
+                    Console.WriteLine("field_entry_key: " + field_entry_key);
+                    current_row.SetField(field_entry.P_column_index, (decimal)value_as_object);
                 }
-                data_found = true;
-            }
-            if (data_found == false) { break; }
-
+            }            
+            if (data_found == false) {
+                break; }
         }
 
         foreach (DataRow row in this.IV_table.Rows)
