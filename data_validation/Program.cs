@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace data_validation
 {
@@ -48,28 +49,14 @@ namespace data_validation
                 return;
             }
 
-            SqlTransactionDetail t_detail = new SqlTransactionDetail(ot_helper,child_activity_pointer);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
+           
             
-            SqlInsertTest(ot_helper, child_activity_pointer, ref purchase);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            //SqlReadTest(ot_helper, child_activity_pointer, t_detail);
+            //SqlInsertTest(ot_helper, child_activity_pointer, ref purchase);
             //method_activity_list.Add(child_activity_pointer.P_pointer);
 
+            SqlReadTest(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            Console.WriteLine(purchase.P_last_validation_result);
-            foreach (string data_id_key in purchase.P_last_validation_result_details.Keys)
-            {
-                List<string> issues_found;
-                purchase.P_last_validation_result_details.TryGetValue(data_id_key, out issues_found);
-                if (issues_found == null) { continue; }
-                foreach (string issue in issues_found)
-                {
-                    Console.WriteLine(issue);
-                }
-
-            }
 
             OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_pointer);
             return;           
@@ -116,12 +103,12 @@ namespace data_validation
             purchase.location_uid.P_value = 1252;
             purchase.POS_name.P_value = "register 2";
             purchase.POS_uid.P_value = 22;
+            purchase.time.P_value = DateTime.Now;
             purchase.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
-            //purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
-            purchase.transaction_lan_uid.P_value = 12;
+            purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            //purchase.transaction_lan_uid.P_value = 12;
             purchase.user_uid.P_value = 221;
             purchase.user_name.P_value = "kevin@sofsafe.cloud";
-            purchase.last_part_scanned.amount.P_value = 2;
 
             TransactionDtoPartDetail part_1 = new TransactionDtoPartDetail("part 1");
             { };
@@ -143,16 +130,7 @@ namespace data_validation
             part_2.amount.P_value = 6;
             part_2.part_name.P_value = "test";
             part_2.part_uid.P_value = 5;
-
-
-            purchase.last_part_scanned.part_category_name.P_value = "Engine Part";
-            purchase.last_part_scanned.part_category_uid.P_value = 2212;
-            purchase.last_part_scanned.amount.P_value = 22;
-            purchase.last_part_scanned.part_name.P_value = "tst";
-            purchase.last_part_scanned.part_uid.P_value = 221;
-            purchase.last_part_scanned.transaction_uid.P_value = 55;
-
-            //transaction.last_part_scanned.setInstanceDisable(ot_helper,child_activity_pointer,true, "transaction.last_part_scanned.setInstanceDisable");
+            
             purchase.purchased_parts_details.Add(part_1);
             purchase.purchased_parts_details.Add(part_2);
             return true;
@@ -222,30 +200,12 @@ namespace data_validation
             List<Activity> method_activity_list = new List<Activity>();
 
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
-            SqlTransactionTable t_main = new SqlTransactionTable(ot_helper, child_activity_pointer, "pos purchase");
-            SqlTransactionDetail t_details = new SqlTransactionDetail(ot_helper, child_activity_pointer, "pos purchase");
-            //translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
-            //method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            //translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase);
-            //method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            translator.registerMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
+            s3TransactionTable t_main = new s3TransactionTable(ot_helper, child_activity_pointer, "pos purchase");
+            translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            translator.registerMultiEntitySourcePointer(ot_helper, child_activity_pointer, "test",
-                purchase.purchased_parts_details, "transaction.purchased_parts_details");
+            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase);
             method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            translator.registerMultiEntityDestinationPointer(ot_helper, child_activity_pointer, "test",
-                t_details, "pos");
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            translator.registerSdoWithMultiEntityAssociation(ot_helper, child_activity_pointer, "test",
-                purchase.transaction_lan_uid);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-
 
             translator.populateDatabaseFields(ot_helper, child_activity_pointer);
             method_activity_list.Add(child_activity_pointer.P_pointer);
@@ -256,6 +216,7 @@ namespace data_validation
                 OTSH.passStatusAndEndActivity(ETR, activity_list_status.P_pointer);
                 return false;
             }
+            method_activity_list.Clear();
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
 
@@ -269,14 +230,88 @@ namespace data_validation
             connection.Open();
             
             SqlDataAdapter da2 = new SqlDataAdapter();
-            SqlCommand insert_command = t_details.createInsertStatement(connection);
-            da2.InsertCommand = insert_command;
+            SqlCommand insert_command = connection.CreateCommand();
+            t_main.createInsertStatement(ref insert_command);
+            insert_command.CommandText += "SELECT uid FROM Transactions WHERE uid = SCOPE_IDENTITY();";
+            da2.InsertCommand = insert_command;           
+            Console.WriteLine(insert_command.CommandText);
+            DataSet ds1 = new DataSet();
+            ds1.Namespace = "sofsafeTesting";
+            da2.TableMappings.Add("Table", t_main.P_schema_name);
+            ds1.Tables.Add(t_main.P_table);
+            foreach (DataTable table in ds1.Tables)
+            {
+                foreach (DataRow row in table.Rows)
+                {
+                    foreach (DataColumn column in table.Columns)
+                    {
+                        Console.WriteLine(column.ColumnName + ": " + row[column]);
+                    }
+                }
+            }
+            da2.Update(t_main.P_table);
+
+
+            purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, false);
+            purchase.transaction_lan_uid.P_value = 55;
+
+            s3TransactionDetailTable t_details = new s3TransactionDetailTable(ot_helper, child_activity_pointer, "pos purchase");
+
+            OdcToDatabaseTranslator details_translator = new OdcToDatabaseTranslator();
+            details_translator.registerMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            details_translator.registerMultiEntityOdcInstanceList(ot_helper, child_activity_pointer, "test",
+                purchase.purchased_parts_details, "transaction.purchased_parts_details");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            details_translator.registerMultiEntityTable(ot_helper, child_activity_pointer, "test",
+                t_details, "pos");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            if (purchase.transaction_lan_uid.P_last_set_time != Sdo<int>.C_unset_time)
+            {
+                details_translator.registerSdoWithMultiEntityAssociation(ot_helper, child_activity_pointer, "test",
+                   purchase.transaction_lan_uid);
+                method_activity_list.Add(child_activity_pointer.P_pointer);
+            }
+
+            details_translator.populateDatabaseFields(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            if (OTSH.checkActivityList(ETR, method_activity_list, out activity_list_status) == false)
+            {
+                OTSH.passStatusAndEndActivity(ETR, activity_list_status.P_pointer);
+                return false;
+            }
+            method_activity_list.Clear();
+
+            da2.TableMappings.Add("Table1", t_details.P_schema_name);
+            ds1.Tables.Add(t_details.P_table);
+
+
+            SqlCommand insert_command2 = connection.CreateCommand();
+            t_details.createInsertStatement(ref insert_command2);
+            da2.InsertCommand = insert_command2;
+            Console.WriteLine(insert_command2.CommandText);
+
+
+            foreach (DataRow row in t_details.P_table.Rows)
+            {
+                foreach (DataColumn column in t_details.P_table.Columns)
+                {
+                    Console.WriteLine(column.ColumnName + ": " + row[column]);
+                }
+            }
+
             da2.Update(t_details.P_table);
+
+            connection.Close();
             return true;
         }
 
 
-        private static bool SqlReadTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SqlTransactionDetail transaction_details_table, string activity_name_prefix = "")
+        private static bool SqlReadTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
         {
             /// observability template
             if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -285,6 +320,9 @@ namespace data_validation
             if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
             ///</end> observability template
+
+            List<Activity> method_activity_list = new List<Activity>();
+
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
 
@@ -297,27 +335,87 @@ namespace data_validation
             SqlConnection connection = new SqlConnection(builder.ConnectionString);
             connection.Open();
 
+            s3TransactionDetailTable transaction_details_table = new s3TransactionDetailTable(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+            s3CategoriesTable part_categories_table = new s3CategoriesTable(ot_helper, child_activity_pointer);
+
+
             SqlDataAdapter sqda = new SqlDataAdapter();
-            SqlCommand select_command = transaction_details_table.createSelectStatement(connection);
+            //SqlCommand select_command = transaction_details_table.createSelectStatement(connection);
+            SqlCommand select_command = connection.CreateCommand();
+            select_command.CommandText = "SELECT TransactionDetail.category_uid, TransactionDetail.part_uid, TransactionDetail.value,  Categories.name  FROM TransactionDetail Inner JOIN Categories on  Categories.uid=TransactionDetail.category_uid  WHERE TransactionDetail.transaction_uid=5;";
             sqda.SelectCommand = select_command;
             DataSet data_set = new DataSet();
             data_set.Tables.Add(transaction_details_table.P_table);
+            data_set.Tables.Add(part_categories_table.P_table);
             sqda.Fill(data_set);
-
+            
+            int table_index = 0;
+            int loop1 = -1;
             foreach (DataTable table in data_set.Tables)
             {
-                foreach (DataRow row in table.Rows)
+                loop1++;
+                if(table.TableName == "Table")
                 {
-                    foreach (DataColumn column in table.Columns)
-                    {
-                        Console.WriteLine(column.ColumnName + ": " + row[column]);
-                    }
-                }
+                    table_index = loop1;
+                }               
             }
 
-            TransactionDto purchase = new TransactionDto(ot_helper, child_activity_pointer, "transaction 521251", PDCI.transaction_type_purchase_parts);
+            //this separates the data into the tables the data came from
+            part_categories_table.P_table.Merge(data_set.Tables[table_index],true, MissingSchemaAction.Ignore);
+            transaction_details_table.P_table.Merge(data_set.Tables[table_index], true,MissingSchemaAction.Ignore);
 
-            transaction_details_table.populateDataObjectsFromDb(ot_helper, child_activity_pointer, data_set);
+            TransactionDto purchase = new TransactionDto(ot_helper, child_activity_pointer, "transaction 521251", PDCI.transaction_type_purchase_parts);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            for (loop1=0; loop1 < transaction_details_table.P_table.Rows.Count; loop1++)
+            {
+                purchase.purchased_parts_details.Add(new TransactionDtoPartDetail("read-test >" + loop1.ToString()));
+            }           
+
+
+            DatabaseToOdcTranslator details_translator = new DatabaseToOdcTranslator();
+            details_translator.registerMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            details_translator.registerMultiEntityOdcInstanceList(ot_helper, child_activity_pointer, "test",
+                purchase.purchased_parts_details, "transaction.purchased_parts_details");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            details_translator.registerMultiEntityTable(ot_helper, child_activity_pointer, "test",
+                transaction_details_table, "pos");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            details_translator.registerMultiEntityTable(ot_helper, child_activity_pointer, "test",
+    part_categories_table, "pos");
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+
+            details_translator.populateEmptySdoInstances(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
+
+            transaction_details_table.populateEmptyDataObjectsFromDb(ot_helper, child_activity_pointer, data_set);
+
+            part_categories_table.populateEmptyDataObjectsFromDb(ot_helper, child_activity_pointer, data_set);
+
+
+
+            ChildActivityPointer activity_list_status;
+            if (OTSH.checkActivityList(ETR, method_activity_list, out activity_list_status) == false)
+            {
+                OTSH.passStatusAndEndActivity(ETR, activity_list_status.P_pointer);
+                return false;
+            }
+            activity_list_status = null;
+            method_activity_list.Clear();     
+
+            foreach (TransactionDtoPartDetail entry in purchase.purchased_parts_details)
+            {
+                Console.WriteLine("entry.category_name:" + entry.part_category_name.P_value);
+                Console.WriteLine("entry.category_uid:" + entry.part_category_uid.P_value);
+                Console.WriteLine("entry.part_uid:" + entry.part_uid.P_value);
+            }
+
 
             OTSH.setSuccessEndActivity(ETR);
             return true;

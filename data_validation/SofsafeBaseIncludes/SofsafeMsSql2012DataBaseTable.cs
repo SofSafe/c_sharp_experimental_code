@@ -27,8 +27,13 @@ class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField
         {
             get { return this.IV_db_field_type; }
         }
-    public SofsafeMsSqlDbField(int column_index,string code_data_identifier, Type code_type, string database_field_name, SqlDbType db_field_type, int field_size, bool is_primary_key = false)
-        : base(code_data_identifier, code_type, database_field_name,column_index,is_primary_key)
+    public SofsafeMsSqlDbField(int column_index,string code_data_identifier,
+        Type code_type, string database_field_name,
+        SqlDbType db_field_type, int field_size,
+        ISofafeSqlDbField replicated_from_on_insert=null,
+        bool is_primary_key = false, bool auto_increments=false)
+        : base(code_data_identifier, code_type, database_field_name,column_index,
+            replicated_from_on_insert, is_primary_key, auto_increments)
     {
         this.IV_db_field_type = db_field_type;
         this.IV_sql_field_size = field_size;
@@ -51,29 +56,49 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
     }
 
     //todo add observability
-    public SqlCommand createInsertStatement(SqlConnection connection)
+    public bool createInsertStatement(ref SqlCommand insert_cmd)
     {
         //todo add datavalidaiton
-        string statement = @"insert into " + this.IV_table.TableName + " values(";
+        string fields_string = @"insert into " + this.IV_table.TableName + " (";
+        string values_string = " values(";
         int loop1 = 0;
-        SqlCommand cmd = connection.CreateCommand();
+ 
+
         foreach (SofsafeDatabaseField field_entry_base in this.IV_field_list.Values)
-        {
-            loop1++;
+        {                     
             SofsafeMsSqlDbField field_entry = field_entry_base as SofsafeMsSqlDbField;
-            if (loop1 > 1) { statement += ", "; }
-            statement += "@" + field_entry.P_database_field_name;
-            cmd.Parameters.Add("@" + field_entry.P_database_field_name,
+            if(field_entry.P_auto_increments == true) { continue; }
+            if(field_entry.P_sdo_instances.Count == 0 
+                && field_entry.P_replicated_from_on_insert == null 
+                && field_entry.P_assigned_sdo_for_all_records == null) { continue; }
+            loop1++;
+            if (loop1 > 1) { 
+                values_string += ", ";
+                fields_string += ", ";
+            }
+            fields_string += field_entry.P_database_field_name;
+            if (field_entry.P_replicated_from_on_insert != null)
+            {
+                //TODO get this working as expected on msql 2012
+                values_string += "@" + field_entry.P_replicated_from_on_insert.P_schema_name + "_" + field_entry.P_replicated_from_on_insert.P_database_field_name;
+            }
+            else
+            {
+                values_string += "@" + field_entry.P_database_field_name;
+                insert_cmd.Parameters.Add("@" + field_entry.P_database_field_name,
                 field_entry.P_db_field_type, field_entry.P_field_size,
                 field_entry.P_database_field_name);
+            }            
         }
-        statement += ")";
-        cmd.CommandText = statement;
-        return cmd;
+        fields_string += ") ";
+        values_string += "); " ;
+
+       insert_cmd.CommandText += fields_string + values_string;
+        return true;
     }
 
     //todo add observability
-    public SqlCommand createSelectStatement(SqlConnection connection, List<string> include_fields=null, List<string> exclude_fields=null)
+    public SqlCommand createSelectStatement(SqlConnection connection, bool include_terminator = false, List<string> include_fields=null, List<string> exclude_fields=null)
     {
         //todo add datavalidaiton
         SqlCommand cmd = connection.CreateCommand();
@@ -85,22 +110,18 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
             if(exclude_fields != null && exclude_fields.Contains(field_entry.P_database_field_name))
             { continue;}
             loop1++;
-            if (loop1 > 1) { statement += ", "; }
-            statement += field_entry.P_database_field_name;
-            //cmd.Parameters.Add("@" + field_entry.P_database_field_name,
-              //  field_entry.P_db_field_type, field_entry.P_field_size,
-                //field_entry.P_database_field_name);
+            if (loop1 > 1) { statement += " , "; }
+            statement += field_entry.P_schema_name + "." + field_entry.P_database_field_name;
 
         }
-        statement += " from " + this.IV_table.TableName + ";";
+        statement += " from " + this.IV_table.TableName;
+        if(include_terminator == true) { statement += ";"; }            
         cmd.CommandText = statement;
         return cmd;
     }
 
-    public bool populateNativeDbFieldsFromSdoInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    public bool populateNativeDbFieldsFromDataObjects(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
-        Console.WriteLine("a1");
-
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
@@ -111,11 +132,13 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
 
         int record_position = -1;
         bool data_found = true;
+        bool record_added = false;
         int existing_row_last_index = this.IV_table.Rows.Count - 1;
         ushort last_fail_code = 0;
         while (data_found)
         {
             data_found = false;
+            record_added = false;
             record_position++;
             foreach (string field_entry_key in this.IV_field_list.Keys)
             {
@@ -153,6 +176,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
                 if (record_position > existing_row_last_index)
                 {
                     this.IV_table.Rows.Add();
+                    record_added = true;
                     existing_row_last_index = this.IV_table.Rows.Count - 1;
                 }
                 DataRow current_row = this.IV_table.Rows[record_position];
@@ -172,33 +196,35 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
                     data_found = true;
                 }
 
-                Console.WriteLine(value_type.FullName);
                 if (value_type == typeof(int))
                 {
-                    Console.WriteLine("field_entry_key: " + field_entry_key);
                     current_row.SetField(field_entry.P_column_index, (int)value_as_object);
                 }
                 else if (value_type == typeof(string))
                 {
-                    Console.WriteLine("field_entry_key: " + field_entry_key);
-
                     current_row.SetField(field_entry.P_column_index, (string)value_as_object);
                 }
                 else if (value_type == typeof(decimal))
                 {
-                    Console.WriteLine("field_entry_key: " + field_entry_key);
                     current_row.SetField(field_entry.P_column_index, (decimal)value_as_object);
+                }
+                else if (value_type == typeof(DateTime))
+                {
+                    current_row.SetField(field_entry.P_column_index, (DateTime)value_as_object);
+                }
+                else
+                {
+                    OTSH.addEventToActivity(ETR, "failed to match a type for field: " + field_entry_key);
+                    last_fail_code = ErrorTagsCodes.C_input_validation;
                 }
             }            
             if (data_found == false) {
-                break; }
-        }
-
-        foreach (DataRow row in this.IV_table.Rows)
-        {
-            foreach (DataColumn column in this.IV_table.Columns)
-            {
-                Console.WriteLine(column.ColumnName + ": " + row[column]);
+                if (record_added == true)
+                {
+                    //the last row was added in case we had data to add, but no data was found to add to it
+                    this.IV_table.Rows.RemoveAt(this.IV_table.Rows.Count - 1);
+                }
+                break; 
             }
         }
 
@@ -212,7 +238,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
         return true;
     }
 
-    public bool populateDataObjectsFromDb(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, DataSet data_set, string activity_name_prefix = "")
+    public bool populateEmptyDataObjectsFromDb(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, DataSet data_set , string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -221,6 +247,8 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
         if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
+
+        //todo add data validation
 
         bool fail_flag = false;
         bool table_found = false;
@@ -235,48 +263,28 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
             }
             table_found = true;
             int row_index = -1;
-            foreach (DataRow row in table.Rows)
+            foreach (DataColumn column in table.Columns)
             {
-                row_index++;
-                foreach (DataColumn column in table.Columns)
+
+                SofsafeDatabaseField field_entry;
+                if (this.IV_field_list.TryGetValue(column.ColumnName, out field_entry) == false)
                 {
-
-                    SofsafeDatabaseField field_entry;
-                    if (this.IV_field_list.TryGetValue(column.ColumnName, out field_entry) == false)
-                    {
-                        OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + column.ColumnName);
-                        fail_flag = true;
-                    }
-
-                    if (field_entry.P_sdo_instances.Count < row_index - 1)
-                    {
-                        //TODO create a method that allows setting SofsafeDatabaseField default parameters for new SDO instances so rules, etc can be passed on. this have those params passed here
-                        if (row[column].GetType() == typeof(int))
-                        {
-                            field_entry.P_sdo_instances.Add(new Sdo<int>(Convert.ToInt32(row[column]),
-                                field_entry.P_code_data_identifier));
-                        }
-                        else if (row[column].GetType() == typeof(string))
-                        {
-                            field_entry.P_sdo_instances.Add(new Sdo<string>(Convert.ToString(row[column]),
-                                field_entry.P_code_data_identifier));
-                        }
-                        else if (row[column].GetType() == typeof(decimal))
-                        {
-                            field_entry.P_sdo_instances.Add(new Sdo<decimal>(Convert.ToDecimal(row[column]),
-                                field_entry.P_code_data_identifier));
-                        }
-
-                    }
-                    else
-                    {
-                        field_entry.P_sdo_instances[row_index].setValueFromObject(row[column]);
-                    }
-
-
-
+                    OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + column.ColumnName);
+                    fail_flag = true;
+                    continue;
                 }
-
+                if (field_entry.P_sdo_instances.Count == 0)
+                {
+                    //unused columns won't be pre-filled with empty instances
+                    continue;
+                }
+                row_index = -1;
+                foreach (DataRow row in table.Rows)
+                {
+                    if(row[column] == null) { continue; }
+                    row_index++;
+                    field_entry.P_sdo_instances[row_index].setValueFromObject(row[column]);
+                }
             }
         }
 
@@ -285,7 +293,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
-
+        OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
@@ -333,8 +341,8 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
                     this.IV_primary_key = field_entry;
                     Array.Resize(ref primary_key_columns, 1);
                     primary_key_columns.SetValue(this.IV_table.Columns[column_index],0);
-                    //#TODO fix #BUG primary_key_columns array isn't being populated 
-                    IV_table.PrimaryKey = primary_key_columns;
+                    //#TODO fix #BUG primary_key_columns being added makes auto-increments fail
+                    //IV_table.PrimaryKey = primary_key_columns;
                 }
             }
         }

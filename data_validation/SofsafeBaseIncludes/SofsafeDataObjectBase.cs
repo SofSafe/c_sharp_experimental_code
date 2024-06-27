@@ -131,6 +131,7 @@ class Sdo<T> : ISdoBaseClass
         if (value.GetType() == this.IV_data_object_type)
         {
             this.IV_value = this.convertValue(value);
+            this.IV_last_set_time = DateTime.Now;
             return true;
         }
 

@@ -16,6 +16,8 @@ static class PCR
     public static List<SDR> uid = new List<SDR>() { SDC.R_greater_0 };
     public static List<SDR> not_zero = new List<SDR>() { SDC.R_not_zero };
     public static List<SDR> name = new List<SDR>() { SDC.R_len_greater_2 };
+    public static List<SDR> not_null = new List<SDR>() { SDC.R_not_null };
+
 }
 
 
@@ -56,7 +58,6 @@ class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInhe
     public Sdo<string> part_name = new Sdo<string>(PDI.part_name,PCR.name);
     public Sdo<int> part_category_uid = new Sdo<int>(PDI.part_category_uid, PCR.uid);
     public Sdo<string> part_category_name = new Sdo<string>(PDI.part_category_name,PCR.name);
-    public Sdo<int> transaction_uid = new Sdo<int>(PDI.transaction_LAN_uid,PCR.uid);
     public List<Sdo<string>> notes = new List<Sdo<string>>();
 
     public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
@@ -99,9 +100,9 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
     public Sdo<string> POS_name = new Sdo<string>(PDI.POS_computer_name, PCR.name);
     public Sdo<int> user_uid = new Sdo<int>(PDI.POS_user_uid, PCR.uid);
     public Sdo<string> user_name = new Sdo<string>(PDI.POS_username, PCR.name);
+    public Sdo<DateTime> time = new Sdo<DateTime>(PDI.transaction_time, PCR.not_null);
     public List<TransactionDtoPartDetail> purchased_parts_details = new List<TransactionDtoPartDetail>();
     public List<TransactionDtoPartDetail> returned_parts_details = new List<TransactionDtoPartDetail>();
-    public TransactionDtoPartDetail last_part_scanned = new TransactionDtoPartDetail("last scanned part",true);
 
     public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
@@ -110,14 +111,21 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
 
     public TransactionDto(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,
         string organized_data_identifier, string transaction_type,
-        bool allow_disabling_instance=false) 
+        bool allow_disabling_instance=false, string activity_name_prefix="") 
         : base(organized_data_identifier,allow_disabling_instance)
     {
-        Activity ETR = ot_helper.startActivityWrapper("TransactionDto.init");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".init");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
         ETR.AddTag("transaction_type", transaction_type);
 
+
+
+        //todo add data validation for nullable types
         this.transaction_type.P_value = transaction_type;
 
 
@@ -129,6 +137,7 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
         ///register iterable objects that contain only Sdo instances
         ///</end>register iterable objects that contain only Sdo instances
 
+        OTSH.setSuccessEndActivity(ETR);
 
     }
 

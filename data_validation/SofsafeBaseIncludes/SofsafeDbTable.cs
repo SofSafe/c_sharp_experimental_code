@@ -10,11 +10,15 @@ interface ISofafeDbField
     string P_code_data_identifier { get; }
     string P_database_field_name { get; }
 
+    string P_schema_name { get; }
+
     Type P_type { get; }
 
     List<ISdoBaseClass> P_sdo_instances { get; }
+    
     bool assignSdoInstanceToRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,ISdoBaseClass sdo_instance, int record_position);
     bool removeSdoInstance(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, int sdo_instance_index, string activity_name_prefix = "");
+    bool setSchemaName(string schema_name);
 }
 
 class SofsafeDatabaseField : ISofafeDbField
@@ -25,8 +29,14 @@ class SofsafeDatabaseField : ISofafeDbField
     protected Type IV_code_type = null;
     protected string IV_database_field_name = "";
     private List<ISdoBaseClass> IV_sdo_instances = new List<ISdoBaseClass>();
-    private ISdoBaseClass IV_assigned_sdo_for_all_records = null;
+    protected ISdoBaseClass IV_assigned_sdo_for_all_records = null;
+    protected string IV_schema_name = "";
 
+
+    public string P_schema_name
+    {
+        get { return this.IV_schema_name; }
+    }
     public List<ISdoBaseClass> P_sdo_instances
     {
         get { return this.IV_sdo_instances; }
@@ -52,9 +62,18 @@ class SofsafeDatabaseField : ISofafeDbField
         get { return this.IV_database_field_name; }
     }
 
-    public bool assignSdoInstanceToRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position)
+
+    public bool setSchemaName(string schema_name)
+    {
+        //todo add input validation
+        this.IV_schema_name= schema_name;
+        return true;
+    }
+    public bool assignSdoInstanceToRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1)
     {
         //todo add datavalidation since sdo_instance can be null
+        
+        if(record_position == -1) { record_position = this.IV_sdo_instances.Count; }
 
         if (this.IV_sdo_instances.Count < record_position + 1)
         {
@@ -109,14 +128,27 @@ interface ISofafeSqlDbField : ISofafeDbField
 {    
     int P_column_index { get; }
     bool P_is_primary_key { get; }
+    bool P_auto_increments { get; }
+    ISofafeSqlDbField P_replicated_from_on_insert { get; }
 }
 
 class SofsafeSqlDbField : SofsafeDatabaseField, ISofafeDbField, ISofafeSqlDbField
 {
     protected int IV_column_index = 0;
     protected bool IV_is_primary_key = false;
+    protected bool IV_auto_increments = false;
+    protected ISofafeSqlDbField IV_replicated_from_on_insert = null;
 
 
+    public ISofafeSqlDbField P_replicated_from_on_insert
+    {
+        get { return this.IV_replicated_from_on_insert; }        
+    }
+
+    public bool P_auto_increments
+    {
+        get { return IV_auto_increments; }
+    }
     public bool P_is_primary_key
     {
         get { return IV_is_primary_key; }
@@ -127,11 +159,16 @@ class SofsafeSqlDbField : SofsafeDatabaseField, ISofafeDbField, ISofafeSqlDbFiel
         get { return IV_column_index; }
     }
 
-    public SofsafeSqlDbField(string code_data_identifier, Type code_type, string database_field_name, int column_index, bool is_primary_key = false)
+    public SofsafeSqlDbField(string code_data_identifier, Type code_type,
+        string database_field_name, int column_index,
+        ISofafeSqlDbField replicated_from_on_insert,
+        bool is_primary_key = false,bool auto_increments=false)
         : base(code_data_identifier, code_type, database_field_name)
     {
         this.IV_column_index = column_index;
         this.IV_is_primary_key = is_primary_key;
+        this.IV_auto_increments = auto_increments;
+        this.IV_replicated_from_on_insert = replicated_from_on_insert;
 
     }
 
@@ -140,7 +177,7 @@ class SofsafeSqlDbField : SofsafeDatabaseField, ISofafeDbField, ISofafeSqlDbFiel
 
 interface ISofsafeDatabaseTableInheritor : ISofsafeDbTable
 {
-    bool populateNativeDbFieldsFromSdoInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
+    bool populateNativeDbFieldsFromDataObjects(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
     //bool updateRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix = "");
     //bool createRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix = "");
     //bool deleteRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix = "");
@@ -154,6 +191,8 @@ interface ISofsafeDbTable
     Dictionary<string, byte> P_usable_code_ids_lookup { get; }
     bool assignSdoToRecordField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "");
     bool assignSdoToAllRecordsField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, string activity_name_prefix = "");
+
+    bool assignEmptySdoToRecordField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "");
 }
 
 
@@ -262,6 +301,42 @@ class SofsafeDbTable : ISofsafeDbTable
     }
 
 
+    public bool assignEmptySdoToRecordField(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ISdoBaseClass sdo_instance, int record_position = -1, string activity_name_prefix = "")
+    {
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".assignEmptySdoToRecordField");
+        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+        ///input validation
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".assignEmptySdoToRecordField");
+        validator.addEntry(new DataVR(sdo_instance, "sdo_instance").addRule(SDC.R_not_null));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return false;
+        }
+        ///</end>input validation
+
+        List<SofsafeDatabaseField> field_entries;
+        this.IV_code_id_to_fields.TryGetValue(sdo_instance.P_data_identifier, out field_entries);
+        if (field_entries == null)
+        {
+            //this is isn't a failure because fields don't have to exist for every sdo
+            OTSH.setSuccessEndActivity(ETR);
+            return true;
+        }
+        foreach (SofsafeDatabaseField field_entry in field_entries)
+        {
+            //no break becasuse an sdo_instances value can populate mutliple database fields
+            field_entry.assignSdoInstanceToRecord(ot_helper, child_activity_pointer, sdo_instance, record_position);            
+        }
+        OTSH.setSuccessEndActivity(ETR);
+        return true;
+
+    }
+
+
     public bool populateDbFields()
     {
 
@@ -289,8 +364,10 @@ class SofsafeDbTable : ISofsafeDbTable
             {
                 continue;
             }
+
             
             SofsafeDatabaseField db_field = field_value as SofsafeDatabaseField;
+            db_field.setSchemaName(this.IV_schema_name);
             this.IV_field_list.Add(db_field.P_database_field_name, db_field);
 
             this.IV_field_names.Add(db_field.P_database_field_name, 1);                
