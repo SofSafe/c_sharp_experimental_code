@@ -212,7 +212,7 @@ static class SDC
     }
 
 
-    private static void ruleOdcList(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleOdcList(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
 
         Activity ETR = ot_helper.startActivityWrapper("SDC.ruleNotNull");
@@ -253,7 +253,7 @@ static class SDC
     }
 
 
-    private static void ruleNotNull(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleNotNull(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
         //the null check happens in the validateData method itself, if a value is null it will never reach here, however a method must exist for each rule.
         Activity ETR = ot_helper.startActivityWrapper("SDC.ruleNotNull");
@@ -265,7 +265,7 @@ static class SDC
     }
 
 
-    private static void rulePopulatedNestedArray(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void rulePopulatedNestedArray(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
         Activity ETR = ot_helper.startActivityWrapper("SDC.rulePopulatedNestedArray");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
@@ -306,49 +306,49 @@ static class SDC
     }
 
     
-    private static void ruleNumberLess0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleNumberLess0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, null,0);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, ref value_description, null,0);
         return;
     }
 
-    private static void ruleNotZero(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleNotZero(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, null,null,null,0);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, ref value_description, null,null,null,0);
         return;
     }
 
 
 
     
-    private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, 1);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, ref value_description, 1);
         return;
     }
 
-    private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, value_to_check, value_description, 1);
+        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_to_check, value_description, 1);
         return;
     }
 
-    private static void ruleLenGreater2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleLenGreater2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, value_to_check, value_description, 3);
+        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_to_check, value_description, 3);
         return;
     }
 
-    private static void ruleFiveDigits(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description)
+    private static void ruleFiveDigits(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description)
     {
         if (value_to_check.GetType() == typeof(string) || value_to_check.GetType() == typeof(char)) {
-            SDC.childRuleLenChecker(ot_helper, method_activity_pointer, value_to_check, value_description, -1, -1, 5);
+            SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_to_check, value_description, -1, -1, 5);
             return;
         }
 
         if (value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
         {
-            SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, value_description, 11110, 99999);
+            SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, ref value_description, 11110, 99999);
             return;
         }
 
@@ -370,7 +370,7 @@ static class SDC
     private static Dictionary<string, SDC.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method_delegate>();
 
     //TODO add D_ as prefix for delegates in programing standards, in this case CV means class variable.
-    private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description);
+    private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,  ref object value_to_check, string value_description);
 
     public delegate List<string> CVD_validation_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rules, string value_description);
 
@@ -434,7 +434,7 @@ static class SDC
     }
 
 
-    private static void childRuleLenChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, string value_description, int min_length = -1,int max_length = -1,int exact_length= -1,bool no_null_values=true)
+    private static void childRuleLenChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, string value_description, int min_length = -1,int max_length = -1,int exact_length= -1,bool no_null_values=true)
     {
         Activity ETR = ot_helper.startActivityWrapper("SDC.childRuleLenChecker");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
@@ -519,7 +519,7 @@ static class SDC
         return;
     }
 
-    private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, string value_description, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null,IComparable not_value= null)
+    private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, ref string value_description, IComparable min_value =null, IComparable max_value =null, IComparable exact_value =null,IComparable not_value= null)
     {        
         Activity ETR = ot_helper.startActivityWrapper("SDC.numberGreater0");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
@@ -679,7 +679,7 @@ static class SDC
             string rule_name = rule.P_rule_name;
             SDC.CVD_rule_method_delegate method_to_call;
             SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
-            method_to_call(ot_helper, child_activity_pointer, value_to_check,issue_prefix);
+            method_to_call(ot_helper, child_activity_pointer, ref value_to_check,issue_prefix);
             if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok) {
                 Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.P_pointer.EnumerateEvents();
                 while (error_events.MoveNext()) {

@@ -208,7 +208,6 @@ class SofsafeDbTable : ISofsafeDbTable
     protected Dictionary<string, byte> IV_usable_code_ids_lookup = new Dictionary<string, byte>();
     protected string IV_schema_name = "";
     protected string IV_entity_path = "";
-    protected OdcToDatabaseTranslator.D_entity_populator IV_entity_populator_method;
 
     public Dictionary<string, byte> P_usable_code_ids_lookup
     {

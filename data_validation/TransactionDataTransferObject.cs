@@ -17,6 +17,7 @@ static class PCR
     public static List<SDR> not_zero = new List<SDR>() { SDC.R_not_zero };
     public static List<SDR> name = new List<SDR>() { SDC.R_len_greater_2 };
     public static List<SDR> not_null = new List<SDR>() { SDC.R_not_null };
+    public static List<SDR> us_zip_code = new List<SDR>() { SDC.R_us_zip_code };
 
 }
 
@@ -60,15 +61,18 @@ class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInhe
     public Sdo<string> part_category_name = new Sdo<string>(PDI.part_category_name,PCR.name);
     public List<Sdo<string>> notes = new List<Sdo<string>>();
 
-    public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public List<string> specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
-        return true;
+        List<string> issues_found = new List<string>();
+        return issues_found;
     }
 
 
     public TransactionDtoPartDetail(string organized_data_identifier,       
        bool allow_disabling_instance = false) : base(organized_data_identifier, allow_disabling_instance)
     {
+
+        this.IV_special_validation_method = this.specialValidationLogic;
 
         ///register iterable objects with Odc instances
         ///</end> register iterable objects with Odc instances
@@ -104,9 +108,10 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
     public List<TransactionDtoPartDetail> purchased_parts_details = new List<TransactionDtoPartDetail>();
     public List<TransactionDtoPartDetail> returned_parts_details = new List<TransactionDtoPartDetail>();
 
-    public bool specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public List<string> specialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
-        return true;
+        List<string> issues_found = new List<string>();
+        return issues_found;
     }
 
     public TransactionDto(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,
@@ -125,10 +130,13 @@ class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
 
 
 
+
         //todo add data validation for nullable types
         this.transaction_type.P_value = transaction_type;
 
 
+
+        this.IV_special_validation_method = this.specialValidationLogic;
         ///register iterable objects that contain only Odc instances
         this.IV_named_odc_lists.Add("purchased_parts_details", this.purchased_parts_details);
         this.IV_named_odc_lists.Add("returned_parts_details", this.returned_parts_details);

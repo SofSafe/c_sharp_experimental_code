@@ -73,7 +73,7 @@ namespace data_validation
 
 
 
-            validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer, zip_code_string, validation_rules, "zip_code_string"));
+            validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer,  zip_code_string, validation_rules, "zip_code_string"));
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer, zip_code_number, validation_rules, "zip_code_number"));
@@ -104,8 +104,8 @@ namespace data_validation
             purchase.POS_name.P_value = "register 2";
             purchase.POS_uid.P_value = 22;
             purchase.time.P_value = DateTime.Now;
-            purchase.transaction_cloud_uid.setInstanceDisable(ot_helper, child_activity_pointer, true);
-            purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            purchase.transaction_cloud_uid.setValueDisabled(ot_helper, child_activity_pointer, true);
+            purchase.transaction_lan_uid.setValueDisabled(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
             //purchase.transaction_lan_uid.P_value = 12;
             purchase.user_uid.P_value = 221;
             purchase.user_name.P_value = "kevin@sofsafe.cloud";
@@ -168,7 +168,7 @@ namespace data_validation
 
             List<Activity> method_activity_list = new List<Activity>();
 
-            Sdo<string> test_string = new Sdo<string>("zip code");
+            Sdo<string> test_string = new Sdo<string>("zip code",PCR.us_zip_code);
             test_string.P_value = "4212";
             List<string> valid_values = new List<string>();
             valid_values.Add("22122");
@@ -177,7 +177,6 @@ namespace data_validation
 
             test_string.IV_valid_values_list.AddRange(valid_values);
 
-            test_string.IV_validation_rules_list.Add(SDC.R_us_zip_code);
 
 
             test_string.runValidationMethod(ot_helper, child_activity_pointer);
@@ -252,7 +251,7 @@ namespace data_validation
             da2.Update(t_main.P_table);
 
 
-            purchase.transaction_lan_uid.setInstanceDisable(ot_helper, child_activity_pointer, false);
+            purchase.transaction_lan_uid.setValueDisabled(ot_helper, child_activity_pointer, false);
             purchase.transaction_lan_uid.P_value = 55;
 
             s3TransactionDetailTable t_details = new s3TransactionDetailTable(ot_helper, child_activity_pointer, "pos purchase");

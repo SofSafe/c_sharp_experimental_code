@@ -74,7 +74,6 @@ static class OTSH
         activity.AddEvent(new ActivityEvent(event_summary, DateTime.Now));
     }
 
-    //TODO add to SBD
     public static bool checkActivityList(Activity methods_activity_object, List<Activity> activity_list, out ChildActivityPointer first_failed_activity)
     {
         bool fail_flag = false;
@@ -114,9 +113,7 @@ class OpenTelemetryConfigHelper
 {
     private TracerProvider IV_tracer_provider;
     private ActivitySource IV_activity_source;
-    //todo add to SBD
     private static OpenTelemetryConfigHelper IV_default_instance;
-    //todo add to SBD
     private static readonly object IV_lock_object = new object();
 
     public static OpenTelemetryConfigHelper P_default
@@ -145,7 +142,6 @@ class OpenTelemetryConfigHelper
     }
 
 
-    //TODO add comments to SBD this has to exist because the StartActivity method returns an Activity instance or null, this means every call to StartActivity will create a CS8600 warning in the compiler and a 8603;
     public Activity startActivityWrapper(string activity_name)
     {
 
