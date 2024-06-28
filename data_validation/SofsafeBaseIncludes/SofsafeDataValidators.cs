@@ -97,7 +97,7 @@ class ArgumentValidator
 //Sofsafe Data Validation Class
 static class SDC
 {
-    //TODO add to SBD that all rule names start with R_ , also add to programming standards
+    //TODO add to programming standards that all rule names start with R_
     public static SDR R_less_0 = new SDR("value_less_than_zero");
     public static SDR R_not_zero = new SDR("value not zero");
     public static SDR R_greater_0 = new SDR("value greater than zero");
@@ -366,12 +366,11 @@ static class SDC
     private static Dictionary<string, List<Type>> CV_general_types_to_language_types = new Dictionary<string, List<Type>>();
     private static Dictionary<string, List<string>> CV_rule_type_compability = new Dictionary<string, List<string>>();
 
-
     private static Dictionary<string, SDC.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method_delegate>();
 
     //TODO add D_ as prefix for delegates in programing standards, in this case CV means class variable.
     private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,  ref object value_to_check, string value_description);
-
+    
     public delegate List<string> CVD_validation_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rules, string value_description);
 
 
@@ -607,7 +606,7 @@ static class SDC
         OTSH.setSuccessEndActivity(ETR);
         return;
     }
-    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string issue_prefix = "")
+    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string value_description = "")
     {
         
         Activity ETR = ot_helper.startActivityWrapper("SDC.validateData");
@@ -615,15 +614,15 @@ static class SDC
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
 
-        if (issue_prefix.Length > 0) {
-            issue_prefix += " > ";
+        if (value_description.Length > 0) {
+            value_description += " > ";
                 }
 
 
         List<string> return_value = new List<string>();
         if (value_to_check == null)
         {
-            string error_message = issue_prefix + "value is null";
+            string error_message = value_description + "value is null";
             return_value.Add(error_message);
             OTSH.addEventThenEndActivity(ETR, "value is null", ErrorTagsCodes.C_input_validation);
             return return_value;
@@ -656,7 +655,7 @@ static class SDC
 
             if (rule_compatible == false) {
                 rules_compatiblity_failed = true;
-                string error_message = issue_prefix + " rule: " + rule_name + " is  not compatible with value";
+                string error_message = value_description + " rule: " + rule_name + " is  not compatible with value";
                 OTSH.addEventThenEndActivity(ETR, error_message, ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
                 return_value.Add(error_message);
                 continue;
@@ -669,7 +668,7 @@ static class SDC
         if (rules_compatiblity_failed == true)
         {
             OTSH.addEventThenEndActivity(ETR,"rule compatability check failed", ErrorTagsCodes.C_input_validation);
-            return_value.Add(issue_prefix + "rule compatability check failed");
+            return_value.Add(value_description + "rule compatability check failed");
             return return_value;
         } 
         ////</end> verify all requested rules are compatible with the type specified
@@ -679,11 +678,11 @@ static class SDC
             string rule_name = rule.P_rule_name;
             SDC.CVD_rule_method_delegate method_to_call;
             SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
-            method_to_call(ot_helper, child_activity_pointer, ref value_to_check,issue_prefix);
+            method_to_call(ot_helper, child_activity_pointer, ref value_to_check,value_description);
             if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok) {
                 Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.P_pointer.EnumerateEvents();
                 while (error_events.MoveNext()) {
-                    return_value.Add(issue_prefix + rule_name + ": " + error_events.Current.Name);
+                    return_value.Add(value_description + rule_name + ": " + error_events.Current.Name);
                 }
             }
         }
