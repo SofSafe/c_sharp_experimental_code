@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 
 
-class s3TransactionTable : MsSql2012DbTable
+class s3TransactionTable : MsSqlDbTable
 {
     public static SofsafeMsSqlDbField lan_sql_uid = new SofsafeMsSqlDbField(0,PDI.transaction_LAN_uid,
         typeof(int), "uid", SqlDbType.BigInt, 8,null,true,true);
@@ -25,7 +25,7 @@ class s3TransactionTable : MsSql2012DbTable
     }
 }
 
-class s3TransactionDetailTable : MsSql2012DbTable
+class s3TransactionDetailTable : MsSqlDbTable
 {
     public static SofsafeMsSqlDbField category_uid = new SofsafeMsSqlDbField(0,PDI.part_category_uid, typeof(int), "category_uid", SqlDbType.BigInt, 8);
     public static SofsafeMsSqlDbField item_id = new SofsafeMsSqlDbField(1, PDI.part_uid, typeof(int), "part_uid", SqlDbType.BigInt, 8);
@@ -41,7 +41,7 @@ class s3TransactionDetailTable : MsSql2012DbTable
 
 
 
-class s3CategoriesTable : MsSql2012DbTable
+class s3CategoriesTable : MsSqlDbTable
 {
     public static SofsafeMsSqlDbField uid = new SofsafeMsSqlDbField(0, PDI.part_category_uid,
         typeof(int), "uid", SqlDbType.BigInt, 8, null, true, true);

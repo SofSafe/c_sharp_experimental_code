@@ -113,12 +113,12 @@ class OpenTelemetryConfigHelper
 {
     private TracerProvider IV_tracer_provider;
     private ActivitySource IV_activity_source;
-    private static OpenTelemetryConfigHelper IV_default_instance;
+    private static OpenTelemetryConfigHelper CV_default_instance;
     private static readonly object IV_lock_object = new object();
 
     public static OpenTelemetryConfigHelper P_default
     {
-        get { return OpenTelemetryConfigHelper.IV_default_instance; }
+        get { return OpenTelemetryConfigHelper.CV_default_instance; }
     }
         
 
@@ -132,10 +132,10 @@ class OpenTelemetryConfigHelper
         .Build();
 
         this.IV_activity_source = new ActivitySource(source_name, version);
-        if(OpenTelemetryConfigHelper.IV_default_instance == null)
+        if(OpenTelemetryConfigHelper.CV_default_instance == null)
         {
             lock (OpenTelemetryConfigHelper.IV_lock_object) {
-                    OpenTelemetryConfigHelper.IV_default_instance = this;
+                    OpenTelemetryConfigHelper.CV_default_instance = this;
                 }
         }
 

@@ -27,6 +27,7 @@ class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField
         {
             get { return this.IV_db_field_type; }
         }
+    //todo add observability
     public SofsafeMsSqlDbField(int column_index,string code_data_identifier,
         Type code_type, string database_field_name,
         SqlDbType db_field_type, int field_size,
@@ -35,6 +36,7 @@ class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField
         : base(code_data_identifier, code_type, database_field_name,column_index,
             replicated_from_on_insert, is_primary_key, auto_increments)
     {
+        //todo add datavalidation
         this.IV_db_field_type = db_field_type;
         this.IV_sql_field_size = field_size;
     }
@@ -43,10 +45,10 @@ class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField
 
 
 
-class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
+class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
 {
     protected readonly DataTable IV_table;
-    protected SofsafeDatabaseField IV_primary_key;
+    protected SofsafeDbField IV_primary_key;
 
 
 
@@ -64,7 +66,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
         int loop1 = 0;
  
 
-        foreach (SofsafeDatabaseField field_entry_base in this.IV_field_list.Values)
+        foreach (SofsafeDbField field_entry_base in this.IV_field_list.Values)
         {                     
             SofsafeMsSqlDbField field_entry = field_entry_base as SofsafeMsSqlDbField;
             if(field_entry.P_auto_increments == true) { continue; }
@@ -142,7 +144,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
             record_position++;
             foreach (string field_entry_key in this.IV_field_list.Keys)
             {
-                SofsafeDatabaseField field_entry_base;
+                SofsafeDbField field_entry_base;
                 if (this.IV_field_list.TryGetValue(field_entry_key, out field_entry_base) == false)
                 {
                     OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + field_entry_key);
@@ -266,7 +268,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
             foreach (DataColumn column in table.Columns)
             {
 
-                SofsafeDatabaseField field_entry;
+                SofsafeDbField field_entry;
                 if (this.IV_field_list.TryGetValue(column.ColumnName, out field_entry) == false)
                 {
                     OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + column.ColumnName);
@@ -297,7 +299,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
         return true;
     }
 
-    public MsSql2012DbTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,
+    public MsSqlDbTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,
         string schema_name,string activity_name_prefix = "") 
         : base(ot_helper, method_activity_pointer, schema_name, typeof(SofsafeMsSqlDbField), activity_name_prefix)
     {
@@ -318,7 +320,7 @@ class MsSql2012DbTable : SofsafeDbTable, ISofsafeDatabaseTableInheritor
         int column_index = -1;
         foreach (string field_entry_key in this.IV_field_list.Keys)
         {
-            SofsafeDatabaseField field_entry_base_instance;
+            SofsafeDbField field_entry_base_instance;
             if (this.IV_field_list.TryGetValue(field_entry_key, out field_entry_base_instance) == false)
             {
                 OTSH.addEventToActivity(ETR, "field entry null for key: " + field_entry_key);

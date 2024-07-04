@@ -19,7 +19,7 @@ class OdcToDatabaseTranslatorBase
     protected Dictionary<string, byte> IV_registered_single_entity_table_names = new Dictionary<string, byte>();
     protected List<List<int>> IV_single_entity_mapping_index;
     protected object IV_build_entity_map_thread_lock = new object();
-    protected List<SofsafeDbTable> IV_single_entity_table_list = new List<SofsafeDbTable>() { };
+    protected List<ISofsafeDbTable> IV_single_entity_table_list = new List<ISofsafeDbTable>() { };
 
 
     protected Dictionary<string, byte> IV_multi_entity_ids = new Dictionary<string, byte>();
@@ -160,7 +160,7 @@ class OdcToDatabaseTranslatorBase
         return true;
     }
 
-    public bool registerMultiEntityAssociation(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, string activity_name_prefix = "")
+    public bool createMultiEntityAssociation(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, string activity_name_prefix = "")
     {
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
@@ -491,7 +491,7 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
 
         foreach (List<int> index_list in this.IV_single_entity_mapping_index)
         {
-            if (this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_disabled == true) { continue; }
+            if (this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_not_used == true) { continue; }
 
             if (this.IV_single_entity_table_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
             this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]]) == false)
@@ -516,14 +516,14 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
                 ISofsafeDbTable table = this.IV_multi_entity_table_list[multi_id][idx[2]];
                 record_position = -1;
                 ISdoBaseClass sdo_instance = this.IV_multi_entity_sdo_instances[multi_id][idx[0]];
-                if (sdo_instance.P_value_disabled == true) { continue; }
+                if (sdo_instance.P_value_not_used == true) { continue; }
 
 
                 record_position++;
                 //Console.WriteLine(String.Join(",", idx));
                 //Console.WriteLine("sdo_instance:" + sdo_instance.P_data_identifier);
                 //bug I'm pretty sure its calling this twice, but the record_position is preventing it from duplicating data.
-                if (table.assignSdoToAllRecordsField(ot_helper, child_activity_pointer,
+                if (table.assignSdoToAllFieldRecords(ot_helper, child_activity_pointer,
                     sdo_instance) == false)
                 {
                     if (fail_flag == true)
@@ -547,7 +547,7 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
                 record_position = -1;
                 foreach (IOdcBaseClass odc_instance in this.IV_multi_entity_odc_lists[multi_id][idx[0]])
                 {
-                    if (odc_instance.P_Sdo_child_objects[idx[2]].P_value_disabled == true) { continue; }
+                    if (odc_instance.P_Sdo_child_objects[idx[2]].P_value_not_used == true) { continue; }
                     record_position++;
                     //bug I'm pretty sure its calling this twice, but the record_position is preventing it from duplicating data.
                     if (table.assignSdoToRecordField(ot_helper, child_activity_pointer,
@@ -567,12 +567,12 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
         //// tell table instances to move data from sdo instances to native database instance types
         foreach (string multi_id in this.IV_multi_entity_odcs_to_tables_map.Keys)
         {
-            foreach (ISofsafeDatabaseTableInheritor table in this.IV_multi_entity_table_list[multi_id])
+            foreach (ISofsafeDbTableInheritor table in this.IV_multi_entity_table_list[multi_id])
             {
                 table.populateNativeDbFieldsFromDataObjects(ot_helper, child_activity_pointer);
             }
         }
-        foreach (ISofsafeDatabaseTableInheritor table in this.IV_single_entity_table_list)
+        foreach (ISofsafeDbTableInheritor table in this.IV_single_entity_table_list)
         {
             table.populateNativeDbFieldsFromDataObjects(ot_helper, child_activity_pointer);
         }
@@ -614,7 +614,7 @@ class DatabaseToOdcTranslator: OdcToDatabaseTranslatorBase {
 
         foreach (List<int> index_list in this.IV_single_entity_mapping_index)
         {
-            if (this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_disabled == true) { continue; }
+            if (this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_not_used == true) { continue; }
 
             if (this.IV_single_entity_table_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
             this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]]) == false)
@@ -640,7 +640,7 @@ class DatabaseToOdcTranslator: OdcToDatabaseTranslatorBase {
                 record_position = -1;
                 foreach (IOdcBaseClass odc_instance in this.IV_multi_entity_odc_lists[multi_id][idx[0]])
                 {
-                    if (odc_instance.P_Sdo_child_objects[idx[2]].P_value_disabled == true) { continue; }
+                    if (odc_instance.P_Sdo_child_objects[idx[2]].P_value_not_used == true) { continue; }
                     record_position++;
                     //bug I'm pretty sure its calling this twice, but the record_position is preventing it from duplicating data.
                     //Console.WriteLine(String.Join(",", idx));

@@ -257,7 +257,7 @@ namespace data_validation
             s3TransactionDetailTable t_details = new s3TransactionDetailTable(ot_helper, child_activity_pointer, "pos purchase");
 
             OdcToDatabaseTranslator details_translator = new OdcToDatabaseTranslator();
-            details_translator.registerMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
+            details_translator.createMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             details_translator.registerMultiEntityOdcInstanceList(ot_helper, child_activity_pointer, "test",
@@ -374,7 +374,7 @@ namespace data_validation
 
 
             DatabaseToOdcTranslator details_translator = new DatabaseToOdcTranslator();
-            details_translator.registerMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
+            details_translator.createMultiEntityAssociation(ot_helper, child_activity_pointer, "test");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             details_translator.registerMultiEntityOdcInstanceList(ot_helper, child_activity_pointer, "test",

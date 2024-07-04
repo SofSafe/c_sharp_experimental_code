@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 
 //TODO add activity_name_prefix arugment on all methods needed in SBD
+//todo add clearValue method see #ZZTreKjh/27-arch on SBD
 interface ISdoBaseClass
 {
     bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
@@ -11,7 +12,7 @@ interface ISdoBaseClass
     void overrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDC.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
     List<string> P_last_validation_result_details { get; }
     bool P_last_validation_result { get; }
-    bool P_value_disabled { get; }
+    bool P_value_not_used { get; }
     string P_data_identifier { get; }
     DateTime P_last_set_time { get; }
     DateTime P_last_validation_attempt_time { get; }
@@ -28,7 +29,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
     public static DateTime C_unset_time = DateTime.MinValue;
     protected type_of_generic IV_value = default(type_of_generic);
     protected string IV_data_identifier = "Data Identifier Not Set";
-    protected bool IV_instance_disabled = false;
+    protected bool IV_instance_not_used = false;
     protected bool IV_allow_disabling_instance = false;
     protected DateTime IV_last_set_time = Sdo<type_of_generic>.C_unset_time;
     protected DateTime IV_last_validation_time = Sdo<type_of_generic>.C_unset_time;
@@ -38,12 +39,12 @@ class Sdo<type_of_generic> : ISdoBaseClass
     protected List<SDR> IV_validation_rules_list = new List<SDR>();
     protected SDC.CVD_validation_method_delegate IV_validator_method = SDC.validateData;
     public List<type_of_generic> IV_valid_values_list = new List<type_of_generic>();
-    protected Type IV_data_object_type = typeof(type_of_generic);
+    protected Type IV_data_type = typeof(type_of_generic);
 
 
 
     public Type P_type {
-        get { return this.IV_data_object_type; }
+        get { return this.IV_data_type; }
         }
     //add to SBD
 
@@ -66,9 +67,9 @@ class Sdo<type_of_generic> : ISdoBaseClass
         get { return this.IV_last_validation_result; }
     }
 
-    public bool P_value_disabled
+    public bool P_value_not_used
     {
-        get { return this.IV_instance_disabled; }       
+        get { return this.IV_instance_not_used; }       
     }
 
     public string P_data_identifier
@@ -107,7 +108,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
     //todo add obersvability
     public bool setValueFromObject(object value)
     {
-        if (value.GetType() == this.IV_data_object_type)
+        if (value.GetType() == this.IV_data_type)
         {
             this.setValue(this.convertValue(value));
             return true;
@@ -120,17 +121,17 @@ class Sdo<type_of_generic> : ISdoBaseClass
     private bool setValue(type_of_generic new_value)
     {
         if (new_value == null) { return false; }
-        if (this.IV_instance_disabled == true) { return false; }
+        if (this.IV_instance_not_used == true) { return false; }
         this.IV_last_set_time = DateTime.Now;
         this.IV_value = new_value;
         return true;
     }
 
 
-    public bool setValueDisabled(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,bool new_disable_setting,string activity_name_prefix="")
+    public bool setValueNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,bool new_disable_setting,string activity_name_prefix="")
     {
         if(activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setValueDisabled");
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setValueNotUsed");
         method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
         ETR.AddTag("new_disable_setting", new_disable_setting);
 
@@ -139,7 +140,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
             return false; 
         }
 
-        this.IV_instance_disabled = new_disable_setting;
+        this.IV_instance_not_used = new_disable_setting;
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
@@ -173,7 +174,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
         ////</end> reset to default safe value in case method doesn't finish
 
         /// disabled values always fail validation checks
-        if(this.IV_instance_disabled == true)
+        if(this.IV_instance_not_used == true)
         {
             ETR.SetTag("IV_data_identifier", this.IV_data_identifier);
             OTSH.addEventThenEndActivity(ETR, activity_name_prefix + "This instance has been set to disabled", ErrorTagsCodes.C_input_validation);
@@ -204,9 +205,9 @@ class Sdo<type_of_generic> : ISdoBaseClass
 
                 Dictionary<string, object> tags = new Dictionary<string, object>();
 
-                if (this.IV_data_object_type == typeof(string) ||
-                    this.IV_data_object_type == typeof(char) ||
-                    this.IV_data_object_type.GetInterfaces().Contains(typeof(IFormattable)))
+                if (this.IV_data_type == typeof(string) ||
+                    this.IV_data_type == typeof(char) ||
+                    this.IV_data_type.GetInterfaces().Contains(typeof(IFormattable)))
                 {
                     tags.Add("IV_valid_values_list", String.Join(" | ", this.IV_valid_values_list));           
                 } else {

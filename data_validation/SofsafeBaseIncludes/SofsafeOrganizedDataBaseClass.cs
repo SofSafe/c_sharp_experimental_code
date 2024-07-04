@@ -16,9 +16,9 @@ interface IOdcBaseClassInheritor: IOdcBaseClass
 //TODO update on SBD
 interface IOdcBaseClass
 {
-    bool setInstanceDisabled(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "");
+    bool setInstanceNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "");
     bool validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
-    bool P_disable_value { get; }
+    bool P_data_not_used { get; }
     string P_organized_data_identifier { get; }
     DateTime P_last_validation_attempt { get; }
     bool P_last_validation_result { get; }
@@ -34,7 +34,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     protected bool IV_allow_disabling_instance = false;
-    protected bool IV_instance_disabled = false;
+    protected bool IV_instance_not_used = false;
     protected readonly List<ISdoBaseClass> IV_Sdo_child_objects = new List<ISdoBaseClass>();
     protected readonly List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
     //TODO add to SBD
@@ -66,10 +66,10 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
     //TODO add to SBD
 
 
-    //TODO add P_disable_value and all supporting logic to SBD
-    public bool P_disable_value
+    //TODO add P_data_not_used and all supporting logic to SBD
+    public bool P_data_not_used
     {
-        get { return this.IV_instance_disabled; }
+        get { return this.IV_instance_not_used; }
     }
     public string P_organized_data_identifier
     {
@@ -92,7 +92,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
     }
     
 
-    public bool setInstanceDisabled(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
+    public bool setInstanceNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable");
@@ -105,7 +105,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
             return false;
         }
 
-        this.IV_instance_disabled = new_disable_setting;
+        this.IV_instance_not_used = new_disable_setting;
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
@@ -132,7 +132,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
         bool failed_flag = false;
         string error_msg;
 
-        if (this.IV_instance_disabled == true)
+        if (this.IV_instance_not_used == true)
         {
             OTSH.addEventThenEndActivity(ETR, activity_name_prefix + " this instance is set to disabled", ErrorTagsCodes.C_input_validation);
             return false;
@@ -142,7 +142,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
         Dictionary<string, byte> individual_sdo_data_ids = new Dictionary<string, byte>();
         foreach (ISdoBaseClass sdo_instance in this.IV_Sdo_child_objects)
         {
-            if(sdo_instance.P_value_disabled == true) { continue; }
+            if(sdo_instance.P_value_not_used == true) { continue; }
             //// logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
             if (individual_sdo_data_ids.ContainsKey(sdo_instance.P_data_identifier))
             {
@@ -176,7 +176,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
 
             foreach (ISdoBaseClass sdo_instance in child_class_list)
             {
-                if (sdo_instance.P_value_disabled == true) { continue; }
+                if (sdo_instance.P_value_not_used == true) { continue; }
                 if (!sdo_instance.runValidationMethod(ot_helper, child_activity_pointer, activity_name_prefix + loop_index))
                 {
                     issues_found.Add(activity_name_prefix + sdo_instance.P_data_identifier + ">" + loop_index,
@@ -191,7 +191,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
         Dictionary<string, byte> individual_odc_data_ids = new Dictionary<string, byte>();
         foreach (IOdcBaseClass odc_instance in this.IV_Odc_child_objects)
         {
-            if (odc_instance.P_disable_value == true) { continue; }
+            if (odc_instance.P_data_not_used == true) { continue; }
             //// logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
             if (individual_odc_data_ids.ContainsKey(odc_instance.P_organized_data_identifier))
             {
@@ -305,6 +305,10 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
     {
         //todo add data valdation
         this.IV_allow_disabling_instance = allow_disabling_instance;
+        if (organized_data_identifier == null || organized_data_identifier.Length == 0)
+        {
+            organized_data_identifier = "organized_data_identifier not set";
+        }
         this.IV_organized_data_identifier = organized_data_identifier;
         this.registerSdoOdcIndividualVariables();
     }
