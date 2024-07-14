@@ -557,6 +557,8 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
         /// for multiple entity data associations put references to lists of data objects in the database fields they match
 
         //// tell table instances to move data from sdo instances to native database instance types
+
+        ////TODO process fail / pass result from populateNativeDbFieldsFromDataObjects
         foreach (string multi_id in this.IV_multi_entity_odcs_to_schemas_map.Keys)
         {
             foreach (ISofsafeDbSchemaInheritor table in this.IV_multi_entity_schema_list[multi_id])
