@@ -439,6 +439,8 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".populateDatabaseFields");
         if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        List<Activity> method_activity_list = new List<Activity>();
+
 
         /// validate data that will be used during the operation
         ChildActivityPointer last_failed_validation = new ChildActivityPointer();
@@ -558,19 +560,28 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
 
         //// tell table instances to move data from sdo instances to native database instance types
 
-        ////TODO process fail / pass result from populateNativeDbFieldsFromDataObjects
         foreach (string multi_id in this.IV_multi_entity_odcs_to_schemas_map.Keys)
         {
             foreach (ISofsafeDbSchemaInheritor table in this.IV_multi_entity_schema_list[multi_id])
             {
                 table.populateNativeDbFieldsFromDataObjects(ot_helper, child_activity_pointer);
+                method_activity_list.Add(child_activity_pointer.P_pointer);
+
             }
         }
         foreach (ISofsafeDbSchemaInheritor table in this.IV_single_entity_schema_list)
         {
             table.populateNativeDbFieldsFromDataObjects(ot_helper, child_activity_pointer);
+            method_activity_list.Add(child_activity_pointer.P_pointer);
         }
 
+        ChildActivityPointer activity_list_status;
+        if (OTSH.checkActivityList(ETR, method_activity_list, out activity_list_status) == false)
+        {
+            OTSH.passStatusAndEndActivity(ETR, activity_list_status.P_pointer);
+            return false;
+        }
+        method_activity_list.Clear();
         ////</end> tell table instances to move data from sdo instances to native database instance types
 
 
