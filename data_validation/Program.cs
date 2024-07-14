@@ -23,72 +23,51 @@ namespace data_validation
             // create objects used for monitoring activities
             List<Activity> method_activity_list = new List<Activity>();
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+            string activity_description = "";
 
-
-            //do runtime setup
+            //do runtime setup for data validation class
             SDC.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
-
 
             Activity ETR = ot_helper.startActivityWrapper("Endpoint Name");
             ETR.SetTag("post_key1", "post key 1 value");
             ETR.SetTag("post_key2", "post key 2 value");
 
-            //SdoIntTest(ot_helper, child_activity_pointer);
-            //SdoStringTest(ot_helper, child_activity_pointer);
-            //OTSH.setSuccessEndActivity(ETR);
-            //return;
 
+            activity_description = "new purchase";
+            TransactionDto write_purchase = new TransactionDto(ot_helper,child_activity_pointer, activity_description, PDCI.transaction_type_purchase_parts);
 
-
-
-            TransactionDto purchase = new TransactionDto(ot_helper,child_activity_pointer, "transaction 521251",PDCI.transaction_type_purchase_parts);
-
-            if (populatePurchaseObject(ot_helper, child_activity_pointer, ref purchase) == false)
+            if (populateDataLayerObject(ot_helper, child_activity_pointer, ref write_purchase, activity_description) == false)
             {
                 OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
                 return;
             }
 
-           
-            
-            //SqlInsertTest(ot_helper, child_activity_pointer, ref purchase);
-            //method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            SqlReadTest(ot_helper, child_activity_pointer);
+            SqlInsertTest(ot_helper, child_activity_pointer, ref write_purchase);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
 
-            OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_pointer);
-            return;           
 
-            List<SDR> validation_rules = new List<SDR>();
-            validation_rules.Add(SDC.R_greater_0);
-            validation_rules.Add(SDC.R_us_zip_code);
+            activity_description = "read transaction " + write_purchase.transaction_lan_uid.P_value.ToString();
+            TransactionDto read_purchase = new TransactionDto(ot_helper, child_activity_pointer, PDCI.transaction_type_purchase_parts, activity_description);
 
-            
-            List<string> validation_results = new List<string>();
-
-            double zip_code_number = -22;
-            string zip_code_string = "0000";
-
-
-
-            validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer,  zip_code_string, validation_rules, "zip_code_string"));
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            validation_results.AddRange(SDC.validateData(ot_helper, child_activity_pointer, zip_code_number, validation_rules, "zip_code_number"));
+            SqlReadTest(ot_helper, child_activity_pointer, activity_description);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
 
-            foreach (var entry in validation_results)
+            ChildActivityPointer activity_list_status;
+            if (OTSH.checkActivityList(ETR, method_activity_list, out activity_list_status) == false)
             {
-
-                Console.WriteLine(entry);
+                OTSH.passStatusAndEndActivity(ETR, activity_list_status.P_pointer);
+                return;
             }
+            method_activity_list.Clear();
+
+            OTSH.setSuccessEndActivity(ETR);
+          
 
         }
 
-        private static bool populatePurchaseObject(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref TransactionDto purchase, string activity_name_prefix = "")
+        private static bool populateDataLayerObject(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref TransactionDto purchase, string activity_name_prefix = "")
         {
             /// observability template
             if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -97,15 +76,16 @@ namespace data_validation
             if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
             ///</end> observability template
-            
+
+            string activity_description = "new purchase";
             purchase.total_amount.P_value = -12;
             purchase.location_name.P_value = "S3 Solutions";
             purchase.location_uid.P_value = 1252;
             purchase.POS_name.P_value = "register 2";
             purchase.POS_uid.P_value = 22;
             purchase.time.P_value = DateTime.Now;
-            purchase.transaction_cloud_uid.setValueDisabled(ot_helper, child_activity_pointer, true);
-            purchase.transaction_lan_uid.setValueDisabled(ot_helper, child_activity_pointer, true, "transaction.transaction_cloud_uid.setInstanceDisable");
+            purchase.transaction_cloud_uid.setValueNotUsed(ot_helper, child_activity_pointer, true, activity_description);
+            purchase.transaction_lan_uid.setValueNotUsed(ot_helper, child_activity_pointer, true, activity_description);
             //purchase.transaction_lan_uid.P_value = 12;
             purchase.user_uid.P_value = 221;
             purchase.user_name.P_value = "kevin@sofsafe.cloud";
@@ -136,55 +116,6 @@ namespace data_validation
             return true;
         }
 
-        private static void SdoIntTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
-        {
-
-            Activity ETR = ot_helper.startActivityWrapper("Sdo<int>Test");
-            method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
-            ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-
-            List<Activity> method_activity_list = new List<Activity>();
-
-            Sdo<int> test_string = new Sdo<int>("User Type UID");
-            test_string.P_value = 7;
-            List<int> valid_values = new List<int>();
-            valid_values.Add(1);
-            valid_values.Add(5);
-            valid_values.Add(12);
-
-            test_string.IV_valid_values_list.AddRange(valid_values);
-            test_string.runValidationMethod(ot_helper, child_activity_pointer);
-
-            OTSH.setSuccessEndActivity(ETR);
-            return;
-        }
-
-        private static void SdoStringTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
-        {
-
-            Activity ETR = ot_helper.startActivityWrapper("Sdo<string>Test");
-            method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
-            ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-
-            List<Activity> method_activity_list = new List<Activity>();
-
-            Sdo<string> test_string = new Sdo<string>("zip code",PCR.us_zip_code);
-            test_string.P_value = "4212";
-            List<string> valid_values = new List<string>();
-            valid_values.Add("22122");
-            valid_values.Add("32122");
-            valid_values.Add("42122");
-
-            test_string.IV_valid_values_list.AddRange(valid_values);
-
-
-
-            test_string.runValidationMethod(ot_helper, child_activity_pointer);
-
-            OTSH.setSuccessEndActivity(ETR);
-            return;
-        }
-        
         private static bool SqlInsertTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,ref TransactionDto purchase, string activity_name_prefix = "")
         {
             /// observability template
@@ -199,14 +130,15 @@ namespace data_validation
             List<Activity> method_activity_list = new List<Activity>();
 
             OdcToDatabaseTranslator translator = new OdcToDatabaseTranslator();
-            s3TransactionTable t_main = new s3TransactionTable(ot_helper, child_activity_pointer, "pos purchase");
-            translator.registerSingleEntityTable(ot_helper, child_activity_pointer, t_main);
+            s3TransactionTable t_main = new s3TransactionTable(ot_helper, child_activity_pointer, "processing end of day counts");
+            
+            translator.registerSingleEntitySchema(ot_helper, child_activity_pointer, t_main,"processing end of day counts");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase);
+            translator.registerSingleEntityOdc(ot_helper, child_activity_pointer, purchase, "processing end of day counts");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            translator.populateDatabaseFields(ot_helper, child_activity_pointer);
+            translator.populateDatabaseFields(ot_helper, child_activity_pointer, "processing end of day counts");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             ChildActivityPointer activity_list_status;
@@ -219,10 +151,10 @@ namespace data_validation
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
 
-            builder.DataSource = "localhost\\SQLEXPRESS";
+            builder.DataSource = "DESKTOP-3V8AOIE";
             builder.UserID = "sa";
             builder.Password = "123";
-            builder.InitialCatalog = "sofsafeTesting";
+            builder.InitialCatalog = "CRUSH_1102";
             builder.TrustServerCertificate = true;
 
             SqlConnection connection = new SqlConnection(builder.ConnectionString);
@@ -251,7 +183,7 @@ namespace data_validation
             da2.Update(t_main.P_table);
 
 
-            purchase.transaction_lan_uid.setValueDisabled(ot_helper, child_activity_pointer, false);
+            purchase.transaction_lan_uid.setValueNotUsed(ot_helper, child_activity_pointer, false);
             purchase.transaction_lan_uid.P_value = 55;
 
             s3TransactionDetailTable t_details = new s3TransactionDetailTable(ot_helper, child_activity_pointer, "pos purchase");
@@ -325,10 +257,10 @@ namespace data_validation
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
 
-            builder.DataSource = "localhost\\SQLEXPRESS";
+            builder.DataSource = "DESKTOP-3V8AOIE";
             builder.UserID = "sa";
             builder.Password = "123";
-            builder.InitialCatalog = "sofsafeTesting";
+            builder.InitialCatalog = "CRUSH_1102";
             builder.TrustServerCertificate = true;
 
             SqlConnection connection = new SqlConnection(builder.ConnectionString);
@@ -419,5 +351,56 @@ namespace data_validation
             OTSH.setSuccessEndActivity(ETR);
             return true;
         }
+
+        private static void SdoIntTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        {
+
+            Activity ETR = ot_helper.startActivityWrapper("Sdo<int>Test");
+            method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+            ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+            List<Activity> method_activity_list = new List<Activity>();
+
+            Sdo<int> test_string = new Sdo<int>("User Type UID");
+            test_string.P_value = 7;
+            List<int> valid_values = new List<int>();
+            valid_values.Add(1);
+            valid_values.Add(5);
+            valid_values.Add(12);
+
+            test_string.IV_valid_values_list.AddRange(valid_values);
+            test_string.runValidationMethod(ot_helper, child_activity_pointer);
+
+            OTSH.setSuccessEndActivity(ETR);
+            return;
+        }
+
+        private static void SdoStringTest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+        {
+
+            Activity ETR = ot_helper.startActivityWrapper("Sdo<string>Test");
+            method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+            ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+            List<Activity> method_activity_list = new List<Activity>();
+
+            Sdo<string> test_string = new Sdo<string>("zip code", PCR.us_zip_code);
+            test_string.P_value = "4212";
+            List<string> valid_values = new List<string>();
+            valid_values.Add("22122");
+            valid_values.Add("32122");
+            valid_values.Add("42122");
+
+            test_string.IV_valid_values_list.AddRange(valid_values);
+
+
+
+            test_string.runValidationMethod(ot_helper, child_activity_pointer);
+
+            OTSH.setSuccessEndActivity(ETR);
+            return;
+        }
+
     }
+
 }

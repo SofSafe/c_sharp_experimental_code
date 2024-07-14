@@ -7,45 +7,53 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
 interface ISofsafeMsSqlDbField: ISofafeDbField, ISofafeSqlDbField
 {
     int P_field_size { get; }
     SqlDbType P_db_field_type { get; }
+
+    SofsafeMsSqlDbField P_replicated_from_on_insert { get; } 
 }
 
 class SofsafeMsSqlDbField : SofsafeSqlDbField, ISofafeDbField, ISofafeSqlDbField, ISofsafeMsSqlDbField
 {
     protected int IV_sql_field_size;
     protected SqlDbType IV_db_field_type;
+    protected SofsafeMsSqlDbField IV_replicated_from_on_insert;
 
     public int P_field_size
-        {
-            get { return this.IV_sql_field_size; }
-        }
+    {
+        get { return this.IV_sql_field_size; }
+    }
     public SqlDbType P_db_field_type
-        {
-            get { return this.IV_db_field_type; }
-        }
+    {
+        get { return this.IV_db_field_type; }
+    }
+
+    public SofsafeMsSqlDbField P_replicated_from_on_insert 
+        {        
+        get { return IV_replicated_from_on_insert;}    
+        }       
+
     //todo add observability
-    public SofsafeMsSqlDbField(int column_index,string code_data_identifier,
+    public SofsafeMsSqlDbField(int column_index,string bus_data_identifier,
         Type code_type, string database_field_name,
-        SqlDbType db_field_type, int field_size,
-        ISofafeSqlDbField replicated_from_on_insert=null,
+        SqlDbType db_field_type, int field_size, SofsafeMsSqlDbField replicated_from_on_insert= null,
         bool is_primary_key = false, bool auto_increments=false)
-        : base(code_data_identifier, code_type, database_field_name,column_index,
-            replicated_from_on_insert, is_primary_key, auto_increments)
+        : base(bus_data_identifier, code_type, database_field_name,column_index,
+             is_primary_key, auto_increments)
     {
         //todo add datavalidation
         this.IV_db_field_type = db_field_type;
         this.IV_sql_field_size = field_size;
+        this.IV_replicated_from_on_insert = replicated_from_on_insert;
     }
 
 }
 
 
 
-class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
+class MsSqlDbTable : SofsafeDbSchema, ISofsafeDbSchemaInheritor
 {
     protected readonly DataTable IV_table;
     protected SofsafeDbField IV_primary_key;
@@ -66,7 +74,7 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
         int loop1 = 0;
  
 
-        foreach (SofsafeDbField field_entry_base in this.IV_field_list.Values)
+        foreach (SofsafeDbField field_entry_base in this.IV_fields_dict.Values)
         {                     
             SofsafeMsSqlDbField field_entry = field_entry_base as SofsafeMsSqlDbField;
             if(field_entry.P_auto_increments == true) { continue; }
@@ -106,7 +114,7 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
         SqlCommand cmd = connection.CreateCommand();
         string statement = @"select ";
         int loop1 = 0;
-        foreach (ISofsafeMsSqlDbField field_entry in this.IV_field_list.Values)
+        foreach (ISofsafeMsSqlDbField field_entry in this.IV_fields_dict.Values)
         {
             if(include_fields != null && include_fields.Contains(field_entry.P_database_field_name) == false) { continue; }
             if(exclude_fields != null && exclude_fields.Contains(field_entry.P_database_field_name))
@@ -142,10 +150,10 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
             data_found = false;
             record_added = false;
             record_position++;
-            foreach (string field_entry_key in this.IV_field_list.Keys)
+            foreach (string field_entry_key in this.IV_fields_dict.Keys)
             {
                 SofsafeDbField field_entry_base;
-                if (this.IV_field_list.TryGetValue(field_entry_key, out field_entry_base) == false)
+                if (this.IV_fields_dict.TryGetValue(field_entry_key, out field_entry_base) == false)
                 {
                     OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + field_entry_key);
                     last_fail_code = ErrorTagsCodes.C_input_validation;
@@ -166,7 +174,7 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
                     {
                         continue;
                     }
-                } 
+                }
                 else
                 {
                     if (field_entry.P_assigned_sdo_for_all_records.P_last_set_time == Sdo<int>.C_unset_time)
@@ -175,6 +183,7 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
                     }
                 }
                 ///</end> input validation
+               
                 if (record_position > existing_row_last_index)
                 {
                     this.IV_table.Rows.Add();
@@ -198,12 +207,24 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
                     data_found = true;
                 }
 
+
                 if (value_type == typeof(int))
                 {
                     current_row.SetField(field_entry.P_column_index, (int)value_as_object);
                 }
                 else if (value_type == typeof(string))
                 {
+                    string validation_pointer = (string)value_as_object;                   
+                    
+                    if (field_entry.P_db_field_type == SqlDbType.VarChar &&
+                        validation_pointer.Length > field_entry.P_field_size)
+                    {
+                        OTSH.addEventToActivity(ETR, field_entry.P_database_field_name + "at record position has a value that is " + validation_pointer.Length.ToString() + " which is greater than the set field size: " + field_entry.P_field_size.ToString());
+                        last_fail_code = ErrorTagsCodes.C_input_validation;
+                        continue;
+                    }
+
+
                     current_row.SetField(field_entry.P_column_index, (string)value_as_object);
                 }
                 else if (value_type == typeof(decimal))
@@ -269,7 +290,7 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
             {
 
                 SofsafeDbField field_entry;
-                if (this.IV_field_list.TryGetValue(column.ColumnName, out field_entry) == false)
+                if (this.IV_fields_dict.TryGetValue(column.ColumnName, out field_entry) == false)
                 {
                     OTSH.addEventToActivity(ETR, "failed to get field entry for column:" + column.ColumnName);
                     fail_flag = true;
@@ -318,10 +339,10 @@ class MsSqlDbTable : SofsafeDbTable, ISofsafeDbTableInheritor
         this.IV_table = new DataTable(this.IV_schema_name);
         DataColumn[] primary_key_columns = new DataColumn[] { };
         int column_index = -1;
-        foreach (string field_entry_key in this.IV_field_list.Keys)
+        foreach (string field_entry_key in this.IV_fields_dict.Keys)
         {
             SofsafeDbField field_entry_base_instance;
-            if (this.IV_field_list.TryGetValue(field_entry_key, out field_entry_base_instance) == false)
+            if (this.IV_fields_dict.TryGetValue(field_entry_key, out field_entry_base_instance) == false)
             {
                 OTSH.addEventToActivity(ETR, "field entry null for key: " + field_entry_key);
                 fail_flag = true;

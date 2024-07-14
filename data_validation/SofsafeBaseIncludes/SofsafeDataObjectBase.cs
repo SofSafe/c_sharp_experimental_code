@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 
 //TODO add activity_name_prefix arugment on all methods needed in SBD
-//todo add clearValue method see #ZZTreKjh/27-arch on SBD
 interface ISdoBaseClass
 {
     bool runValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
@@ -20,6 +19,8 @@ interface ISdoBaseClass
     //todo add to SBD
     object P_value_as_object {  get; }
     bool setValueFromObject(object value);
+
+    void clearValue();
 
 }
 
@@ -115,6 +116,21 @@ class Sdo<type_of_generic> : ISdoBaseClass
         }
 
         return false;
+    }
+
+    public void clearValue() { 
+        this.IV_last_set_time = Sdo<type_of_generic>.C_unset_time;
+        
+        if(default(type_of_generic) != null)
+        {
+            this.IV_value = default(type_of_generic);
+        }
+
+        this.IV_last_validation_time = DateTime.Now;
+        this.IV_last_validation_result_details.Clear();
+        this.IV_last_validation_result = false;
+        this.IV_value_in_valid_values_list = false;
+        this.IV_last_validation_time = Sdo<type_of_generic>.C_unset_time;
     }
 
     //todo add obersvability

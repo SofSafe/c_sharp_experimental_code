@@ -16,24 +16,22 @@ class OdcToDatabaseTranslatorBase
 {
     protected Dictionary<string, byte> IV_registered_single_entity_odc_ids = new Dictionary<string, byte>();
     protected List<IOdcBaseClass> IV_single_entity_odc_instances = new List<IOdcBaseClass>();
-    protected Dictionary<string, byte> IV_registered_single_entity_table_names = new Dictionary<string, byte>();
+    protected Dictionary<string, byte> IV_registered_single_entity_schema_names = new Dictionary<string, byte>();
     protected List<List<int>> IV_single_entity_mapping_index;
     protected object IV_build_entity_map_thread_lock = new object();
-    protected List<ISofsafeDbTable> IV_single_entity_table_list = new List<ISofsafeDbTable>() { };
+    protected List<ISofsafeDbSchema> IV_single_entity_schema_list = new List<ISofsafeDbSchema>() { };
 
 
     protected Dictionary<string, byte> IV_multi_entity_ids = new Dictionary<string, byte>();
-    protected Dictionary<string, byte> IV_registered_multi_entity_tables = new Dictionary<string, byte> { };
-    protected Dictionary<string, List<ISofsafeDbTable>> IV_multi_entity_table_list = new Dictionary<string, List<ISofsafeDbTable>> { };
+    protected Dictionary<string, List<ISofsafeDbSchema>> IV_multi_entity_schema_list = new Dictionary<string, List<ISofsafeDbSchema>> { };
 
     protected Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>> IV_multi_entity_odc_lists = new Dictionary<string, List<IEnumerable<IOdcBaseClassInheritor>>>();
-    protected Dictionary<string, List<List<int>>> IV_multi_entity_odcs_to_tables_map = new Dictionary<string, List<List<int>>>() { };
+    protected Dictionary<string, List<List<int>>> IV_multi_entity_odcs_to_schemas_map = new Dictionary<string, List<List<int>>>() { };
     
 
-    protected Dictionary<string, byte> IV_registered_multi_entity_sdo_instances = new Dictionary<string, byte> { };
     protected Dictionary<string, List<ISdoBaseClass>> IV_multi_entity_sdo_instances = new Dictionary<string, List<ISdoBaseClass>>();
 
-    protected Dictionary<string, List<List<int>>> IV_multi_entity_sdos_to_tables_map = new Dictionary<string, List<List<int>>>() { };
+    protected Dictionary<string, List<List<int>>> IV_multi_entity_sdos_to_schemas_map = new Dictionary<string, List<List<int>>>() { };
 
 
     public delegate bool D_entity_populator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
@@ -44,7 +42,7 @@ class OdcToDatabaseTranslatorBase
     protected DateTime IV_last_data_object_to_db_transfer = DateTime.MinValue;
 
 
-    public bool registerSingleEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SofsafeDbTable table_instance, string activity_name_prefix = "")
+    public bool registerSingleEntitySchema(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SofsafeDbSchema schema_instance, string activity_name_prefix = "")
     {
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
@@ -52,22 +50,22 @@ class OdcToDatabaseTranslatorBase
         if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
 
         /// input validation
-        if (table_instance == null)
+        if (schema_instance == null)
         {
             OTSH.addEventThenEndActivity(ETR, "table_instance is null", ErrorTagsCodes.C_input_validation);
             return false;
         }
-        if (this.IV_registered_single_entity_table_names.ContainsKey(table_instance.P_schema_name))
+        if (this.IV_registered_single_entity_schema_names.ContainsKey(schema_instance.P_schema_name))
         {
-            OTSH.addEventThenEndActivity(ETR, "table_instance with " + table_instance.P_schema_name + " has already been registered", ErrorTagsCodes.C_input_validation);
+            OTSH.addEventThenEndActivity(ETR, "table_instance with " + schema_instance.P_schema_name + " has already been registered", ErrorTagsCodes.C_input_validation);
             return false;
         }
         ///</end> input validation
 
 
-        ETR.AddTag("table_instance data identifier", table_instance.P_schema_name);
-        this.IV_registered_single_entity_table_names.Add(table_instance.P_schema_name, 1);
-        this.IV_single_entity_table_list.Add(table_instance);
+        ETR.AddTag("table_instance data identifier", schema_instance.P_schema_name);
+        this.IV_registered_single_entity_schema_names.Add(schema_instance.P_schema_name, 1);
+        this.IV_single_entity_schema_list.Add(schema_instance);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
@@ -119,11 +117,6 @@ class OdcToDatabaseTranslatorBase
         if (this.IV_multi_entity_ids.ContainsKey(multi_entity_id) == false)
         {
             OTSH.addEventThenEndActivity(ETR, "multi entity association: " + multi_entity_id + " has not been registered", ErrorTagsCodes.C_input_validation);
-            return false;
-        }
-        if (this.IV_registered_multi_entity_sdo_instances.ContainsKey(sdo_instance_to_add.P_data_identifier))
-        {
-            OTSH.addEventThenEndActivity(ETR, "sdo_instance with " + sdo_instance_to_add.P_data_identifier + " has already been registered", ErrorTagsCodes.C_input_validation);
             return false;
         }
 
@@ -189,7 +182,7 @@ class OdcToDatabaseTranslatorBase
         return true;
     }
 
-    public bool registerMultiEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, ISofsafeDbTable table_instance, string activity_name_prefix = "")
+    public bool registerMultiEntityTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string multi_entity_id, ISofsafeDbSchema table_instance, string activity_name_prefix = "")
     {
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " > "; }
@@ -215,9 +208,9 @@ class OdcToDatabaseTranslatorBase
         }
 
         /////make sure we aren't adding a duplicate reference
-        if (this.IV_multi_entity_table_list.ContainsKey(multi_entity_id) == true)
+        if (this.IV_multi_entity_schema_list.ContainsKey(multi_entity_id) == true)
         {
-            foreach (ISofsafeDbTable table_entity in this.IV_multi_entity_table_list[multi_entity_id])
+            foreach (ISofsafeDbSchema table_entity in this.IV_multi_entity_schema_list[multi_entity_id])
             {
                 if (table_instance.P_schema_name == table_entity.P_schema_name)
                 {
@@ -239,11 +232,11 @@ class OdcToDatabaseTranslatorBase
         ///</end> input validation
 
 
-        if (this.IV_multi_entity_table_list.ContainsKey(multi_entity_id) == false)
+        if (this.IV_multi_entity_schema_list.ContainsKey(multi_entity_id) == false)
         {
-            this.IV_multi_entity_table_list.Add(multi_entity_id, new List<ISofsafeDbTable>() { });
+            this.IV_multi_entity_schema_list.Add(multi_entity_id, new List<ISofsafeDbSchema>() { });
         }
-        this.IV_multi_entity_table_list[multi_entity_id].Add(table_instance);
+        this.IV_multi_entity_schema_list[multi_entity_id].Add(table_instance);
         OTSH.setSuccessEndActivity(ETR);
         return true;
     }
@@ -315,7 +308,7 @@ class OdcToDatabaseTranslatorBase
             {
                 sdo_instance_index++;
                 table_instance_index = -1;
-                foreach (ISofsafeDbTable table in this.IV_single_entity_table_list)
+                foreach (ISofsafeDbSchema table in this.IV_single_entity_schema_list)
                 {
                     table_instance_index++;
                     if (table.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
@@ -364,7 +357,7 @@ class OdcToDatabaseTranslatorBase
 
                 sdo_instance_index++;
                 table_instance_index = -1;
-                foreach (ISofsafeDbTable table_instance in this.IV_multi_entity_table_list[multi_id])
+                foreach (ISofsafeDbSchema table_instance in this.IV_multi_entity_schema_list[multi_id])
                 {
                     table_instance_index++;
                     if (table_instance.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
@@ -377,7 +370,7 @@ class OdcToDatabaseTranslatorBase
             }
             lock (this.IV_build_entity_map_thread_lock)
             {
-                this.IV_multi_entity_sdos_to_tables_map[multi_id] = multi_entity_sdo_list_map;
+                this.IV_multi_entity_sdos_to_schemas_map[multi_id] = multi_entity_sdo_list_map;
             }
         }       
         //// build map for multi entity table to sdo data associations
@@ -404,7 +397,7 @@ class OdcToDatabaseTranslatorBase
                     {
                         sdo_instance_index++;
                         table_instance_index = -1;
-                        foreach (ISofsafeDbTable table_instance in this.IV_multi_entity_table_list[multi_id])
+                        foreach (ISofsafeDbSchema table_instance in this.IV_multi_entity_schema_list[multi_id])
                         {
                             table_instance_index++;
                             if (table_instance.P_usable_code_ids_lookup.ContainsKey(sdo_instance.P_data_identifier) == true)
@@ -420,8 +413,7 @@ class OdcToDatabaseTranslatorBase
             }
             lock (this.IV_build_entity_map_thread_lock)
             {
-                this.IV_multi_entity_odcs_to_tables_map[multi_id] = multi_entity_odc_list_map;
-                this.IV_multi_entity_sdos_to_tables_map[multi_id] = multi_entity_sdo_list_map;
+                this.IV_multi_entity_odcs_to_schemas_map[multi_id] = multi_entity_odc_list_map;
             }
         }
 
@@ -493,7 +485,7 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
         {
             if (this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_not_used == true) { continue; }
 
-            if (this.IV_single_entity_table_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
+            if (this.IV_single_entity_schema_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
             this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]]) == false)
             {
                 if (fail_flag == true)
@@ -511,9 +503,9 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
         int record_position;
         foreach (string multi_id in this.IV_multi_entity_sdo_instances.Keys)
         {
-            foreach (List<int> idx in this.IV_multi_entity_sdos_to_tables_map[multi_id])
+            foreach (List<int> idx in this.IV_multi_entity_sdos_to_schemas_map[multi_id])
             {
-                ISofsafeDbTable table = this.IV_multi_entity_table_list[multi_id][idx[2]];
+                ISofsafeDbSchema table = this.IV_multi_entity_schema_list[multi_id][idx[2]];
                 record_position = -1;
                 ISdoBaseClass sdo_instance = this.IV_multi_entity_sdo_instances[multi_id][idx[0]];
                 if (sdo_instance.P_value_not_used == true) { continue; }
@@ -539,11 +531,11 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
 
 
         /// for multiple entity data associations put references to lists of data objects in the database fields they match
-        foreach (string multi_id in this.IV_multi_entity_odcs_to_tables_map.Keys)
+        foreach (string multi_id in this.IV_multi_entity_odcs_to_schemas_map.Keys)
         {
-            foreach (List<int> idx in this.IV_multi_entity_odcs_to_tables_map[multi_id])
+            foreach (List<int> idx in this.IV_multi_entity_odcs_to_schemas_map[multi_id])
             {
-                ISofsafeDbTable table = this.IV_multi_entity_table_list[multi_id][idx[3]];
+                ISofsafeDbSchema table = this.IV_multi_entity_schema_list[multi_id][idx[3]];
                 record_position = -1;
                 foreach (IOdcBaseClass odc_instance in this.IV_multi_entity_odc_lists[multi_id][idx[0]])
                 {
@@ -565,14 +557,14 @@ class OdcToDatabaseTranslator : OdcToDatabaseTranslatorBase
         /// for multiple entity data associations put references to lists of data objects in the database fields they match
 
         //// tell table instances to move data from sdo instances to native database instance types
-        foreach (string multi_id in this.IV_multi_entity_odcs_to_tables_map.Keys)
+        foreach (string multi_id in this.IV_multi_entity_odcs_to_schemas_map.Keys)
         {
-            foreach (ISofsafeDbTableInheritor table in this.IV_multi_entity_table_list[multi_id])
+            foreach (ISofsafeDbSchemaInheritor table in this.IV_multi_entity_schema_list[multi_id])
             {
                 table.populateNativeDbFieldsFromDataObjects(ot_helper, child_activity_pointer);
             }
         }
-        foreach (ISofsafeDbTableInheritor table in this.IV_single_entity_table_list)
+        foreach (ISofsafeDbSchemaInheritor table in this.IV_single_entity_schema_list)
         {
             table.populateNativeDbFieldsFromDataObjects(ot_helper, child_activity_pointer);
         }
@@ -616,7 +608,7 @@ class DatabaseToOdcTranslator: OdcToDatabaseTranslatorBase {
         {
             if (this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]].P_value_not_used == true) { continue; }
 
-            if (this.IV_single_entity_table_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
+            if (this.IV_single_entity_schema_list[index_list[2]].assignSdoToRecordField(ot_helper, child_activity_pointer,
             this.IV_single_entity_odc_instances[index_list[0]].P_Sdo_child_objects[index_list[1]]) == false)
             {
                 if (fail_flag == true)
@@ -632,11 +624,11 @@ class DatabaseToOdcTranslator: OdcToDatabaseTranslatorBase {
 
         /// for multiple entity data associations put references to lists of data objects in the database fields they match
         int record_position;
-        foreach (string multi_id in this.IV_multi_entity_odcs_to_tables_map.Keys)
+        foreach (string multi_id in this.IV_multi_entity_odcs_to_schemas_map.Keys)
         {
-            foreach (List<int> idx in this.IV_multi_entity_odcs_to_tables_map[multi_id])
+            foreach (List<int> idx in this.IV_multi_entity_odcs_to_schemas_map[multi_id])
             {
-                ISofsafeDbTable table = this.IV_multi_entity_table_list[multi_id][idx[3]];
+                ISofsafeDbSchema table = this.IV_multi_entity_schema_list[multi_id][idx[3]];
                 record_position = -1;
                 foreach (IOdcBaseClass odc_instance in this.IV_multi_entity_odc_lists[multi_id][idx[0]])
                 {
@@ -645,6 +637,7 @@ class DatabaseToOdcTranslator: OdcToDatabaseTranslatorBase {
                     //bug I'm pretty sure its calling this twice, but the record_position is preventing it from duplicating data.
                     //Console.WriteLine(String.Join(",", idx));
                     //Console.WriteLine("sdo_instance:" + odc_instance.P_Sdo_child_objects[idx[2]].P_data_identifier);
+                    odc_instance.P_Sdo_child_objects[idx[2]].clearValue();
                     if (table.assignEmptySdoToRecordField(ot_helper, child_activity_pointer,
                         odc_instance.P_Sdo_child_objects[idx[2]], record_position) == false)
                     {

@@ -52,7 +52,7 @@ class PDCI {
     public static string transaction_type_purchase_gift_card = "Purchase gift card";
 }
 
-class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
+class TransactionDtoPartDetail: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 {
     public Sdo<decimal> amount = new Sdo<decimal>(PDI.part_cost,PCR.not_zero);
     public Sdo<int> part_uid = new Sdo<int>(PDI.part_uid, PCR.uid);
@@ -86,17 +86,13 @@ class TransactionDtoPartDetail: SofsafeOrganizedDataBaseClass, IOdcBaseClassInhe
 
 }
 
-class TransactionDto: SofsafeOrganizedDataBaseClass, IOdcBaseClassInheritor
+class TransactionDto: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 {
 
     public Sdo<string> transaction_type = new Sdo<string>(PDI.transaction_type,null,
-        new List<string> {
-            PDCI.transaction_type_purchase_parts,
-            PDCI.transaction_type_purchase_gift_card,
-            PDCI.transaction_type_return_parts 
-        }); 
+        s3TransactionTable.valid_values_transaction_types); 
     public Sdo<string> transaction_cloud_uid = new Sdo<string>(PDI.transaction_cloud_uid, PCR.uid, null, true);
-    public Sdo<int> transaction_lan_uid = new Sdo<int>(PDI.transaction_LAN_uid,PCR.uid,null,true);
+    public Sdo<int> transaction_lan_uid = new Sdo<int>(PDI.transaction_LAN_uid, s3TransactionTable.rule_lan_sql_uid, null,true);
     public Sdo<decimal> total_amount = new Sdo<decimal>(PDI.transaction_total, PCR.not_zero);
     public Sdo<int> location_uid = new Sdo<int>(PDI.recycler_location_uid, PCR.uid);
     public Sdo<string> location_name = new Sdo<string>(PDI.recycler_location_name, PCR.name);

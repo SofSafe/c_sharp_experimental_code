@@ -30,7 +30,7 @@ interface IOdcBaseClass
     Dictionary<string, List<string>> P_last_validation_result_details { get; }
 }
 
-class SofsafeOrganizedDataBaseClass : IOdcBaseClass
+class SofsafeOrganizedDataClassBase : IOdcBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     protected bool IV_allow_disabling_instance = false;
@@ -44,7 +44,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
 
     protected Dictionary<string, List<string>> IV_last_validation_result_details = new Dictionary<string, List<string>>();
 
-    protected DateTime IV_last_validation_time = SofsafeOrganizedDataBaseClass.C_unset_time;
+    protected DateTime IV_last_validation_time = SofsafeOrganizedDataClassBase.C_unset_time;
     protected bool IV_last_validation_result = false;
 
     protected string IV_organized_data_identifier = null;
@@ -164,7 +164,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
         ////</end> check all individual Sdo objects        
 
 
-        //// check all named Lists of Sdc child objects
+        //// check all named Lists of Sdo child objects
         int loop1 = -1;
         foreach (string sdo_list_key in this.IV_named_sdo_lists.Keys)
         {
@@ -185,7 +185,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
                 }
             }
         }
-        ////</end> check all named Lists of Sdc child objects
+        ////</end> check all named Lists of Sdo child objects
 
         //// check all Odc child objects
         Dictionary<string, byte> individual_odc_data_ids = new Dictionary<string, byte>();
@@ -300,7 +300,7 @@ class SofsafeOrganizedDataBaseClass : IOdcBaseClass
     }
 
     //todo add observability
-    public SofsafeOrganizedDataBaseClass(string organized_data_identifier,
+    public SofsafeOrganizedDataClassBase(string organized_data_identifier,
         bool allow_disabling_instance = false)
     {
         //todo add data valdation
