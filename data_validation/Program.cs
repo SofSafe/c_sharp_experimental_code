@@ -6,10 +6,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 
 namespace data_validation
 {

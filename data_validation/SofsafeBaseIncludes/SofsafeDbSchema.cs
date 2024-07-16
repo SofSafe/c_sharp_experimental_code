@@ -172,13 +172,10 @@ class SofsafeSqlDbField : SofsafeDbField, ISofafeDbField, ISofafeSqlDbField
 }
 
 
+//TODO add to SBD
 interface ISofsafeDbSchemaInheritor : ISofsafeDbSchema
 {
     bool populateNativeDbFieldsFromDataObjects(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
-    //bool updateRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix = "");
-    //bool createRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix = "");
-    //bool deleteRecords(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix = "");
-    //bool populateRecordsFromQuery(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string query,string activity_name_prefix = "");
 }
 
 
