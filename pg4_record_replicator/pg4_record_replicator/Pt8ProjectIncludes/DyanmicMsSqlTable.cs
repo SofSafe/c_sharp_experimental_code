@@ -273,6 +273,40 @@ class DyanmicMsSqlTable
 
             string combined_statement = "";
 
+            var param_start_time = "";
+
+            combined_statement = @$"DECLARE @pram_replication_start_time DATETIME = '{param_start_time}';
+
+                IF EXISTS (SELECT 1 FROM {this.IV_replicated_data_table_name} {where_statement})
+                BEGIN
+                    -- UPDATE statement
+                    IF EXISTS (
+                        SELECT 1
+                        FROM RemotePartPrices
+                        WHERE {where_statement}
+                          AND ReplicationStartTime < @pram_replication_start_time
+                    )
+                    BEGIN
+                        UPDATE {this.IV_replicated_data_table_name} 
+                            SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId='{this.IV_client_id}' , ReplicationFinishTime=GETUTCDATE() 
+                            {where_statement};
+                    END
+                ELSE
+                    BEGIN
+                        -- INSERT statement
+                        INSERT INTO {this.IV_replicated_data_table_name} 
+                        (   {insert_columns}, 
+                            ReplicationStartTime, 
+                            ClientId, 
+                            ReplicationFinishTime )
+                        VALUES (
+                        {insert_values},
+                        '{replication_start_time_string}' , 
+                        '{this.IV_client_id}', 
+                         GETUTCDATE() );
+                    END
+                END;";
+
             return_value.Add(new ReplicationRequest(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement, replication_start_time, this.IV_client_id, activity_name_prefix));
         }
         ////</end> build the parts of the select, insert and update statements that will use data from the replicated data
