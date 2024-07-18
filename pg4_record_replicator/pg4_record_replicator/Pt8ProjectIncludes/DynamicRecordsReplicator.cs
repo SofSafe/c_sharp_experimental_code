@@ -8,6 +8,92 @@ using System.Text;
 using System.Threading.Tasks;
 
 
+//TODO add to SBD
+class ReplicationRequest
+{
+    private string IV_select_statement;
+    private string IV_insert_statement;
+    private string IV_update_statement;
+    private string IV_combined_statement;
+    //todo add methods and properites for these instance variables
+    private byte IV_replication_type;
+    private DateTime IV_replication_start_time;
+    private string IV_client_id;
+
+
+    public byte P_replication_type
+    {
+        get { return this.IV_replication_type; }
+    }
+    public string P_client_id
+    {
+        get { return this.IV_client_id; }
+    }
+
+    public DateTime P_replication_start_time {
+        get { return this.IV_replication_start_time;}
+    }
+
+    public string P_select_statement {
+        get {return this.IV_select_statement;}
+    }
+    public string P_insert_statement
+    {
+        get { return this.IV_insert_statement; }
+    }
+    public string P_update_statement
+    {
+        get { return this.IV_update_statement; }
+    }
+
+    public string P_combined_sql_statement
+    {
+        get { return this.IV_combined_statement; }
+    }
+
+    public ReplicationRequest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string select_statment, string insert_statement, string update_statement, string combined_statement,  DateTime replication_start_time, string client_id, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+
+        //// input data validation
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
+        //TODO create a rules to detect that a string has the right keywords for a select, insert, or update statement     
+        validator.addEntry(new DataVR(select_statment).addRule(SDC.R_len_greater_2));
+        validator.addEntry(new DataVR(insert_statement).addRule(SDC.R_len_greater_2));
+        validator.addEntry(new DataVR(update_statement).addRule(SDC.R_len_greater_2));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return;
+        }
+        ///</end> input data validation
+
+        this.IV_select_statement = select_statment;
+        this.IV_update_statement = update_statement;
+        this.IV_insert_statement = insert_statement;
+        this.IV_combined_statement = combined_statement;
+        this.IV_replication_start_time = replication_start_time;
+        this.IV_client_id = client_id;
+
+    }
+
+    public void setReplicationTypeSimple()
+    {
+        this.IV_replication_type = 1;
+    }
+    public void setReplicationTypeComplex()
+    {
+        this.IV_replication_type = 2;
+    }
+
+}
+
 class DynamicRecordsReplicator
 {
     //todo add a flag to indicate the instnace is in an un-usable state due to validation errors
@@ -135,27 +221,42 @@ class DynamicRecordsReplicator
     }
 
 
-    public bool ConnectAndReplicateLocally(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string dest_db_name,string activity_name_prefix="")
+    //TODO update return type on SBD
+    public List<ReplicationRequest> getReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".ConnectAndReplicateLocally");
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".getReplicationSqlStatements");
         if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-
+        List<ReplicationRequest> return_data = new List<ReplicationRequest>();
         //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".ConnectAndReplicateLocally");
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getReplicationSqlStatements");
+        validator.addEntry(new DataVR(sql_connection).addRule(SDC.R_not_null));
         validator.addEntry(new DataVR(source_db_name).addRule(SDC.R_len_greater_0));
-        validator.addEntry(new DataVR(dest_db_name).addRule(SDC.R_len_greater_0));
         if (validator.validateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return false;
+            return return_data;
         }
         ///</end> input data validation       
+
+        //// switch to database we are replicating records from
+        ETR.AddTag("source_db_name", source_db_name);
+        try
+        {
+            sql_connection.ChangeDatabase(source_db_name);
+        }
+        catch (Exception error_instance)
+        {
+            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to source database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
+            return return_data;
+        }       
+        ////</end> switch to database we are replicating records from
+
 
 
         List<Activity> method_activities_list = new List<Activity>();
@@ -172,6 +273,10 @@ class DynamicRecordsReplicator
 
             if(dynamic_table.P_table_name == this.IV_primary_table_name) { is_primary_table=true; } else
             {
+                if(secondary_tables_for_joins.Length > 0 )
+                {
+                    secondary_tables_for_joins += " , ";
+                }
                 secondary_tables_for_joins += dynamic_table.P_table_name;
             }
 
@@ -192,8 +297,9 @@ class DynamicRecordsReplicator
 
         //// run query to get all records that need to be replicated
         //need to add list of table name to joins using this
-        secondary_tables_for_joins
-        records_select_statement += $" FROM {this.IV_primary_table_name} {this.IV_join_statement} {records_where_statement}={this.IV_primary_record_uid};";        
+
+        string join_statement = String.Empty;
+        records_select_statement += $" FROM {this.IV_primary_table_name} INNER JOIN {secondary_tables_for_joins} ON {this.IV_join_statement} {records_where_statement}={this.IV_primary_record_uid};";        
         SqlDataAdapter sqda = new SqlDataAdapter();
         SqlCommand select_command = sql_connection.CreateCommand();
         select_command.CommandText = records_select_statement;
@@ -207,19 +313,18 @@ class DynamicRecordsReplicator
         catch (Exception error_instance)
         {
             OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving schema record from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
-            return false;
+            return return_data;
         }
 
         ////</end> run query to get all records that need to be replicated
 
         //// put records into individual table class instances and collect replication SQL statments
-        List<List<string>> replication_statements = new List<List<string>>();
         foreach (DyanmicMsSqlTable dynamic_table in this.IV_tables)
         {
             dynamic_table.putDataInColumns(ot_helper, child_activity_pointer, data_set, activity_name_prefix);
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
-            replication_statements.AddRange(dynamic_table.generateSqlStatementsFromData(ot_helper, child_activity_pointer, activity_name_prefix));
+            return_data.AddRange(dynamic_table.generateSqlStatementsFromData(ot_helper, child_activity_pointer, activity_name_prefix));
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
         }
@@ -230,12 +335,57 @@ class DynamicRecordsReplicator
         if (OTSH.checkActivityList(ETR, method_activities_list, out first_failed_activity) == false)
         {
             OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
-            return false;
+            return_data.Clear();
+            return return_data;
         }
         ////</end> verify we've had no errors before doing write operations
 
 
-        //// switch to database we are replicating records too and replicate records
+        if (this.IV_replication_mode == 1)
+        {
+            foreach (ReplicationRequest request in return_data)
+            {
+                request.setReplicationTypeSimple();
+            }
+        }
+        else if (this.IV_replication_mode == 2)
+        {
+            foreach (ReplicationRequest request in return_data)
+            {
+                request.setReplicationTypeComplex();
+            }
+        }
+        OTSH.setSuccessEndActivity(ETR);
+        return return_data;
+    }
+
+
+    public bool replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, List<ReplicationRequest> replication_requests, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".replicateSqlStatements");
+        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+
+        List<List<string>> return_data = new List<List<string>>();
+        //// input data validation
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".replicateSqlStatements");
+        validator.addEntry(new DataVR(sql_connection).addRule(SDC.R_not_null));
+        validator.addEntry(new DataVR(dest_db_name).addRule(SDC.R_len_greater_0));
+        //TODO make a more specific validation rule for replication lists
+        validator.addEntry(new DataVR(replication_requests).addRule(SDC.R_len_greater_0));
+        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return false;
+        }
+        ///</end> input data validation       
+
+        //// switch to database we are replicating records too
+        ETR.AddTag("dest_db_name", dest_db_name);
         try
         {
             sql_connection.ChangeDatabase(dest_db_name);
@@ -245,25 +395,47 @@ class DynamicRecordsReplicator
             OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to destination database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
             return false;
         }
+        ////</end> switch to database we are replicating records too  
 
-        //TOOD add logic for comparing ReplicationStartTime to make sure we aren't overwriting newer data
-
-        foreach(List<string> sql_statements in replication_statements)
+        //// use select statements to identify which SQL statement records dont' need to be replicated and for that those that do need to be replicated, if they need an insert or updated statement used.
+        SqlDataAdapter adapter = new SqlDataAdapter();
+        SqlCommand select_command = sql_connection.CreateCommand();
+        
+        List<string> insert_statements = new List<string>();
+        foreach (ReplicationRequest request in replication_requests)
         {
-            Console.WriteLine(sql_statements[0]);
-            Console.WriteLine(sql_statements[1]);
-            Console.WriteLine(sql_statements[2]);
+            select_command.CommandText = request.P_select_statement;
+            adapter.SelectCommand = select_command;
+            DataSet data_set = new DataSet();
+            //TODO create a method to put exception handling around SQL methods
+            try
+            {
+                adapter.Fill(data_set);
+            } catch (Exception error_instance)
+            {
+                OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > executing SQL  statement > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
+                return false;
+            }
+            if (data_set.Tables.Count == 0) {
+                insert_statements.Add(request.P_insert_statement);
+            }
+
+            //data_set.Tables[0].Rows[0][data_set.Tables[0].]
+
+
+
+
         }
-        ////</end> switch to database we are replicating records too and replicate records
+
+
+        ////</end> use select statements to identify which SQL statement records dont' need to be replicated and for that those that do need to be replicated, if they need an insert or updated statement used.
 
 
 
 
-
-        OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 
-}
+    }
 
 

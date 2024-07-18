@@ -177,7 +177,9 @@ class DyanmicMsSqlTable
         return true;
     }
 
-    public List<List<string>> generateSqlStatementsFromData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+
+    //TODO change return type on SBD
+    public List<ReplicationRequest> generateSqlStatementsFromData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
 
         /// observability template
@@ -185,9 +187,11 @@ class DyanmicMsSqlTable
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".generateSqlStatementsFromData");
         if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
         ///</end> observability template
 
-        List<List<string>> return_value  = new List<List<string>>();
+        List<ReplicationRequest> return_value  = new List<ReplicationRequest>();
 
         //// build the parts of the select, insert and update statements that will use data from the replicated data
         foreach (DataRow row in this.IV_table.Rows)
@@ -260,14 +264,16 @@ class DyanmicMsSqlTable
             }
 
             select_statement = $"SELECT ReplicationStartTime FROM {this.IV_replicated_data_table_name} {where_statement};";
-            
-            //TODO re-add support for crush version number from TSS-5 and TSS-6
-            string replication_start_time = DateTime.Now.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss:fff");
-            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time}' , '{this.IV_client_id}', GETUTCDATE() );";
-            
-            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time}', ClientId='{this.IV_client_id}' , ReplicationFinishTime=GETUTCDATE()   {where_statement};";
 
-            return_value.Add(new List<string> { select_statement,insert_statement,update_statement });
+            DateTime replication_start_time = DateTime.Now;
+            string replication_start_time_string = replication_start_time.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss:fff");
+            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , '{this.IV_client_id}', GETUTCDATE() );";
+            
+            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId='{this.IV_client_id}' , ReplicationFinishTime=GETUTCDATE()   {where_statement};";
+
+            string combined_statement = "";
+
+            return_value.Add(new ReplicationRequest(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement, replication_start_time, this.IV_client_id, activity_name_prefix));
         }
         ////</end> build the parts of the select, insert and update statements that will use data from the replicated data
 

@@ -18,17 +18,26 @@ namespace pg4_record_replicator
             // create objects used for monitoring activities
             List<Activity> method_activity_list = new List<Activity>();
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-            string activity_description = "";
-
             //do runtime setup for data validation class
             SDC.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
 
-            Activity ETR = ot_helper.startActivityWrapper("Endpoint Name");
+            Activity ETR = ot_helper.startActivityWrapper("Local replication");
 
+            ////arguments that will be passed from the crush POS client via https request
             string arg_table_name = "Parts";
             string arg_primary_uid = "5";
-            string arg_crush_version = "123";
+            string arg_crush_version = "1232";
             string arg_client_id = "1235";
+            ////</end> arguments that will be passed from the crush POS client via https request
+
+            //// arguments we add from a settings file on the server with the sychronizer file
+            string arg_join_statement = "PartPrices.PartRno=Parts.PartRno";
+            List<string> arg_secondary_tables = new List<string>() { "PartPrices" };
+
+            //uncomment for only replicating a single record
+            arg_join_statement = "";
+            arg_secondary_tables.Clear();
+            ////</end> arguments we add from a settings file on the server with the sychronizer file
 
 
 
@@ -43,13 +52,20 @@ namespace pg4_record_replicator
             SqlConnection connection = new SqlConnection(builder.ConnectionString);
             connection.Open();
 
-
-            List<string> secondary_tables = new List<string>() { "PartPrices" };
-            DynamicRecordsReplicator test = new DynamicRecordsReplicator(ot_helper,child_activity_pointer,arg_table_name,arg_primary_uid,
-                secondary_tables,arg_client_id, arg_crush_version, "PartPrices.PartRno=Parts.PartRno", "Remote");
+            DynamicRecordsReplicator replicator;
+            if (arg_secondary_tables.Count > 0)
+            {
+                replicator = new DynamicRecordsReplicator(ot_helper, child_activity_pointer, arg_table_name, arg_primary_uid,
+                arg_secondary_tables, arg_client_id, arg_crush_version, arg_join_statement, "Remote");
+            } else
+            {
+                replicator = new DynamicRecordsReplicator(ot_helper, child_activity_pointer, arg_table_name, arg_primary_uid,
+                 arg_client_id, arg_crush_version, "Remote");
+            }
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            test.ConnectAndReplicateLocally(ot_helper, child_activity_pointer, "CRUSH_1102", connection, "CRUSH_1102");
+            List<ReplicationRequest> replication_statements = new List<ReplicationRequest>();
+            replication_statements = replicator.getReplicationSqlStatements(ot_helper, child_activity_pointer, "CRUSH_1102", connection, "CRUSH_1102");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             ChildActivityPointer first_failed_activity;
@@ -57,6 +73,13 @@ namespace pg4_record_replicator
             {
                 OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
                 return;
+            }
+
+            foreach (ReplicationRequest request in replication_statements)
+            {
+                Console.WriteLine(request.P_select_statement);
+                Console.WriteLine(request.P_insert_statement);
+                Console.WriteLine(request.P_update_statement);
             }
 
             OTSH.setSuccessEndActivity(ETR);
