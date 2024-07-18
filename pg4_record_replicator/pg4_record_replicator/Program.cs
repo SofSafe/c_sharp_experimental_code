@@ -59,52 +59,6 @@ namespace pg4_record_replicator
 
             OTSH.setSuccessEndActivity(ETR);
             return;
-
-
-            DyanmicMsSqlTable replicator = new DyanmicMsSqlTable(ot_helper, child_activity_pointer, arg_table_name, arg_client_id, arg_crush_version, $"Remote{arg_table_name}");
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-
-            replicator.getSchemaData(ot_helper, child_activity_pointer, connection);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            SqlDataAdapter sqda = new SqlDataAdapter();           
-            SqlCommand select_command = connection.CreateCommand();
-            select_command.CommandText = "SELECT * FROM Parts WHERE PartRno<5;";
-            sqda.SelectCommand = select_command;
-            DataSet data_set = new DataSet();
-            sqda.Fill(data_set);
- 
-
-
-            replicator.putDataInColumns(ot_helper,child_activity_pointer,data_set);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-            List<List<string>> sql_statements = new List<List<string>>();
-            sql_statements = replicator.generateSqlStatementsFromData(ot_helper, child_activity_pointer);
-            method_activity_list.Add(child_activity_pointer.P_pointer);
-
-
-            ChildActivityPointer first_failed_activity1 = null;
-            if (OTSH.checkActivityList(ETR, method_activity_list, out first_failed_activity1) == false)
-            {
-                OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
-                return;
-            }
-            
-
-            foreach(List<string> record in sql_statements)
-            {
-                foreach (string statement in record)
-                {
-                    Console.WriteLine(statement);
-                }
-
-            }
-
-            OTSH.setSuccessEndActivity(ETR);
-            Console.WriteLine("Hello, World!");
-            return;
         }
     }
 }
