@@ -92,9 +92,9 @@ namespace Sql_schema_class_generator
                     //code identifier
                     + $" , \"{field_info.IV_table_name}.{field_info.IV_column_name}\""
                     //code type
-                    + $" , {field_info.P_code_type}"
+                    + $" , {field_info.P_code_type_string}"
                     //sqlDB type
-                    + $" , {field_info.P_field_type}"
+                    + $" , {field_info.P_field_type_string}"
                     //sql database field size
                     + $" , {field_info.IV_field_size.ToString()}"
                     + ");\n";

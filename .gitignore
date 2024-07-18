@@ -8,3 +8,13 @@
 
 
 *.vsidx
+
+*.bin
+
+*.v2
+
+sql_dataset_experiments/sql_dataset_experiments/.vs/sql_dataset_experiments/v17/
+
+pg4_record_replicator/pg4_record_replicator/.vs/pg4_record_replicator/v17/
+
+schema_class_generator/Sql_schema_class_generator/.vs/Sql_schema_class_generator/v17/

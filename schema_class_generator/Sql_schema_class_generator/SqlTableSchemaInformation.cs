@@ -11,59 +11,71 @@ class SqlTableSchemaFieldInformation
     public string IV_column_name = "";
     public int IV_field_size = -1;
     public int IV_column_index = -1;
-    private string IV_field_type = String.Empty;
-    private string IV_code_type = String.Empty;
+    private string IV_field_type_as_string = String.Empty;
+    private SqlDbType IV_field_type;
+
+    private string IV_code_type_as_string = String.Empty;
+    private Type IV_code_type = null;
+
     public bool IV_is_identity_field = false;
     public bool IV_is_nullable = true;
     public string IV_table_name = String.Empty;
 
 
-    public string P_field_type
+    public string P_field_type_string
     {
-        get { return this.IV_field_type; }
+        get { return this.IV_field_type_as_string; }
     }
 
-    public string P_code_type
+    public string P_code_type_string
     {
-        get { return this.IV_code_type; }
+        get { return this.IV_code_type_as_string; }
     }
 
 
 
     public bool setTypeFromTypeName(string type_name)
     {
-        string code_type = string.Empty;
-        string db_type = string.Empty;
         if (type_name == "int")
         {
-            code_type = "typeof(int)";
-            db_type = "SqlDbType.Int";
+            this.IV_code_type_as_string = "typeof(int)";
+            this.IV_code_type = typeof(int);
+            this.IV_field_type = SqlDbType.Int;
+            this.IV_field_type_as_string = "SqlDbType.Int";
+
         }
         else if (type_name == "money")
         {
-            code_type = "typeof(decimal)";
-            db_type = "SqlDbType.Money";
+            this.IV_code_type_as_string = "typeof(decimal)";
+            this.IV_code_type = typeof(decimal);
+            this.IV_field_type = SqlDbType.Money;
+            this.IV_field_type_as_string = "SqlDbType.Money";
         }
         else if (type_name == "varchar")
         {
-            code_type = "typeof(string)";
-            db_type = "SqlDbType.VarChar";
+            this.IV_code_type_as_string = "typeof(string)";
+            this.IV_code_type = typeof(string);
+            this.IV_field_type = SqlDbType.VarChar;
+            this.IV_field_type_as_string = "SqlDbType.VarChar";
         }
         else if (type_name == "datetime")
         {
-            code_type = "typeof(DateTime)";
-            db_type = "SqlDbType.DateTime";
+            this.IV_code_type_as_string = "typeof(DateTime)";
+            this.IV_code_type = typeof(DateTime);
+            this.IV_field_type = SqlDbType.DateTime;
+            this.IV_field_type_as_string = "SqlDbType.DateTime";
         }
         else if (type_name == "datetime2")
         {
-            code_type = "typeof(DateTime)";
-            db_type = "SqlDbType.DateTime";
+            this.IV_code_type_as_string = "typeof(DateTime)";
+            this.IV_code_type = typeof(DateTime);
+            this.IV_field_type = SqlDbType.DateTime2;
+            this.IV_field_type_as_string = "SqlDbType.DateTime2";
+        } else
+        {
+            return false;
         }
 
-        this.IV_code_type = code_type;
-        this.IV_field_type = db_type;
-
-        if (code_type == String.Empty) { return false; }
         return true;
     }
 
