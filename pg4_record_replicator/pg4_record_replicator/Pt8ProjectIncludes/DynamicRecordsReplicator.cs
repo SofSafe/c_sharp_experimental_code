@@ -61,6 +61,8 @@ class DynamicRecordsReplicator
         }
         ///</end> input data validation
 
+        this.IV_join_statement = join_statement;
+
         //// create all tables associated with the primary table
         List<Activity> method_activites_list = new List<Activity>();
         foreach(string table_name in secondary_table_names)
@@ -161,13 +163,17 @@ class DynamicRecordsReplicator
         string records_select_statement = "SELECT ";
         string records_where_statement = " WHERE ";
         short field_count = 0;
+        string secondary_tables_for_joins = "";
         foreach(DyanmicMsSqlTable dynamic_table in this.IV_tables)
         {
             bool is_primary_table = false;
             dynamic_table.getSchemaData(ot_helper, child_activity_pointer, sql_connection, activity_name_prefix);
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
-            if(dynamic_table.P_table_name == this.IV_primary_table_name) { is_primary_table=true; }
+            if(dynamic_table.P_table_name == this.IV_primary_table_name) { is_primary_table=true; } else
+            {
+                secondary_tables_for_joins += dynamic_table.P_table_name;
+            }
 
             foreach(DynamicMsSqlColumn dynamic_column in dynamic_table.P_columns_meta_data.Values)
             {
@@ -184,7 +190,9 @@ class DynamicRecordsReplicator
         ////</end>get the schemas for all tables and build the field list for the select query
 
 
-        //// run query to get all records that need to be replicated        
+        //// run query to get all records that need to be replicated
+        //need to add list of table name to joins using this
+        secondary_tables_for_joins
         records_select_statement += $" FROM {this.IV_primary_table_name} {this.IV_join_statement} {records_where_statement}={this.IV_primary_record_uid};";        
         SqlDataAdapter sqda = new SqlDataAdapter();
         SqlCommand select_command = sql_connection.CreateCommand();

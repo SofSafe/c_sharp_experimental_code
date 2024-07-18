@@ -44,7 +44,9 @@ namespace pg4_record_replicator
             connection.Open();
 
 
-            DynamicRecordsReplicator test = new DynamicRecordsReplicator(ot_helper,child_activity_pointer,arg_table_name,arg_primary_uid,arg_client_id,arg_crush_version,"Remote");
+            List<string> secondary_tables = new List<string>() { "PartPrices" };
+            DynamicRecordsReplicator test = new DynamicRecordsReplicator(ot_helper,child_activity_pointer,arg_table_name,arg_primary_uid,
+                secondary_tables,arg_client_id, arg_crush_version, "PartPrices.PartRno=Parts.PartRno", "Remote");
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
             test.ConnectAndReplicateLocally(ot_helper, child_activity_pointer, "CRUSH_1102", connection, "CRUSH_1102");
@@ -59,6 +61,6 @@ namespace pg4_record_replicator
 
             OTSH.setSuccessEndActivity(ETR);
             return;
-        }
+        }        
     }
 }
