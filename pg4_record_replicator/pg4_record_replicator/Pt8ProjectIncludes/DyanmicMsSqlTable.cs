@@ -209,6 +209,9 @@ class DyanmicMsSqlTable
                 string equals_statement = "";
 
                 string next_insert_value = "";
+                if(row[column] == null) { continue; }
+                if (row[column].GetType() == typeof(DBNull)) { continue; }
+
                 if (this.IV_columns_meta_data[column.ColumnName].P_code_type == typeof(string))
                 {
                     //don't include empty strings in sql statements
@@ -226,11 +229,26 @@ class DyanmicMsSqlTable
                     next_insert_value = $"'{sql_date}'";
                     equals_statement = $"{column.ColumnName}='{sql_date}'";
                 }
+                else if (this.IV_columns_meta_data[column.ColumnName].P_code_type == typeof(bool))
+                {
+                    if ((bool)row[column] == true)
+                    {
+                        next_insert_value = $"1";
+                        equals_statement = $"{column.ColumnName}=1";
+                    } 
+                    else
+                    {
+                        next_insert_value = $"0";
+                        equals_statement = $"{column.ColumnName}=0";
+                    }
+                }
                 else
                 {
                     next_insert_value = $"{row[column].ToString()}";
                     equals_statement = $"{column.ColumnName}={row[column].ToString()}";
                 }
+
+                if(next_insert_value.Length == 0) { continue; }
 
                 loop1++;
                 if (loop1 > 0)

@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 
-//TODO add to SBD
+//TODO add complex replication requst class
+//TODO add to SBD as simple replication request
 class ReplicationRequest
 {
     private string IV_select_statement;
@@ -17,8 +19,9 @@ class ReplicationRequest
     private string IV_combined_statement;
     //todo add methods and properites for these instance variables
     private byte IV_replication_type;
-    private DateTime IV_replication_start_time;
+    private DateTime IV_replication_start_time;   
     private string IV_client_id;
+    //todo add crush version
 
 
     public byte P_replication_type
@@ -122,6 +125,7 @@ class DynamicRecordsReplicator
             OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
         }
+        OTSH.setSuccessEndActivity(ETR);
         return;
     }
 
@@ -299,11 +303,14 @@ class DynamicRecordsReplicator
         //need to add list of table name to joins using this
 
         string join_statement = String.Empty;
-        records_select_statement += $" FROM {this.IV_primary_table_name} INNER JOIN {secondary_tables_for_joins} ON {this.IV_join_statement} {records_where_statement}={this.IV_primary_record_uid};";        
+        if(secondary_tables_for_joins.Length > 0 && this.IV_join_statement.Length >0)
+        {
+            join_statement = $" INNER JOIN { secondary_tables_for_joins} ON { this.IV_join_statement} ";
+        }
+        records_select_statement += $" FROM {this.IV_primary_table_name} {join_statement}   {records_where_statement}={this.IV_primary_record_uid};";        
         SqlDataAdapter sqda = new SqlDataAdapter();
         SqlCommand select_command = sql_connection.CreateCommand();
         select_command.CommandText = records_select_statement;
-        Console.WriteLine(records_select_statement);
         sqda.SelectCommand = select_command;
         DataSet data_set = new DataSet();
         try
@@ -397,42 +404,28 @@ class DynamicRecordsReplicator
         }
         ////</end> switch to database we are replicating records too  
 
-        //// use select statements to identify which SQL statement records dont' need to be replicated and for that those that do need to be replicated, if they need an insert or updated statement used.
+        //// replicate the records using the combined select, insert, update statements
         SqlDataAdapter adapter = new SqlDataAdapter();
-        SqlCommand select_command = sql_connection.CreateCommand();
-        
-        List<string> insert_statements = new List<string>();
         foreach (ReplicationRequest request in replication_requests)
         {
-            select_command.CommandText = request.P_select_statement;
-            adapter.SelectCommand = select_command;
-            DataSet data_set = new DataSet();
+            SqlCommand combined_command = sql_connection.CreateCommand();
+            combined_command.CommandText = request.P_insert_statement;
             //TODO create a method to put exception handling around SQL methods
             try
             {
-                adapter.Fill(data_set);
+                combined_command.ExecuteNonQuery();
             } catch (Exception error_instance)
             {
-                OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > executing SQL  statement > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
+                ETR.AddTag("combined_sql_statement", request.P_combined_sql_statement);
+                OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > executing combined SQL statement > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
                 return false;
             }
-            if (data_set.Tables.Count == 0) {
-                insert_statements.Add(request.P_insert_statement);
-            }
-
-            //data_set.Tables[0].Rows[0][data_set.Tables[0].]
-
-
-
-
         }
-
-
-        ////</end> use select statements to identify which SQL statement records dont' need to be replicated and for that those that do need to be replicated, if they need an insert or updated statement used.
-
+        //// replicate the records using the combined select, insert, update statements
 
 
 
+        OTSH.setSuccessEndActivity(ETR);
         return true;
     }
 

@@ -28,16 +28,16 @@ namespace pg4_record_replicator
             string arg_primary_uid = "5";
             string arg_crush_version = "1232";
             string arg_client_id = "1235";
-            ////</end> arguments that will be passed from the crush POS client via https request
-
-            //// arguments we add from a settings file on the server with the sychronizer file
+           
+            //we can store the join statements and secondary tables in the Crush POS as a definition that can updated with crush
             string arg_join_statement = "PartPrices.PartRno=Parts.PartRno";
             List<string> arg_secondary_tables = new List<string>() { "PartPrices" };
-
+            
             //uncomment for only replicating a single record
             arg_join_statement = "";
             arg_secondary_tables.Clear();
-            ////</end> arguments we add from a settings file on the server with the sychronizer file
+            ////</end> arguments that will be passed from the crush POS client via https request
+
 
 
 
@@ -71,16 +71,26 @@ namespace pg4_record_replicator
             ChildActivityPointer first_failed_activity;
             if (OTSH.checkActivityList(ETR, method_activity_list, out first_failed_activity) == false)
             {
+                Console.WriteLine(first_failed_activity.P_pointer.DisplayName);
                 OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
                 return;
             }
-
+            
             foreach (ReplicationRequest request in replication_statements)
             {
                 Console.WriteLine(request.P_select_statement);
                 Console.WriteLine(request.P_insert_statement);
                 Console.WriteLine(request.P_update_statement);
             }
+
+            replicator.replicateSqlStatements(ot_helper, child_activity_pointer, "CRUSH_1102", connection, replication_statements);
+            if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+            {
+                OTSH.passStatusAndEndActivity(ETR,child_activity_pointer.P_pointer);
+                return;
+            }
+
+            
 
             OTSH.setSuccessEndActivity(ETR);
             return;
