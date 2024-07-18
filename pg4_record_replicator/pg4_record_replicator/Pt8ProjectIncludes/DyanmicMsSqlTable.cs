@@ -273,6 +273,7 @@ class DyanmicMsSqlTable
 
             string combined_statement = "";
 
+            // SET the replication_start_time here
             var param_start_time = "";
 
             combined_statement = @$"DECLARE @pram_replication_start_time DATETIME = '{param_start_time}';
