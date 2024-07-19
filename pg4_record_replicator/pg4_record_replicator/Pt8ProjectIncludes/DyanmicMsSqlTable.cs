@@ -62,7 +62,7 @@ class DyanmicMsSqlTable
     }
 
 
-    public bool getSchemaData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SqlConnection connection_instance , string activity_name_prefix = "")
+    public bool GetSchemaData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SqlConnection connection_instance , string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -140,7 +140,7 @@ class DyanmicMsSqlTable
     }
 
 
-    public bool putDataInColumns(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, DataSet data_set, string activity_name_prefix = "")
+    public bool PutDataInColumns(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, DataSet data_set, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -179,7 +179,7 @@ class DyanmicMsSqlTable
 
 
     //TODO change return type on SBD
-    public List<ReplicationRequest> generateSqlStatementsFromData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    public List<ReplicationRecord> GenerateSqlStatementsFromData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
 
         /// observability template
@@ -191,7 +191,7 @@ class DyanmicMsSqlTable
 
         ///</end> observability template
 
-        List<ReplicationRequest> return_value  = new List<ReplicationRequest>();
+        List<ReplicationRecord> return_value  = new List<ReplicationRecord>();
 
         //// build the parts of the select, insert and update statements that will use data from the replicated data
         foreach (DataRow row in this.IV_table.Rows)
@@ -268,30 +268,64 @@ class DyanmicMsSqlTable
 
                 if (this.IV_columns_meta_data[column.ColumnName].P_is_primary_key == true)
                 {                   
-                    where_primary_key_statement = $" WHERE clientID='{this.IV_client_id}' AND {equals_statement}";
+                    where_primary_key_statement = $" clientID={this.IV_client_id} AND {equals_statement}";
                 }
             }
 
             string select_statement = "";
             string where_statement = "";
             if (where_primary_key_statement.Length == 0) {
-                where_statement = $" WHERE clientID='{this.IV_client_id}' AND {select_by_all_fields};";
+                where_statement = $" clientID={this.IV_client_id} AND {select_by_all_fields};";
             } else
             {
                 where_statement = where_primary_key_statement ;
             }
 
-            select_statement = $"SELECT ReplicationStartTime FROM {this.IV_replicated_data_table_name} {where_statement};";
+            select_statement = $"SELECT ReplicationStartTime FROM {this.IV_replicated_data_table_name} WHERE {where_statement};";
 
             DateTime replication_start_time = DateTime.Now;
             string replication_start_time_string = replication_start_time.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss:fff");
-            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , '{this.IV_client_id}', GETUTCDATE() );";
+            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , {this.IV_client_id}, GETUTCDATE() );";
             
-            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId='{this.IV_client_id}' , ReplicationFinishTime=GETUTCDATE()   {where_statement};";
+            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id} , ReplicationFinishTime=GETUTCDATE() WHERE {where_statement};";
 
-            string combined_statement = "";
+            // SET the replication_start_time here
+            var param_start_time = replication_start_time_string;
+            string combined_statement = @$"DECLARE @pram_replication_start_time DATETIME = '{param_start_time}';
 
-            return_value.Add(new ReplicationRequest(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement, replication_start_time, this.IV_client_id, activity_name_prefix));
+                IF NOT EXISTS (SELECT 1 FROM {this.IV_replicated_data_table_name} WHERE {where_statement})
+                    BEGIN
+                        -- INSERT statement
+                        INSERT INTO {this.IV_replicated_data_table_name} 
+                        (   {insert_columns}, 
+                            ReplicationStartTime, 
+                            ClientId, 
+                            ReplicationFinishTime )
+                        VALUES (
+                        {insert_values},
+                        '{replication_start_time_string}' , 
+                        {this.IV_client_id}, 
+                         GETUTCDATE() );
+                    END
+
+                ELSE
+
+                    -- UPDATE statement
+                    IF EXISTS (
+                        SELECT 1
+                        FROM {this.IV_replicated_data_table_name}
+                        WHERE {where_statement}
+                          AND ReplicationStartTime < @pram_replication_start_time
+                    )
+                    BEGIN
+                        UPDATE {this.IV_replicated_data_table_name} 
+                            SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id} , ReplicationFinishTime=GETUTCDATE() 
+                            WHERE {where_statement};
+                    END
+                ;";
+
+
+            return_value.Add(new ReplicationRecord(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement, activity_name_prefix));
         }
         ////</end> build the parts of the select, insert and update statements that will use data from the replicated data
 

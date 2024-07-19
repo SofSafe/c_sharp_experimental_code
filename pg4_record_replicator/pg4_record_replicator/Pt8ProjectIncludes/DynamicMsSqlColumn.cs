@@ -83,6 +83,8 @@ class DynamicMsSqlColumn
         bool size_set = false;
         bool index_set = false;
         bool type_set = false;
+        string errors = String.Empty;
+
         string debugging_row_data = "";
         foreach (DataColumn column in table.Columns)
         {
@@ -130,9 +132,19 @@ class DynamicMsSqlColumn
                     this.IV_code_type = typeof(bool);
                     this.IV_db_column_type = SqlDbType.Bit;
                 }
+                else if (type_name == "smallint")
+                {
+                    this.IV_code_type = typeof(int);
+                    this.IV_db_column_type = SqlDbType.SmallInt;
+                }
+                else if (type_name == "numeric")
+                {
+                    this.IV_code_type = typeof(decimal);
+                    this.IV_db_column_type = SqlDbType.Decimal;
+                }
                 else
                 {
-                    Console.WriteLine(type_name);
+                    errors += $"Column type {type_name} doesn't have any handler logic. ";
                     type_set = false;
                 }
 
@@ -153,7 +165,6 @@ class DynamicMsSqlColumn
             }                
         }
 
-        string errors = String.Empty;
         if(index_set == false) { errors += "column index not found. "; }
         if (name_set == false) { errors += "column name not found. "; }
         if (type_set == false) { errors += "column type not found. "; }

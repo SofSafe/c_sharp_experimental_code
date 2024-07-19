@@ -9,33 +9,57 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-//TODO add complex replication requst class
-//TODO add to SBD as simple replication request
-class ReplicationRequest
-{
-    private string IV_select_statement;
-    private string IV_insert_statement;
-    private string IV_update_statement;
-    private string IV_combined_statement;
-    //todo add methods and properites for these instance variables
-    private byte IV_replication_type;
-    private DateTime IV_replication_start_time;   
-    private string IV_client_id;
-    //todo add crush version
+//TODO add to SBD and finish implementing
 
+class ReplicationBatch
+{
+    protected byte IV_replication_type;
+    List<ReplicationRecord> IV_replication_records = new List<ReplicationRecord>();
+    protected decimal IV_crush_verison = 0;
+    protected short IV_client_id = 0;
+    protected DateTime IV_replication_start_time;
+
+    public DateTime P_replication_start_time
+    {
+        get { return this.IV_replication_start_time; }
+    }
 
     public byte P_replication_type
     {
         get { return this.IV_replication_type; }
     }
-    public string P_client_id
+    public void SetReplicationTypeSimple()
     {
-        get { return this.IV_client_id; }
+        this.IV_replication_type = 1;
+    }
+    public void SetReplicationTypeComplex()
+    {
+        this.IV_replication_type = 2;
     }
 
-    public DateTime P_replication_start_time {
-        get { return this.IV_replication_start_time;}
+    public string GetBatchAsJson()
+    {
+        string json_data = "";
+        return json_data;
+
     }
+
+    public bool PopulateBatchFromJson()
+    {
+        return true;
+    }
+
+
+}
+
+
+//TODO add to SBD and finish implementing
+class ReplicationRecord
+{
+    private string IV_select_statement;
+    private string IV_insert_statement;
+    private string IV_update_statement;
+    private string IV_combined_statement;
 
     public string P_select_statement {
         get {return this.IV_select_statement;}
@@ -54,7 +78,7 @@ class ReplicationRequest
         get { return this.IV_combined_statement; }
     }
 
-    public ReplicationRequest(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string select_statment, string insert_statement, string update_statement, string combined_statement,  DateTime replication_start_time, string client_id, string activity_name_prefix = "")
+    public ReplicationRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string select_statment, string insert_statement, string update_statement, string combined_statement, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -70,6 +94,7 @@ class ReplicationRequest
         validator.addEntry(new DataVR(select_statment).addRule(SDC.R_len_greater_2));
         validator.addEntry(new DataVR(insert_statement).addRule(SDC.R_len_greater_2));
         validator.addEntry(new DataVR(update_statement).addRule(SDC.R_len_greater_2));
+        validator.addEntry(new DataVR(combined_statement).addRule(SDC.R_len_greater_2));
         if (validator.validateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
@@ -81,24 +106,13 @@ class ReplicationRequest
         this.IV_update_statement = update_statement;
         this.IV_insert_statement = insert_statement;
         this.IV_combined_statement = combined_statement;
-        this.IV_replication_start_time = replication_start_time;
-        this.IV_client_id = client_id;
-
-    }
-
-    public void setReplicationTypeSimple()
-    {
-        this.IV_replication_type = 1;
-    }
-    public void setReplicationTypeComplex()
-    {
-        this.IV_replication_type = 2;
     }
 
 }
 
 class DynamicRecordsReplicator
 {
+
     //todo add a flag to indicate the instnace is in an un-usable state due to validation errors
     protected string IV_join_statement = "";
     protected string IV_primary_record_uid = "";
@@ -120,7 +134,7 @@ class DynamicRecordsReplicator
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
         
-        if(this.sharedConstructorLogic(ot_helper,child_activity_pointer,1,primary_table_name,primary_key_value,client_id,crush_version,replication_table_prefix) == false)
+        if(this.SharedConstructorLogic(ot_helper,child_activity_pointer,1,primary_table_name,primary_key_value,client_id,crush_version,replication_table_prefix) == false)
         {
             OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
@@ -172,7 +186,7 @@ class DynamicRecordsReplicator
         ////</end> create all tables associated with the primary table
 
 
-        if (this.sharedConstructorLogic(ot_helper, child_activity_pointer, 2, primary_table_name, primary_key_value, client_id, crush_version, replication_table_prefix) == false)
+        if (this.SharedConstructorLogic(ot_helper, child_activity_pointer, 2, primary_table_name, primary_key_value, client_id, crush_version, replication_table_prefix) == false)
         {
             OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
@@ -182,7 +196,7 @@ class DynamicRecordsReplicator
         return;
     }
 
-    private bool sharedConstructorLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,byte replication_type,string primary_table_name, string primary_key_value, string client_id, string crush_version,string replication_table_prefix, string activity_name_prefix = "")
+    private bool SharedConstructorLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,byte replication_type,string primary_table_name, string primary_key_value, string client_id, string crush_version,string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -226,7 +240,7 @@ class DynamicRecordsReplicator
 
 
     //TODO update return type on SBD
-    public List<ReplicationRequest> getReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
+    public List<ReplicationRecord> GetReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -236,7 +250,7 @@ class DynamicRecordsReplicator
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-        List<ReplicationRequest> return_data = new List<ReplicationRequest>();
+        List<ReplicationRecord> return_data = new List<ReplicationRecord>();
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getReplicationSqlStatements");
         validator.addEntry(new DataVR(sql_connection).addRule(SDC.R_not_null));
@@ -272,7 +286,7 @@ class DynamicRecordsReplicator
         foreach(DyanmicMsSqlTable dynamic_table in this.IV_tables)
         {
             bool is_primary_table = false;
-            dynamic_table.getSchemaData(ot_helper, child_activity_pointer, sql_connection, activity_name_prefix);
+            dynamic_table.GetSchemaData(ot_helper, child_activity_pointer, sql_connection, activity_name_prefix);
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
             if(dynamic_table.P_table_name == this.IV_primary_table_name) { is_primary_table=true; } else
@@ -305,11 +319,11 @@ class DynamicRecordsReplicator
         string join_statement = String.Empty;
         if(secondary_tables_for_joins.Length > 0 && this.IV_join_statement.Length >0)
         {
-            join_statement = $" INNER JOIN { secondary_tables_for_joins} ON { this.IV_join_statement} ";
+            join_statement = this.IV_join_statement;
         }
         records_select_statement += $" FROM {this.IV_primary_table_name} {join_statement}   {records_where_statement}={this.IV_primary_record_uid};";        
         SqlDataAdapter sqda = new SqlDataAdapter();
-        SqlCommand select_command = sql_connection.CreateCommand();
+        SqlCommand select_command = sql_connection.CreateCommand();        
         select_command.CommandText = records_select_statement;
         sqda.SelectCommand = select_command;
         DataSet data_set = new DataSet();
@@ -319,7 +333,8 @@ class DynamicRecordsReplicator
         }
         catch (Exception error_instance)
         {
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving schema record from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
+            ETR.AddTag("records_select_statement", records_select_statement);
+            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving data records from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
             return return_data;
         }
 
@@ -328,10 +343,10 @@ class DynamicRecordsReplicator
         //// put records into individual table class instances and collect replication SQL statments
         foreach (DyanmicMsSqlTable dynamic_table in this.IV_tables)
         {
-            dynamic_table.putDataInColumns(ot_helper, child_activity_pointer, data_set, activity_name_prefix);
+            dynamic_table.PutDataInColumns(ot_helper, child_activity_pointer, data_set, activity_name_prefix);
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
-            return_data.AddRange(dynamic_table.generateSqlStatementsFromData(ot_helper, child_activity_pointer, activity_name_prefix));
+            return_data.AddRange(dynamic_table.GenerateSqlStatementsFromData(ot_helper, child_activity_pointer, activity_name_prefix));
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
         }
@@ -346,28 +361,13 @@ class DynamicRecordsReplicator
             return return_data;
         }
         ////</end> verify we've had no errors before doing write operations
-
-
-        if (this.IV_replication_mode == 1)
-        {
-            foreach (ReplicationRequest request in return_data)
-            {
-                request.setReplicationTypeSimple();
-            }
-        }
-        else if (this.IV_replication_mode == 2)
-        {
-            foreach (ReplicationRequest request in return_data)
-            {
-                request.setReplicationTypeComplex();
-            }
-        }
+        
         OTSH.setSuccessEndActivity(ETR);
         return return_data;
     }
 
 
-    public bool replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, List<ReplicationRequest> replication_requests, string activity_name_prefix = "")
+    public int replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, List<ReplicationRecord> replication_requests, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -377,7 +377,7 @@ class DynamicRecordsReplicator
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-        List<List<string>> return_data = new List<List<string>>();
+        int statements_executed = 0;
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".replicateSqlStatements");
         validator.addEntry(new DataVR(sql_connection).addRule(SDC.R_not_null));
@@ -387,7 +387,7 @@ class DynamicRecordsReplicator
         if (validator.validateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return false;
+            return statements_executed;
         }
         ///</end> input data validation       
 
@@ -400,16 +400,16 @@ class DynamicRecordsReplicator
         catch (Exception error_instance)
         {
             OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to destination database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
-            return false;
+            return statements_executed;
         }
         ////</end> switch to database we are replicating records too  
 
         //// replicate the records using the combined select, insert, update statements
         SqlDataAdapter adapter = new SqlDataAdapter();
-        foreach (ReplicationRequest request in replication_requests)
+        foreach (ReplicationRecord request in replication_requests)
         {
             SqlCommand combined_command = sql_connection.CreateCommand();
-            combined_command.CommandText = request.P_insert_statement;
+            combined_command.CommandText = request.P_combined_sql_statement;
             //TODO create a method to put exception handling around SQL methods
             try
             {
@@ -418,15 +418,16 @@ class DynamicRecordsReplicator
             {
                 ETR.AddTag("combined_sql_statement", request.P_combined_sql_statement);
                 OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > executing combined SQL statement > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
-                return false;
+                return statements_executed;
             }
+            statements_executed++;
         }
         //// replicate the records using the combined select, insert, update statements
 
 
 
         OTSH.setSuccessEndActivity(ETR);
-        return true;
+        return statements_executed;
     }
 
     }
