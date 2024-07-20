@@ -315,7 +315,6 @@ class DynamicRecordsReplicator
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return statements_executed;
         }
-
         ///</end> input data validation    
         
         //// switch to database we are replicating records too

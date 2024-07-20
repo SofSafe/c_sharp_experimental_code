@@ -23,7 +23,7 @@ namespace pg4_record_replicator
         {
             string table_name = "Parts";
             string primary_key_value = "12";
-            double crush_version = 1;
+            double crush_version = 0;
             string client_id = "1102";
             HttpsRequestToSychonizerProgram(table_name, primary_key_value, crush_version, client_id);
         }
@@ -111,7 +111,6 @@ namespace pg4_record_replicator
                 //Console.WriteLine(request.P_combined_sql_statement);
 
             }
-
             int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch);
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {

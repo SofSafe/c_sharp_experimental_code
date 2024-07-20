@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 internal class ProjectValidationRuleLists
 {
-    static public readonly List<SDR> R_replication_type = new List<SDR>() { SDV.R_greater_0};
+    static public readonly List<SDR> R_replication_type = new List<SDR>() { SDV.R_1or2};
     static public readonly List<SDR> R_software_version = new List<SDR>() { SDV.R_greater_0 };
     static public readonly List<SDR> R_client_id = new List<SDR>() { SDV.R_client_id };
     

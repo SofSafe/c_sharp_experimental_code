@@ -24,7 +24,7 @@ interface IDcoBaseClass
 
 }
 
-//Sofsafe data object
+//Sofsafe data container
 class Dco<type_of_generic> : IDcoBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
