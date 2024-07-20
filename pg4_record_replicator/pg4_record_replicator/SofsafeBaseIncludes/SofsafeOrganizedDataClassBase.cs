@@ -380,7 +380,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
 
 
         //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
         
         if (allow_empty_data_identifier == false)
         {

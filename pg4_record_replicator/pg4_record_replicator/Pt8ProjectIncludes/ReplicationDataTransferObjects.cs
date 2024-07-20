@@ -78,7 +78,7 @@ class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         ///</end> observability template
 
         //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
         validator.AddEntry(new DataVR(client_id).AddRuleList(this.IV_client_id.P_validation_rules_list));
 
         validator.AddEntry(new DataVR(replication_start_time).AddRuleList(this.IV_replication_start_time.P_validation_rules_list));
@@ -154,7 +154,7 @@ class ReplicationRecord: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         /// observability template for constructor in an ODC inheritor
 
         //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
         validator.AddEntry(new DataVR(select_statment, "insert_statement").AddRuleList(this.IV_select_statement.P_validation_rules_list));
         
         validator.AddEntry(new DataVR(insert_statement, "insert_statement").AddRuleList(this.IV_insert_statement.P_validation_rules_list));

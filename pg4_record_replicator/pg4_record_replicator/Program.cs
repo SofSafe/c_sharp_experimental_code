@@ -111,7 +111,7 @@ namespace pg4_record_replicator
                 //Console.WriteLine(request.P_combined_sql_statement);
 
             }
-            int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch);
+            int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch,"end of day batching");
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);

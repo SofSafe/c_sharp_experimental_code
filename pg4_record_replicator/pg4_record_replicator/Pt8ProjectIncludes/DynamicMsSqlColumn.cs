@@ -69,7 +69,7 @@ class DynamicMsSqlColumn
         }
 
         this.IV_populating_attempted = true;
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".registerListOfOdcInstances");
         validator.AddEntry(new DataVR(table).AddRule(SDV.R_not_null));
         validator.AddEntry(new DataVR(schema_row).AddRule(SDV.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
