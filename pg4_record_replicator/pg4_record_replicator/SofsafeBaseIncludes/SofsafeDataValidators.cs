@@ -7,6 +7,7 @@ using OpenTelemetry.Trace;
 using System.Runtime.CompilerServices;
 using System.Data.Common;
 using System.Collections;
+using System.Data;
 
 
 
@@ -32,11 +33,23 @@ class DataVR
         get { return this.IV_identifier; }
     }
 
-    public DataVR addRule(SDR rule)
+    public DataVR AddRule(SDR rule)
     {
         if (rule != null)
         {
             this.IV_rules.Add(rule);
+        }
+        return this;
+    }
+
+    public DataVR AddRuleList(List<SDR> rule_list)
+    {
+        foreach (SDR rule in rule_list)
+        {
+            if (rule != null)
+            {
+                this.IV_rules.Add(rule);
+            }
         }
         return this;
     }
@@ -52,7 +65,7 @@ class ArgumentValidator
 {
     private List<DataVR> IV_entries = new List<DataVR>();
     private string IV_method_name = "Default Method Name";
-    public void addEntry(DataVR new_entry)
+    public void AddEntry(DataVR new_entry)
     {
         this.IV_entries.Add(new_entry);
     }
@@ -65,16 +78,16 @@ class ArgumentValidator
     }
 
 
-    public bool validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public bool ValidateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
-        Activity ETR = ot_helper.startActivityWrapper("ArgumentValidator.validateData");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("ArgumentValidator.validateData");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
         bool validation_failed = false;
         foreach (DataVR entry in this.IV_entries)
         {
-            SDC.validateData(ot_helper, child_activity_pointer, entry.P_value, entry.P_rules, this.IV_method_name + " > " + entry.P_id);
+            SDC.ValidateData(ot_helper, child_activity_pointer, entry.P_value, entry.P_rules, this.IV_method_name + " > " + entry.P_id);
             if (validation_failed == false && child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 validation_failed = true;
@@ -84,11 +97,11 @@ class ArgumentValidator
 
         if (validation_failed == true)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return true;
     }
 
@@ -110,11 +123,11 @@ static class SDC
 
 
 
-    private static void setupRules(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    private static void SetupRules(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
 
-        Activity ETR = ot_helper.startActivityWrapper("SDC.setupRules");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.setupRules");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
 
@@ -223,26 +236,26 @@ static class SDC
         ////</end> associate rule names with methods
 
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
     }
 
 
-    private static void ruleNotNull(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleNotNull(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
         //the null check happens in the validateData method itself, if a value is null it will never reach here, however a method must exist for each rule.
-        Activity ETR = ot_helper.startActivityWrapper("SDC.ruleNotNull");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.ruleNotNull");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ETR.AddTag("value_to_check", value_to_check);
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return;
 
     }
 
 
-    private static void rulePopulatedNestedArray(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void rulePopulatedNestedArray(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDC.rulePopulatedNestedArray");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.rulePopulatedNestedArray");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
 
         bool enumerable_child_found = true;
         IEnumerable<object> deepest_child = value_to_check as IEnumerable<object>;
@@ -254,7 +267,7 @@ static class SDC
             {
                 if (child_object == null)
                 {
-                    OTSH.addEventThenEndActivity(ETR, "nested list has a null entry", ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventThenEndActivity(ETR, "nested list has a null entry", ErrorTagsCodes.C_input_validation);
                     return;
                 }
                 if (child_object.GetType().GetInterfaces().Contains(typeof(IEnumerable<>)))
@@ -270,67 +283,67 @@ static class SDC
 
         if (deepest_child.Count() == 0)
         {
-            OTSH.addEventThenEndActivity(ETR, "nested list has no entries", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, "nested list has no entries", ErrorTagsCodes.C_input_validation);
             return;
         }
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return;
 
     }
 
 
-    private static void ruleNumberLess0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleNumberLess0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, null, 0);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, null, 0);
         return;
     }
 
-    private static void ruleNotZero(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleNotZero(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, null, null, null, 0);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, null, null, null, 0);
         return;
     }
 
 
 
     
-    private static void ruleNumber1or2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleNumber1or2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, 1,2);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1,2);
         return;
     }
-    private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, 1);
-        return;
-    }
-
-    private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
-    {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_to_check, 1);
+        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1);
         return;
     }
 
-    private static void ruleLenGreater2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_to_check, 3);
+        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 1);
         return;
     }
 
-    private static void ruleClientId(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check)
+    private static void ruleLenGreater2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
+    {
+        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 3);
+        return;
+    }
+
+    private static void ruleClientId(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
 
 
         if (value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
         {
-            SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, (IComparable)value_to_check, 1000, 9999);
+            SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
             return;
         }
 
         //we only need these activity variables if the value can't be handled by a child rule directly
-        Activity ETR = ot_helper.startActivityWrapper("SDC.ruleClientId");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.ruleClientId");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
         //// handle string representation of numbers
@@ -344,21 +357,21 @@ static class SDC
             }
             catch
             {
-                OTSH.addEventThenEndActivity(ETR, "value_to_check could not be converted to a nubmer", ErrorTagsCodes.C_input_validation);
+                OTSH.AddEventThenEndActivity(ETR, "value_to_check could not be converted to a nubmer", ErrorTagsCodes.C_input_validation);
             }
             
-            SDC.childRuleNumberChecker(ot_helper, child_activity_pointer, (IComparable)value_to_check, 1000, 9999);
+            SDC.childRuleNumberChecker(ot_helper, child_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
             
             if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
-                OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                 return;
             }            
         }
         ////</end> handle string representation of numbers
 
 
-        OTSH.addEventThenEndActivity(ETR, "value_to_check didn't match a type this rule supports", ErrorTagsCodes.C_input_validation);
+        OTSH.AddEventThenEndActivity(ETR, "value_to_check didn't match a type this rule supports", ErrorTagsCodes.C_input_validation);
         return;
     }
 
@@ -370,8 +383,8 @@ static class SDC
 
     private static Dictionary<string, SDC.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method_delegate>();
 
-    //TODO add D_ as prefix for delegates in programing standards, in this case CV means class variable.
-    private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check);
+    //todo value_description argument to SBD
+    private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check);
 
     public delegate List<string> CVD_validation_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rules, string value_description = "");
 
@@ -379,11 +392,11 @@ static class SDC
 
     public static void runOnceAtRunTimeStart(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDC.runtimeSetup");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.runtimeSetup");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        SDC.setupRules(ot_helper, child_activity_pointer);
+        SDC.SetupRules(ot_helper, child_activity_pointer);
 
         foreach (string rule_name_key in SDC.CV_rule_name_to_method.Keys)
         {
@@ -430,17 +443,17 @@ static class SDC
             SDC.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);
         }
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
 
     }
 
 
-    private static void childRuleLenChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref object value_to_check, int min_length = -1, int max_length = -1, int exact_length = -1, bool no_null_values = true)
+    private static void childRuleLenChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,ref string value_description, ref object value_to_check, int min_length = -1, int max_length = -1, int exact_length = -1, bool no_null_values = true)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDC.childRuleLenChecker");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.childRuleLenChecker");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-
+        ETR.AddTag("value_description", value_description);
         ETR.AddTag("value_to_check", value_to_check);
 
         Type value_type = value_to_check.GetType();
@@ -450,26 +463,26 @@ static class SDC
         {
             if (min_length != -1 && value_to_check.ToString().Length < min_length)
             {
-                OTSH.addEventToActivity(ETR, "length is less than " + min_length.ToString(), OTSH.C_empty_tags_object);
-                OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                OTSH.AddEventToActivity(ETR, "length is less than " + min_length.ToString(), OTSH.C_empty_tags_object);
+                OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                 return;
             }
 
             if (max_length != -1 && value_to_check.ToString().Length > max_length)
             {
-                OTSH.addEventToActivity(ETR, "length is more than " + max_length.ToString(), OTSH.C_empty_tags_object);
-                OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                OTSH.AddEventToActivity(ETR, "length is more than " + max_length.ToString(), OTSH.C_empty_tags_object);
+                OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                 return;
             }
             if (exact_length != -1 && value_to_check.ToString().Length != exact_length)
             {
-                OTSH.addEventToActivity(ETR, "length does not equal " + exact_length.ToString(), OTSH.C_empty_tags_object);
-                OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                OTSH.AddEventToActivity(ETR, "length does not equal " + exact_length.ToString(), OTSH.C_empty_tags_object);
+                OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                 return;
             }
 
 
-            OTSH.setSuccessEndActivity(ETR);
+            OTSH.SetSuccessEndActivity(ETR);
             return;
         }
         ////</end> handle strings passed as arguments differently since they are no longer enumerable
@@ -488,7 +501,7 @@ static class SDC
                 {
                     if (enumerator.Current == null)
                     {
-                        OTSH.addEventToActivity(ETR, "index:" + loop1.ToString() + " is null", OTSH.C_empty_tags_object);
+                        OTSH.AddEventToActivity(ETR, "index:" + loop1.ToString() + " is null", OTSH.C_empty_tags_object);
                         if (fail_flag == false) { fail_flag = true; }
                     }
                     loop1++;
@@ -496,41 +509,42 @@ static class SDC
             }
             if (min_length != -1 && object_length < min_length)
             {
-                OTSH.addEventToActivity(ETR, "length is less than " + min_length.ToString(), OTSH.C_empty_tags_object);
+                OTSH.AddEventToActivity(ETR, "length is less than " + min_length.ToString(), OTSH.C_empty_tags_object);
                 fail_flag = true;
             }
             if (max_length != -1 && object_length < max_length)
             {
-                OTSH.addEventToActivity(ETR, "length is more than " + max_length.ToString(), OTSH.C_empty_tags_object);
+                OTSH.AddEventToActivity(ETR, "length is more than " + max_length.ToString(), OTSH.C_empty_tags_object);
                 fail_flag = true;
             }
             if (exact_length != -1 && object_length != exact_length)
             {
-                OTSH.addEventToActivity(ETR, "length does not equal " + exact_length.ToString(), OTSH.C_empty_tags_object);
+                OTSH.AddEventToActivity(ETR, "length does not equal " + exact_length.ToString(), OTSH.C_empty_tags_object);
                 fail_flag = true;
             }
 
             if (fail_flag == true)
             {
-                OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                 return;
             }
-            OTSH.setSuccessEndActivity(ETR);
+            OTSH.SetSuccessEndActivity(ETR);
             return;
         }
         ////</end> handle enumerable objects
 
 
-        OTSH.addEventThenEndActivity(ETR,"value isn't a string or enumerable",ErrorTagsCodes.C_input_validation);
+        OTSH.AddEventThenEndActivity(ETR,"value isn't a string or enumerable",ErrorTagsCodes.C_input_validation);
         return;
     }
 
-    private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, IComparable value_to_check, IComparable min_value = null, IComparable max_value = null, IComparable exact_value = null, IComparable not_value = null)
+    private static void childRuleNumberChecker(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, IComparable value_to_check, IComparable min_value = null, IComparable max_value = null, IComparable exact_value = null, IComparable not_value = null)
     {
-        Activity ETR = ot_helper.startActivityWrapper("SDC.numberGreater0");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.numberGreater0");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
+        ETR.AddTag("value_description", value_description);
 
 
         try
@@ -542,29 +556,29 @@ static class SDC
 
                 if (not_value != null && converted_value_to_check == (double)Convert.ToDouble(not_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is  equal to " + not_value.ToString() + " and shouldn't be", OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is  equal to " + not_value.ToString() + " and shouldn't be", OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
                 if (min_value != null && converted_value_to_check < (double)Convert.ToDouble(min_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
                 if (max_value != null && converted_value_to_check > (double)Convert.ToDouble(max_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
                 if (exact_value != null && converted_value_to_check != (double)Convert.ToDouble(exact_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
@@ -576,29 +590,29 @@ static class SDC
 
                 if (not_value != null && converted_value_to_check == (decimal)Convert.ToDecimal(not_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is  equal to " + not_value.ToString() + " and shouldn't be", OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is  equal to " + not_value.ToString() + " and shouldn't be", OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
                 if (min_value != null && converted_value_to_check < (decimal)Convert.ToDecimal(min_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is less than " + min_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
                 if (max_value != null && converted_value_to_check > (decimal)Convert.ToDecimal(max_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is more than " + max_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
 
                 if (exact_value != null && converted_value_to_check != (decimal)Convert.ToDecimal(exact_value))
                 {
-                    OTSH.addEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
-                    OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+                    OTSH.AddEventToActivity(ETR, "value is not equal to " + exact_value.ToString(), OTSH.C_empty_tags_object);
+                    OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
                     return;
                 }
             }
@@ -606,21 +620,25 @@ static class SDC
         catch (Exception exception_object)
         {
             ETR.RecordException(exception_object);
-            OTSH.addEventThenEndActivity(ETR, "exception while comparing number values", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, "exception while comparing number values", ErrorTagsCodes.C_input_validation);
             return;
         }
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return;
     }
-    public static List<string> validateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string value_description = "")
+    public static List<string> ValidateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, object value_to_check, List<SDR> rule_list, string value_description = "")
     {
 
-        Activity ETR = ot_helper.startActivityWrapper("SDC.validateData");
-        method_activity_pointer.setPointerValue(ETR, ETR.TraceId);
+        Activity ETR = ot_helper.StartActivityWrapper("SDC.validateData");
+        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("value_to_check", value_to_check);
-
+        ETR.AddTag("value_description", value_description);
+        if (value_description == null)
+        {
+            value_description = "";
+        }
         if (value_description.Length > 0)
         {
             value_description += " > ";
@@ -632,7 +650,7 @@ static class SDC
         {
             string error_message = value_description + "value is null";
             return_value.Add(error_message);
-            OTSH.addEventThenEndActivity(ETR, "value is null", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, "value is null", ErrorTagsCodes.C_input_validation);
             return return_value;
         }
 
@@ -669,7 +687,7 @@ static class SDC
             {
                 rules_compatiblity_failed = true;
                 string error_message = value_description + " rule: " + rule_name + " is  not compatible with value";
-                OTSH.addEventThenEndActivity(ETR, error_message, ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
+                OTSH.AddEventThenEndActivity(ETR, error_message, ErrorTagsCodes.C_input_validation, OTSH.C_empty_tags_object);
                 return_value.Add(error_message);
                 continue;
             }
@@ -680,7 +698,7 @@ static class SDC
 
         if (rules_compatiblity_failed == true)
         {
-            OTSH.addEventThenEndActivity(ETR, "rule compatability check failed", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, "rule compatability check failed", ErrorTagsCodes.C_input_validation);
             return_value.Add(value_description + "rule compatability check failed");
             return return_value;
         }
@@ -692,7 +710,7 @@ static class SDC
             string rule_name = rule.P_rule_name;
             SDC.CVD_rule_method_delegate method_to_call;
             SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
-            method_to_call(ot_helper, child_activity_pointer, ref value_to_check);
+            method_to_call(ot_helper, child_activity_pointer, ref value_description, ref value_to_check);
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 Activity.Enumerator<ActivityEvent> error_events = child_activity_pointer.P_pointer.EnumerateEvents();
@@ -707,10 +725,10 @@ static class SDC
 
         if (return_value.Count > 0)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return return_value;
         }
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return return_value;
     }
 

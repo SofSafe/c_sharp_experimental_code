@@ -16,20 +16,20 @@ static class OTSH
     public static Dictionary<string, Object> C_empty_tags_object;
 
 
-    public static void setSuccessEndActivity(Activity activity)
+    public static void SetSuccessEndActivity(Activity activity)
     {
         activity.SetStatus(ActivityStatusCode.Ok);
         activity.Stop();
     }
 
-    public static void setFailureEndActivity(Activity activity, ushort error_code)
+    public static void SetFailureEndActivity(Activity activity, ushort error_code)
     {
         activity.AddTag(ErrorTagsCodes.C_tag_error_code, error_code);
         activity.SetStatus(ActivityStatusCode.Error);
         activity.Stop();
     }
 
-    public static void passStatusAndEndActivity(Activity parent_activity, Activity child_activity)
+    public static void PassStatusAndEndActivity(Activity parent_activity, Activity child_activity)
     {
         parent_activity.SetStatus(child_activity.Status);
         if (child_activity.GetTagItem(ErrorTagsCodes.C_tag_error_code) != null)
@@ -41,25 +41,25 @@ static class OTSH
 
     }
 
-    public static bool checkStatusAndEndActivity(Activity parent_activity, Activity child_activity)
+    public static bool CheckStatusAndEndActivity(Activity parent_activity, Activity child_activity)
     {
         if (child_activity.Status == ActivityStatusCode.Ok) { return true; }
 
-        OTSH.passStatusAndEndActivity(parent_activity, child_activity);
+        OTSH.PassStatusAndEndActivity(parent_activity, child_activity);
         return false;
 
     }
 
 
-    public static void addEventThenEndActivity(Activity activity, string event_summary, ushort error_code, Dictionary<string, Object> tag_items=null)
+    public static void AddEventThenEndActivity(Activity activity, string event_summary, ushort error_code, Dictionary<string, Object> tag_items=null)
     {   
-        OTSH.addEventToActivity(activity, event_summary, tag_items);
+        OTSH.AddEventToActivity(activity, event_summary, tag_items);
         activity.SetTag(ErrorTagsCodes.C_tag_error_code, error_code);
         activity.SetStatus(ActivityStatusCode.Error);
         activity.Stop();
     }
 
-    public static void addEventToActivity(Activity activity, string event_summary, Dictionary<string, Object> tag_items=null)
+    public static void AddEventToActivity(Activity activity, string event_summary, Dictionary<string, Object> tag_items=null)
     {
         if (tag_items != null && tag_items.Count > 0)
         {
@@ -74,7 +74,7 @@ static class OTSH
         activity.AddEvent(new ActivityEvent(event_summary, DateTime.Now));
     }
 
-    public static bool checkActivityList(Activity methods_activity_object, List<Activity> activity_list, out ChildActivityPointer first_failed_activity)
+    public static bool CheckActivityList(Activity methods_activity_object, List<Activity> activity_list, out ChildActivityPointer first_failed_activity)
     {
         bool fail_flag = false;
         first_failed_activity = new ChildActivityPointer();
@@ -83,7 +83,7 @@ static class OTSH
         {
             if (entry == null)
             {
-                OTSH.addEventToActivity(methods_activity_object, "checkActivityList > null activity_list entry");
+                OTSH.AddEventToActivity(methods_activity_object, "checkActivityList > null activity_list entry");
                 fail_flag = true;
                 continue;
             }
@@ -92,7 +92,7 @@ static class OTSH
             {
                 if (fail_flag == false)
                 {
-                    first_failed_activity.setPointerValue(entry, entry.TraceId);
+                    first_failed_activity.SetPointerValue(entry, entry.TraceId);
                     fail_flag = true;
                 }
 
@@ -142,7 +142,7 @@ class OpenTelemetryConfigHelper
     }
 
 
-    public Activity startActivityWrapper(string activity_name)
+    public Activity StartActivityWrapper(string activity_name)
     {
 
         //these 2 disables have to be done because the StartActivity method returns an Activity instance or null. in this case we know the activity source is good.
@@ -163,7 +163,7 @@ class ChildActivityPointer
     public static readonly Activity C_default_safe_value = new Activity("ChildActivityPointer default safe value");
 
 
-    public void setPointerValue(Activity child_activity, ActivityTraceId trace_id)
+    public void SetPointerValue(Activity child_activity, ActivityTraceId trace_id)
     {
         //trace_id argument is here on purpose, see the SBD
         this.IV_child_activity_pointer = child_activity;
@@ -184,7 +184,7 @@ class ChildActivityPointer
     }
 
     //TODO add to SBD
-    public void equals(ChildActivityPointer other)
+    public void Equals(ChildActivityPointer other)
     {
         this.IV_child_activity_pointer = other.IV_child_activity_pointer;
     }
@@ -214,9 +214,20 @@ class LogErrorsToConsole : BaseProcessor<Activity>
             object test = value.GetTagItem(ErrorTagsCodes.C_tag_error_code);
             Console.WriteLine("error code: " + value.GetTagItem(ErrorTagsCodes.C_tag_error_code));
 
+            foreach (var tag in value.Tags)
+            {
+                try
+                {
+                    Console.WriteLine($"Tag: {tag.Key} : {tag.Value}");
+                }
+                catch { }
+                 
+            }
+
             foreach (ActivityEvent event_entry in value.Events)
             {
                 Console.WriteLine(event_entry.Name);
+
             }
             Console.WriteLine("");
         }
