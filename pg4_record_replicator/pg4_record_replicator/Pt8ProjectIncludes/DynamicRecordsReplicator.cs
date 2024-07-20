@@ -9,106 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-//TODO add to SBD and finish implementing
-
-class ReplicationBatch
-{
-    protected byte IV_replication_type;
-    List<ReplicationRecord> IV_replication_records = new List<ReplicationRecord>();
-    protected decimal IV_crush_verison = 0;
-    protected short IV_client_id = 0;
-    protected DateTime IV_replication_start_time;
-
-    public DateTime P_replication_start_time
-    {
-        get { return this.IV_replication_start_time; }
-    }
-
-    public byte P_replication_type
-    {
-        get { return this.IV_replication_type; }
-    }
-    public void SetReplicationTypeSimple()
-    {
-        this.IV_replication_type = 1;
-    }
-    public void SetReplicationTypeComplex()
-    {
-        this.IV_replication_type = 2;
-    }
-
-    public string GetBatchAsJson()
-    {
-        string json_data = "";
-        return json_data;
-
-    }
-
-    public bool PopulateBatchFromJson()
-    {
-        return true;
-    }
-
-
-}
-
-
-//TODO add to SBD and finish implementing
-class ReplicationRecord
-{
-    private string IV_select_statement;
-    private string IV_insert_statement;
-    private string IV_update_statement;
-    private string IV_combined_statement;
-
-    public string P_select_statement {
-        get {return this.IV_select_statement;}
-    }
-    public string P_insert_statement
-    {
-        get { return this.IV_insert_statement; }
-    }
-    public string P_update_statement
-    {
-        get { return this.IV_update_statement; }
-    }
-
-    public string P_combined_sql_statement
-    {
-        get { return this.IV_combined_statement; }
-    }
-
-    public ReplicationRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string select_statment, string insert_statement, string update_statement, string combined_statement, string activity_name_prefix = "")
-    {
-        /// observability template
-        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
-        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
-        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        ///</end> observability template
-
-        //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
-        //TODO create a rules to detect that a string has the right keywords for a select, insert, or update statement     
-        validator.addEntry(new DataVR(select_statment).addRule(SDC.R_len_greater_2));
-        validator.addEntry(new DataVR(insert_statement).addRule(SDC.R_len_greater_2));
-        validator.addEntry(new DataVR(update_statement).addRule(SDC.R_len_greater_2));
-        validator.addEntry(new DataVR(combined_statement).addRule(SDC.R_len_greater_2));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
-        {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return;
-        }
-        ///</end> input data validation
-
-        this.IV_select_statement = select_statment;
-        this.IV_update_statement = update_statement;
-        this.IV_insert_statement = insert_statement;
-        this.IV_combined_statement = combined_statement;
-    }
-
-}
 
 class DynamicRecordsReplicator
 {
@@ -119,48 +19,53 @@ class DynamicRecordsReplicator
     protected string IV_primary_table_name = "";
     protected byte IV_replication_mode = 0;
     protected string IV_client_id = "";
-    protected string IV_crush_version = "";
+    protected double IV_software_version = 0;
     protected string IV_replicated_table_name_prefix = "";
+    //todo add to SBD
+    private readonly bool _IV_constructor_success = false;
     protected List<DyanmicMsSqlTable> IV_tables = new List<DyanmicMsSqlTable> ();
 
 
-    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, string client_id, string crush_version, string replication_table_prefix, string activity_name_prefix = "")
+    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, string client_id, double software_version, string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".SimpleReplicationConstructor");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".SimpleReplicationConstructor");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
         
-        if(this.SharedConstructorLogic(ot_helper,child_activity_pointer,1,primary_table_name,primary_key_value,client_id,crush_version,replication_table_prefix) == false)
+        if(this.SharedConstructorLogic(ot_helper,child_activity_pointer,1,primary_table_name,primary_key_value,client_id,software_version,replication_table_prefix) == false)
         {
-            OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
         }
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
+        this._IV_constructor_success = true;
         return;
     }
 
 
-    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, List<string> secondary_table_names, string client_id, string crush_version, string join_statement, string replication_table_prefix, string activity_name_prefix = "")
+    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, List<string> secondary_table_names, string client_id, double software_version, string join_statement, string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".ComplexReplicationConstructor");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".ComplexReplicationConstructor");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor2");
         //TODO create a rule for a list of sql table names
-        validator.addEntry(new DataVR(secondary_table_names).addRule(SDC.R_len_greater_0));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        //SharedConstructorLogic validates all other arguments
+        validator.AddEntry(new DataVR(secondary_table_names).AddRule(SDC.R_len_greater_0));
+
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
         }
         ///</end> input data validation
@@ -178,44 +83,45 @@ class DynamicRecordsReplicator
         }
         
         ChildActivityPointer first_failed_activity;
-        if(OTSH.checkActivityList(ETR,method_activites_list,out first_failed_activity) == false)
+        if(OTSH.CheckActivityList(ETR,method_activites_list,out first_failed_activity) == false)
         {
-            OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
+            OTSH.PassStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
             return;
         }
         ////</end> create all tables associated with the primary table
 
 
-        if (this.SharedConstructorLogic(ot_helper, child_activity_pointer, 2, primary_table_name, primary_key_value, client_id, crush_version, replication_table_prefix) == false)
+        if (this.SharedConstructorLogic(ot_helper, child_activity_pointer, 2, primary_table_name, primary_key_value, client_id, software_version, replication_table_prefix) == false)
         {
-            OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
         }
         
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
+        this._IV_constructor_success = true;
         return;
     }
 
-    private bool SharedConstructorLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,byte replication_type,string primary_table_name, string primary_key_value, string client_id, string crush_version,string replication_table_prefix, string activity_name_prefix = "")
+    private bool SharedConstructorLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,byte replication_type,string primary_table_name, string primary_key_value, string client_id, double software_version,string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".sharedConstructorLogic");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".sharedConstructorLogic");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".sharedConstructorLogic");
-        validator.addEntry(new DataVR(replication_type).addRule(SDC.R_1or2));
-        validator.addEntry(new DataVR(primary_table_name).addRule(SDC.R_len_greater_0));
-        validator.addEntry(new DataVR(primary_key_value).addRule(SDC.R_len_greater_0));
-        validator.addEntry(new DataVR(client_id).addRule(SDC.R_client_id));
-        validator.addEntry(new DataVR(crush_version).addRule(SDC.R_len_greater_2));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        validator.AddEntry(new DataVR(replication_type, "replication_type").AddRule(SDC.R_1or2));
+        validator.AddEntry(new DataVR(primary_table_name, "primary_table_name").AddRule(SDC.R_len_greater_0));
+        validator.AddEntry(new DataVR(primary_key_value, "primary_key_value").AddRule(SDC.R_len_greater_0));
+        validator.AddEntry(new DataVR(client_id, "client_id").AddRule(SDC.R_client_id));
+        validator.AddEntry(new DataVR(software_version, "software_version").AddRule(SDC.R_greater_0));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return false;
         }
         ///</end> input data validation
@@ -223,42 +129,50 @@ class DynamicRecordsReplicator
         DyanmicMsSqlTable primary_table = new DyanmicMsSqlTable(ot_helper, child_activity_pointer, primary_table_name, client_id, replication_table_prefix + primary_table_name, activity_name_prefix);
         if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
         {
-            OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return false;
         }
 
-        this.IV_crush_version = crush_version;
+        this.IV_software_version = software_version;
         this.IV_client_id = client_id;
         this.IV_replication_mode = replication_type;
         this.IV_primary_table_name = primary_table_name;
         this.IV_primary_record_uid = primary_key_value;
         this.IV_tables.Add(primary_table);
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return true;
     }
 
 
     //TODO update return type on SBD
-    public List<ReplicationRecord> GetReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
+    public ReplicationBatch GetReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".getReplicationSqlStatements");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".getReplicationSqlStatements");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-        List<ReplicationRecord> return_data = new List<ReplicationRecord>();
+        ReplicationBatch return_value = new ReplicationBatch(ot_helper,child_activity_pointer,this.IV_client_id,this.IV_software_version,DateTime.Now,this.IV_replication_mode, activity_name_prefix);
+                
+
         //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getReplicationSqlStatements");
-        validator.addEntry(new DataVR(sql_connection).addRule(SDC.R_not_null));
-        validator.addEntry(new DataVR(source_db_name).addRule(SDC.R_len_greater_0));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        if(this._IV_constructor_success != true)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return return_data;
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > method not running due to the fact the class constructor failed when it ran", ErrorTagsCodes.C_input_validation);
+            return return_value;
+        }
+
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getReplicationSqlStatements");
+        validator.AddEntry(new DataVR(sql_connection).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(source_db_name).AddRule(SDC.R_len_greater_0));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return return_value;
         }
         ///</end> input data validation       
 
@@ -270,8 +184,8 @@ class DynamicRecordsReplicator
         }
         catch (Exception error_instance)
         {
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to source database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
-            return return_data;
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to source database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
+            return return_value;
         }       
         ////</end> switch to database we are replicating records from
 
@@ -334,8 +248,8 @@ class DynamicRecordsReplicator
         catch (Exception error_instance)
         {
             ETR.AddTag("records_select_statement", records_select_statement);
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving data records from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
-            return return_data;
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving data records from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
+            return return_value;
         }
 
         ////</end> run query to get all records that need to be replicated
@@ -346,7 +260,7 @@ class DynamicRecordsReplicator
             dynamic_table.PutDataInColumns(ot_helper, child_activity_pointer, data_set, activity_name_prefix);
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
-            return_data.AddRange(dynamic_table.GenerateSqlStatementsFromData(ot_helper, child_activity_pointer, activity_name_prefix));
+            return_value.P_replication_records.AddRange(dynamic_table.GenerateSqlStatementsFromData(ot_helper, child_activity_pointer, activity_name_prefix));
             method_activities_list.Add(child_activity_pointer.P_pointer);
 
         }
@@ -354,43 +268,56 @@ class DynamicRecordsReplicator
 
         //// verify we've had no errors before doing write operations
         ChildActivityPointer first_failed_activity = null;
-        if (OTSH.checkActivityList(ETR, method_activities_list, out first_failed_activity) == false)
+        if (OTSH.CheckActivityList(ETR, method_activities_list, out first_failed_activity) == false)
         {
-            OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
-            return_data.Clear();
-            return return_data;
+            OTSH.PassStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
+            return_value.P_replication_records.Clear();
+            return return_value;
         }
         ////</end> verify we've had no errors before doing write operations
         
-        OTSH.setSuccessEndActivity(ETR);
-        return return_data;
+        OTSH.SetSuccessEndActivity(ETR);
+        return return_value;
     }
 
 
-    public int replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, List<ReplicationRecord> replication_requests, string activity_name_prefix = "")
+    public int replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, ReplicationBatch replication_batch, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".replicateSqlStatements");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".replicateSqlStatements");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
         int statements_executed = 0;
         //// input data validation
-        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".replicateSqlStatements");
-        validator.addEntry(new DataVR(sql_connection).addRule(SDC.R_not_null));
-        validator.addEntry(new DataVR(dest_db_name).addRule(SDC.R_len_greater_0));
-        //TODO make a more specific validation rule for replication lists
-        validator.addEntry(new DataVR(replication_requests).addRule(SDC.R_len_greater_0));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        if (this._IV_constructor_success != true)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > method not running due to the fact the class constructor failed when it ran", ErrorTagsCodes.C_input_validation);
             return statements_executed;
         }
-        ///</end> input data validation       
 
+        ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".replicateSqlStatements");
+        validator.AddEntry(new DataVR(sql_connection).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(dest_db_name).AddRule(SDC.R_len_greater_0));
+        //TODO make a more specific validation rule for replication lists
+        validator.AddEntry(new DataVR(replication_batch).AddRule(SDC.R_not_null));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return statements_executed;
+        }
+          
+        if(replication_batch.ValidateData(ot_helper,child_activity_pointer,activity_name_prefix) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return statements_executed;
+        }
+
+        ///</end> input data validation    
+        
         //// switch to database we are replicating records too
         ETR.AddTag("dest_db_name", dest_db_name);
         try
@@ -399,14 +326,14 @@ class DynamicRecordsReplicator
         }
         catch (Exception error_instance)
         {
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to destination database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > switching to destination database > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
             return statements_executed;
         }
         ////</end> switch to database we are replicating records too  
 
         //// replicate the records using the combined select, insert, update statements
         SqlDataAdapter adapter = new SqlDataAdapter();
-        foreach (ReplicationRecord request in replication_requests)
+        foreach (ReplicationRecord request in replication_batch.P_replication_records)
         {
             SqlCommand combined_command = sql_connection.CreateCommand();
             combined_command.CommandText = request.P_combined_sql_statement;
@@ -417,7 +344,7 @@ class DynamicRecordsReplicator
             } catch (Exception error_instance)
             {
                 ETR.AddTag("combined_sql_statement", request.P_combined_sql_statement);
-                OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > executing combined SQL statement > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
+                OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > executing combined SQL statement > {error_instance.Message}", ErrorTagsCodes.C_server_db_connection);
                 return statements_executed;
             }
             statements_executed++;
@@ -426,7 +353,7 @@ class DynamicRecordsReplicator
 
 
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return statements_executed;
     }
 

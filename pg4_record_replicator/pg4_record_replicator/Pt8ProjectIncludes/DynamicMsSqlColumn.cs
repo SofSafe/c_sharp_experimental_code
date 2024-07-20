@@ -54,8 +54,8 @@ class DynamicMsSqlColumn
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".PopulateSchemaInformation");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".PopulateSchemaInformation");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
@@ -64,17 +64,17 @@ class DynamicMsSqlColumn
         //// input data validation
         if(this.IV_populating_attempted == true)
         {
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > PopulateSchemaInformation has already been called on this instance", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > PopulateSchemaInformation has already been called on this instance", ErrorTagsCodes.C_input_validation);
             return false;
         }
 
         this.IV_populating_attempted = true;
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
-        validator.addEntry(new DataVR(table).addRule(SDC.R_not_null));
-        validator.addEntry(new DataVR(schema_row).addRule(SDC.R_not_null));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        validator.AddEntry(new DataVR(table).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(schema_row).AddRule(SDC.R_not_null));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
         ///</end> input data validation
@@ -173,12 +173,12 @@ class DynamicMsSqlColumn
         if(errors.Length > 0)
         {
             ETR.AddTag("column data", debugging_row_data);
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > {errors}", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {errors}", ErrorTagsCodes.C_input_validation);
             return false;
         }
 
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return true;
     }
 

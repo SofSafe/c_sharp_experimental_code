@@ -5,6 +5,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace pg4_record_replicator
 {
@@ -12,15 +14,16 @@ namespace pg4_record_replicator
     {
         static void Main(string[] args)
         {
-            SimpleReplicationExampleCrushLogic();
-            //ComplexReplicationExampleCrushLogic();
+
+            //SimpleReplicationExampleCrushLogic();
+            ComplexReplicationExampleCrushLogic();
         }        
     
         static void SimpleReplicationExampleCrushLogic()
         {
             string table_name = "Parts";
             string primary_key_value = "12";
-            string crush_version = "4.84";
+            double crush_version = 1;
             string client_id = "1102";
             HttpsRequestToSychonizerProgram(table_name, primary_key_value, crush_version, client_id);
         }
@@ -29,7 +32,7 @@ namespace pg4_record_replicator
         {
             string table_name = ReplicationTableHelper.PosSalesHdr.P_primary_table_name;
             string primary_key_value = "29";
-            string crush_version = "4.84";
+            double crush_version = 1;
             string client_id = "1102";
             string join_statment = ReplicationTableHelper.PosSalesHdr.P_join_statement;
             List<string> secondary_tables = ReplicationTableHelper.PosSalesHdr.P_secondary_tables;
@@ -40,7 +43,7 @@ namespace pg4_record_replicator
 
         static void HttpsRequestToSychonizerProgram(string arg_table_name,
         string arg_primary_uid,
-        string arg_crush_version,
+        double arg_software_version,
         string arg_client_id,
         string arg_join_statement =null,
         List<string> arg_secondary_tables=null
@@ -55,7 +58,7 @@ namespace pg4_record_replicator
             //do runtime setup for data validation class
             SDC.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
 
-            Activity ETR = ot_helper.startActivityWrapper("SychonizerProgram");
+            Activity ETR = ot_helper.StartActivityWrapper("SychonizerProgram");
 
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
@@ -77,28 +80,30 @@ namespace pg4_record_replicator
                 && arg_secondary_tables.Count > 0)
             {
                 replicator = new DynamicRecordsReplicator(ot_helper, child_activity_pointer, arg_table_name, arg_primary_uid,
-                arg_secondary_tables, arg_client_id, arg_crush_version, arg_join_statement, "Remote");
+                arg_secondary_tables, arg_client_id, arg_software_version, arg_join_statement, "Remote");
             }
             else
             {
                 replicator = new DynamicRecordsReplicator(ot_helper, child_activity_pointer, arg_table_name, arg_primary_uid,
-                 arg_client_id, arg_crush_version, "Remote");
+                 arg_client_id, arg_software_version, "Remote");
             }
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
-            List<ReplicationRecord> replication_statements = new List<ReplicationRecord>();
-            replication_statements = replicator.GetReplicationSqlStatements(ot_helper, child_activity_pointer, "CRUSH_1102", connection);
+            ReplicationBatch replication_batch;
+            replication_batch = replicator.GetReplicationSqlStatements(ot_helper, child_activity_pointer, "CRUSH_1102", connection);
             method_activity_list.Add(child_activity_pointer.P_pointer);
 
+            bool test = replication_batch.ValidateData(ot_helper, child_activity_pointer);
+
             ChildActivityPointer first_failed_activity;
-            if (OTSH.checkActivityList(ETR, method_activity_list, out first_failed_activity) == false)
+            if (OTSH.CheckActivityList(ETR, method_activity_list, out first_failed_activity) == false)
             {
                 Console.WriteLine(first_failed_activity.P_pointer.DisplayName);
-                OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
+                OTSH.PassStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
                 return;
             }
 
-            foreach (ReplicationRecord request in replication_statements)
+            foreach (ReplicationRecord request in replication_batch.P_replication_records)
             {
                 //Console.WriteLine(request.P_select_statement);
                 //Console.WriteLine(request.P_insert_statement);
@@ -107,16 +112,16 @@ namespace pg4_record_replicator
 
             }
 
-            int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_statements);
+            int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch);
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
-                OTSH.passStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+                OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
                 return;
             }
 
             Console.WriteLine($"Replicated {replication_count} records.");
 
-            OTSH.setSuccessEndActivity(ETR);
+            OTSH.SetSuccessEndActivity(ETR);
             return;
         }
 

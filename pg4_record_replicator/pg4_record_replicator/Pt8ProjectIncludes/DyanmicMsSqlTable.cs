@@ -33,19 +33,19 @@ class DyanmicMsSqlTable
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
-        validator.addEntry(new DataVR(replicate_from_table_name).addRule(SDC.R_len_greater_2));
-        validator.addEntry(new DataVR(client_id).addRule(SDC.R_client_id));
-        validator.addEntry(new DataVR(replicate_to_table_name).addRule(SDC.R_len_greater_2));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        validator.AddEntry(new DataVR(replicate_from_table_name).AddRule(SDC.R_len_greater_2));
+        validator.AddEntry(new DataVR(client_id).AddRule(SDC.R_client_id));
+        validator.AddEntry(new DataVR(replicate_to_table_name).AddRule(SDC.R_len_greater_2));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return;
         }
         ///</end> input data validation
@@ -54,7 +54,7 @@ class DyanmicMsSqlTable
         this.IV_table_name = replicate_from_table_name;
         this.IV_table.TableName = replicate_from_table_name;
         this.IV_replicated_data_table_name = replicate_to_table_name;
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return;
 
 
@@ -67,17 +67,17 @@ class DyanmicMsSqlTable
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".getSchemaData");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".getSchemaData");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getSchemaData");
-        validator.addEntry(new DataVR(connection_instance).addRule(SDC.R_not_null));
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        validator.AddEntry(new DataVR(connection_instance).AddRule(SDC.R_not_null));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
         ///</end> input data validation
@@ -94,7 +94,7 @@ class DyanmicMsSqlTable
             adapter.Fill(data_set);
         } catch (Exception error_instance)
         {
-            OTSH.addEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving schema record from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > retrieving schema record from server > {error_instance.Message}", ErrorTagsCodes.C_db_read_failed);
             return false;
         }
         List<Activity> method_activities_list = new List<Activity>();
@@ -115,27 +115,27 @@ class DyanmicMsSqlTable
         }
 
         ChildActivityPointer first_failed_activity = null;
-        if (OTSH.checkActivityList(ETR,method_activities_list, out first_failed_activity) == false)
+        if (OTSH.CheckActivityList(ETR,method_activities_list, out first_failed_activity) == false)
         {
-            OTSH.passStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
+            OTSH.PassStatusAndEndActivity(ETR, first_failed_activity.P_pointer);
             return false;
         }
 
         if(this.IV_columns_meta_data.Count == 0)
         {
             ETR.AddTag("IV_table.TableName", this.IV_table.TableName);
-            OTSH.addEventThenEndActivity(ETR, "no data in IV_columns_meta_data", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, "no data in IV_columns_meta_data", ErrorTagsCodes.C_input_validation);
             return false;
         }
 
         if(primary_keys_found > 1)
         {
             ETR.AddTag("IV_table.TableName", this.IV_table.TableName);
-            OTSH.addEventThenEndActivity(ETR, "more than 1 primary key found", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, "more than 1 primary key found", ErrorTagsCodes.C_input_validation);
             return false;
         }
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return true;
     }
 
@@ -145,21 +145,21 @@ class DyanmicMsSqlTable
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".PutDataInColumns");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".PutDataInColumns");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".PutDataInColumns");
-        validator.addEntry(new DataVR(data_set).addRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(data_set).AddRule(SDC.R_not_null));
         if (data_set != null)
         {
-            validator.addEntry(new DataVR(data_set.Tables.Count).addRule(SDC.R_greater_0));
+            validator.AddEntry(new DataVR(data_set.Tables.Count).AddRule(SDC.R_greater_0));
         }
-        if (validator.validateData(ot_helper, child_activity_pointer) == false)
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
-            OTSH.setFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return false;
         }
         ///</end> input data validation        
@@ -169,11 +169,11 @@ class DyanmicMsSqlTable
             this.IV_table.Merge(data_set.Tables[0], true, MissingSchemaAction.Ignore);
         } catch(Exception error_object)
         {
-            OTSH.addEventThenEndActivity(ETR, $"merge failed: {error_object.Message}", ErrorTagsCodes.C_parsing_db_records_failed);
+            OTSH.AddEventThenEndActivity(ETR, $"merge failed: {error_object.Message}", ErrorTagsCodes.C_parsing_db_records_failed);
             return false;
         }
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return true;
     }
 
@@ -185,8 +185,8 @@ class DyanmicMsSqlTable
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.startActivityWrapper(activity_name_prefix + this.GetType().Name + ".generateSqlStatementsFromData");
-        if (method_activity_pointer != null) { method_activity_pointer.setPointerValue(ETR, ETR.TraceId); }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".generateSqlStatementsFromData");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
         ///</end> observability template
@@ -205,7 +205,6 @@ class DyanmicMsSqlTable
             int loop1 = -1;
             foreach (DataColumn column in this.IV_table.Columns)
             {
-                bool value_found = false;
                 string equals_statement = "";
 
                 string next_insert_value = "";
@@ -325,12 +324,12 @@ class DyanmicMsSqlTable
                 ;";
 
 
-            return_value.Add(new ReplicationRecord(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement, activity_name_prefix));
+            return_value.Add(new ReplicationRecord(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement,null, activity_name_prefix));
         }
         ////</end> build the parts of the select, insert and update statements that will use data from the replicated data
 
 
-        OTSH.setSuccessEndActivity(ETR);
+        OTSH.SetSuccessEndActivity(ETR);
         return return_value;
     }
 }
