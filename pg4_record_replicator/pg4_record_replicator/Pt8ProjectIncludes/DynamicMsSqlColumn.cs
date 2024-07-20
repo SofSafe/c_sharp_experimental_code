@@ -70,8 +70,8 @@ class DynamicMsSqlColumn
 
         this.IV_populating_attempted = true;
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".registerListOfOdcInstances");
-        validator.AddEntry(new DataVR(table).AddRule(SDC.R_not_null));
-        validator.AddEntry(new DataVR(schema_row).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(table).AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(schema_row).AddRule(SDV.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);

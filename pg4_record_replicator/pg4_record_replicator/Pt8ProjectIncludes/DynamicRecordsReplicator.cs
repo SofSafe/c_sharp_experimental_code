@@ -61,7 +61,7 @@ class DynamicRecordsReplicator
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor2");
         //TODO create a rule for a list of sql table names
         //SharedConstructorLogic validates all other arguments
-        validator.AddEntry(new DataVR(secondary_table_names).AddRule(SDC.R_len_greater_0));
+        validator.AddEntry(new DataVR(secondary_table_names).AddRule(SDV.R_len_greater_0));
 
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
@@ -114,11 +114,11 @@ class DynamicRecordsReplicator
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".sharedConstructorLogic");
-        validator.AddEntry(new DataVR(replication_type, "replication_type").AddRule(SDC.R_1or2));
-        validator.AddEntry(new DataVR(primary_table_name, "primary_table_name").AddRule(SDC.R_len_greater_0));
-        validator.AddEntry(new DataVR(primary_key_value, "primary_key_value").AddRule(SDC.R_len_greater_0));
-        validator.AddEntry(new DataVR(client_id, "client_id").AddRule(SDC.R_client_id));
-        validator.AddEntry(new DataVR(software_version, "software_version").AddRule(SDC.R_greater_0));
+        validator.AddEntry(new DataVR(replication_type, "replication_type").AddRule(SDV.R_1or2));
+        validator.AddEntry(new DataVR(primary_table_name, "primary_table_name").AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(primary_key_value, "primary_key_value").AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(client_id, "client_id").AddRule(SDV.R_client_id));
+        validator.AddEntry(new DataVR(software_version, "software_version").AddRule(SDV.R_greater_0));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -167,8 +167,8 @@ class DynamicRecordsReplicator
         }
 
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getReplicationSqlStatements");
-        validator.AddEntry(new DataVR(sql_connection).AddRule(SDC.R_not_null));
-        validator.AddEntry(new DataVR(source_db_name).AddRule(SDC.R_len_greater_0));
+        validator.AddEntry(new DataVR(sql_connection).AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(source_db_name).AddRule(SDV.R_len_greater_0));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -300,10 +300,10 @@ class DynamicRecordsReplicator
         }
 
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".replicateSqlStatements");
-        validator.AddEntry(new DataVR(sql_connection).AddRule(SDC.R_not_null));
-        validator.AddEntry(new DataVR(dest_db_name).AddRule(SDC.R_len_greater_0));
+        validator.AddEntry(new DataVR(sql_connection).AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(dest_db_name).AddRule(SDV.R_len_greater_0));
         //TODO make a more specific validation rule for replication lists
-        validator.AddEntry(new DataVR(replication_batch).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(replication_batch).AddRule(SDV.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);

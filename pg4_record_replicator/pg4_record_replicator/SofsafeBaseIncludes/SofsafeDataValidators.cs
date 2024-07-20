@@ -87,7 +87,7 @@ class ArgumentValidator
         bool validation_failed = false;
         foreach (DataVR entry in this.IV_entries)
         {
-            SDC.ValidateData(ot_helper, child_activity_pointer, entry.P_value, entry.P_rules, this.IV_method_name + " > " + entry.P_id);
+            SDV.ValidateData(ot_helper, child_activity_pointer, entry.P_value, entry.P_rules, this.IV_method_name + " > " + entry.P_id);
             if (validation_failed == false && child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 validation_failed = true;
@@ -108,7 +108,7 @@ class ArgumentValidator
 }
 
 //Sofsafe Data Validation Class
-static class SDC
+static class SDV
 {
     //TODO add to programming standards that all rule names start with R_
     public static SDR R_less_0 = new SDR("value_less_than_zero");
@@ -134,13 +134,13 @@ static class SDC
         //// IEnumerable interface rules
         List<Type> array_types = new List<Type>();
         array_types.Add(typeof(Array));
-        SDC.CV_general_types_to_language_types.Add("array", array_types);
+        SDV.CV_general_types_to_language_types.Add("array", array_types);
 
         List<SDR> array_rule_names = new List<SDR>();
-        array_rule_names.Add(SDC.R_len_greater_0);
-        array_rule_names.Add(SDC.R_len_greater_2);
+        array_rule_names.Add(SDV.R_len_greater_0);
+        array_rule_names.Add(SDV.R_len_greater_2);
 
-        SDC.CV_compatible_rules_by_general_types.Add("array", array_rule_names);
+        SDV.CV_compatible_rules_by_general_types.Add("array", array_rule_names);
         //// IEnumerable interface rules
 
         //// IEnumerable interface rules
@@ -148,25 +148,25 @@ static class SDC
         enumerable_interface_types.Add(typeof(IEnumerable<>));
         enumerable_interface_types.Add(typeof(ICollection));
         enumerable_interface_types.Add(typeof(ICollection<>));
-        SDC.CV_general_types_to_language_types.Add("enumerable", enumerable_interface_types);
+        SDV.CV_general_types_to_language_types.Add("enumerable", enumerable_interface_types);
 
         List<SDR> enumerable_interface_rule_names = new List<SDR>();
-        enumerable_interface_rule_names.Add(SDC.R_len_greater_0);
-        enumerable_interface_rule_names.Add(SDC.R_len_greater_2);
-        enumerable_interface_rule_names.Add(SDC.R_populated_nested_iterable);
+        enumerable_interface_rule_names.Add(SDV.R_len_greater_0);
+        enumerable_interface_rule_names.Add(SDV.R_len_greater_2);
+        enumerable_interface_rule_names.Add(SDV.R_populated_nested_iterable);
 
-        SDC.CV_compatible_rules_by_general_types.Add("enumerable", enumerable_interface_rule_names);
+        SDV.CV_compatible_rules_by_general_types.Add("enumerable", enumerable_interface_rule_names);
         //// IEnumerable interface rules
 
 
         //// rules for objects
         List<Type> object_rules_types = new List<Type>();
         object_rules_types.Add(typeof(object));
-        SDC.CV_general_types_to_language_types.Add("object", object_rules_types);
+        SDV.CV_general_types_to_language_types.Add("object", object_rules_types);
 
         List<SDR> object_rule_names = new List<SDR>();
-        object_rule_names.Add(SDC.R_not_null);
-        SDC.CV_compatible_rules_by_general_types.Add("object", object_rule_names);
+        object_rule_names.Add(SDV.R_not_null);
+        SDV.CV_compatible_rules_by_general_types.Add("object", object_rule_names);
         ///</end> rules for objects
 
 
@@ -183,26 +183,26 @@ static class SDC
         int_rules_types.Add(typeof(long));
         int_rules_types.Add(typeof(ulong));
         int_rules_types.Add(typeof(ushort));
-        SDC.CV_general_types_to_language_types.Add("int", int_rules_types);
+        SDV.CV_general_types_to_language_types.Add("int", int_rules_types);
 
         List<SDR> int_rule_names = new List<SDR>();
-        int_rule_names.Add(SDC.R_client_id);
-        int_rule_names.Add(SDC.R_1or2);
-        SDC.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
+        int_rule_names.Add(SDV.R_client_id);
+        int_rule_names.Add(SDV.R_1or2);
+        SDV.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
         ////</end> rules for whole numbers only
 
         //// general number rules
         List<Type> number_langage_types = new List<Type>();
         number_langage_types.Add(typeof(INumber<>));
         number_langage_types.Add(typeof(INumberBase<>));
-        SDC.CV_general_types_to_language_types.Add("numbers", number_langage_types);
+        SDV.CV_general_types_to_language_types.Add("numbers", number_langage_types);
 
 
         List<SDR> number_type_rule_names = new List<SDR>();
-        number_type_rule_names.Add(SDC.R_greater_0);
-        number_type_rule_names.Add(SDC.R_less_0);
-        number_type_rule_names.Add(SDC.R_not_zero);
-        SDC.CV_compatible_rules_by_general_types.Add("numbers", number_type_rule_names);
+        number_type_rule_names.Add(SDV.R_greater_0);
+        number_type_rule_names.Add(SDV.R_less_0);
+        number_type_rule_names.Add(SDV.R_not_zero);
+        SDV.CV_compatible_rules_by_general_types.Add("numbers", number_type_rule_names);
         //// general number rules
 
 
@@ -210,29 +210,29 @@ static class SDC
         List<Type> text_langage_types = new List<Type>();
         text_langage_types.Add(typeof(char));
         text_langage_types.Add(typeof(string));
-        SDC.CV_general_types_to_language_types.Add("text", text_langage_types);
+        SDV.CV_general_types_to_language_types.Add("text", text_langage_types);
 
         List<SDR> text_type_rule_names = new List<SDR>();
-        text_type_rule_names.Add(SDC.R_client_id);
-        text_type_rule_names.Add(SDC.R_len_greater_0);
-        text_type_rule_names.Add(SDC.R_len_greater_2);
+        text_type_rule_names.Add(SDV.R_client_id);
+        text_type_rule_names.Add(SDV.R_len_greater_0);
+        text_type_rule_names.Add(SDV.R_len_greater_2);
 
-        SDC.CV_compatible_rules_by_general_types.Add("text", text_type_rule_names);
+        SDV.CV_compatible_rules_by_general_types.Add("text", text_type_rule_names);
         ////</end> text rules
 
 
         //// associate rule names with methods
-        SDC.CV_rule_name_to_method.Add(SDC.R_greater_0.P_rule_name, SDC.ruleNumberGreater0);
-        SDC.CV_rule_name_to_method.Add(SDC.R_1or2.P_rule_name, SDC.ruleNumber1or2);
+        SDV.CV_rule_name_to_method.Add(SDV.R_greater_0.P_rule_name, SDV.ruleNumberGreater0);
+        SDV.CV_rule_name_to_method.Add(SDV.R_1or2.P_rule_name, SDV.ruleNumber1or2);
 
-        SDC.CV_rule_name_to_method.Add(SDC.R_not_zero.P_rule_name, SDC.ruleNotZero);
+        SDV.CV_rule_name_to_method.Add(SDV.R_not_zero.P_rule_name, SDV.ruleNotZero);
 
-        SDC.CV_rule_name_to_method.Add(SDC.R_len_greater_0.P_rule_name, SDC.ruleLenGreater0);
-        SDC.CV_rule_name_to_method.Add(SDC.R_len_greater_2.P_rule_name, SDC.ruleLenGreater2);
+        SDV.CV_rule_name_to_method.Add(SDV.R_len_greater_0.P_rule_name, SDV.ruleLenGreater0);
+        SDV.CV_rule_name_to_method.Add(SDV.R_len_greater_2.P_rule_name, SDV.ruleLenGreater2);
 
-        SDC.CV_rule_name_to_method.Add(SDC.R_client_id.P_rule_name, SDC.ruleClientId);
-        SDC.CV_rule_name_to_method.Add(SDC.R_populated_nested_iterable.P_rule_name, SDC.rulePopulatedNestedArray);
-        SDC.CV_rule_name_to_method.Add(SDC.R_not_null.P_rule_name, SDC.ruleNotNull);
+        SDV.CV_rule_name_to_method.Add(SDV.R_client_id.P_rule_name, SDV.ruleClientId);
+        SDV.CV_rule_name_to_method.Add(SDV.R_populated_nested_iterable.P_rule_name, SDV.rulePopulatedNestedArray);
+        SDV.CV_rule_name_to_method.Add(SDV.R_not_null.P_rule_name, SDV.ruleNotNull);
         ////</end> associate rule names with methods
 
 
@@ -295,13 +295,13 @@ static class SDC
 
     private static void ruleNumberLess0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, null, 0);
+        SDV.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, null, 0);
         return;
     }
 
     private static void ruleNotZero(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, null, null, null, 0);
+        SDV.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, null, null, null, 0);
         return;
     }
 
@@ -310,24 +310,24 @@ static class SDC
     
     private static void ruleNumber1or2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1,2);
+        SDV.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1,2);
         return;
     }
     private static void ruleNumberGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1);
+        SDV.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1);
         return;
     }
 
     private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 1);
+        SDV.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 1);
         return;
     }
 
     private static void ruleLenGreater2(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-        SDC.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 3);
+        SDV.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 3);
         return;
     }
 
@@ -337,7 +337,7 @@ static class SDC
 
         if (value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
         {
-            SDC.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
+            SDV.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
             return;
         }
 
@@ -360,7 +360,7 @@ static class SDC
                 OTSH.AddEventThenEndActivity(ETR, "value_to_check could not be converted to a nubmer", ErrorTagsCodes.C_input_validation);
             }
             
-            SDC.childRuleNumberChecker(ot_helper, child_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
+            SDV.childRuleNumberChecker(ot_helper, child_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
             
             if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
@@ -381,7 +381,7 @@ static class SDC
     private static Dictionary<string, List<Type>> CV_general_types_to_language_types = new Dictionary<string, List<Type>>();
     private static Dictionary<string, List<string>> CV_rule_type_compability = new Dictionary<string, List<string>>();
 
-    private static Dictionary<string, SDC.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDC.CVD_rule_method_delegate>();
+    private static Dictionary<string, SDV.CVD_rule_method_delegate> CV_rule_name_to_method = new Dictionary<string, SDV.CVD_rule_method_delegate>();
 
     //todo value_description argument to SBD
     private delegate void CVD_rule_method_delegate(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check);
@@ -396,18 +396,18 @@ static class SDC
         method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        SDC.SetupRules(ot_helper, child_activity_pointer);
+        SDV.SetupRules(ot_helper, child_activity_pointer);
 
-        foreach (string rule_name_key in SDC.CV_rule_name_to_method.Keys)
+        foreach (string rule_name_key in SDV.CV_rule_name_to_method.Keys)
         {
             List<string> rule_type_compability_list = new List<string>();
             //// check each general type to see if it supports this rule
-            foreach (string general_type_key in SDC.CV_compatible_rules_by_general_types.Keys)
+            foreach (string general_type_key in SDV.CV_compatible_rules_by_general_types.Keys)
             {
 
                 //// find out what type concepts like "number", "text" are compatible with this rule
                 List<SDR> rules_for_general_type;
-                SDC.CV_compatible_rules_by_general_types.TryGetValue(general_type_key, out rules_for_general_type);
+                SDV.CV_compatible_rules_by_general_types.TryGetValue(general_type_key, out rules_for_general_type);
 
                 List<string> rules_names_for_general_type = new List<string>();
                 foreach (SDR rule_object in rules_for_general_type)
@@ -424,13 +424,13 @@ static class SDC
 
 
                 ////// check if any language types are associated with the general type and associates those language types with the rule
-                if (SDC.CV_general_types_to_language_types.ContainsKey(general_type_key) == false)
+                if (SDV.CV_general_types_to_language_types.ContainsKey(general_type_key) == false)
                 {
                     continue;
                 }
 
                 List<Type> types_for_general_type;
-                SDC.CV_general_types_to_language_types.TryGetValue(general_type_key, out types_for_general_type);
+                SDV.CV_general_types_to_language_types.TryGetValue(general_type_key, out types_for_general_type);
                 foreach (Type type_object in types_for_general_type)
                 {
                     rule_type_compability_list.Add(type_object.Name);
@@ -440,7 +440,7 @@ static class SDC
             }
             ////</end> check each general type to see if it supports this rule
 
-            SDC.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);
+            SDV.CV_rule_type_compability.Add(rule_name_key, rule_type_compability_list);
         }
 
         OTSH.SetSuccessEndActivity(ETR);
@@ -667,7 +667,7 @@ static class SDC
             string rule_name = rule.P_rule_name;
             rule_names.Add(rule_name);
             List<string> compatible_type_names;
-            SDC.CV_rule_type_compability.TryGetValue(rule_name, out compatible_type_names);
+            SDV.CV_rule_type_compability.TryGetValue(rule_name, out compatible_type_names);
             bool rule_compatible = false;
             if (compatible_type_names.Contains("Object") == true)
             {
@@ -708,8 +708,8 @@ static class SDC
         foreach (SDR rule in rule_list)
         {
             string rule_name = rule.P_rule_name;
-            SDC.CVD_rule_method_delegate method_to_call;
-            SDC.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
+            SDV.CVD_rule_method_delegate method_to_call;
+            SDV.CV_rule_name_to_method.TryGetValue(rule_name, out method_to_call);
             method_to_call(ot_helper, child_activity_pointer, ref value_description, ref value_to_check);
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {

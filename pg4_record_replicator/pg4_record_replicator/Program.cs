@@ -56,7 +56,7 @@ namespace pg4_record_replicator
             List<Activity> method_activity_list = new List<Activity>();
             ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
             //do runtime setup for data validation class
-            SDC.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
+            SDV.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
 
             Activity ETR = ot_helper.StartActivityWrapper("SychonizerProgram");
 

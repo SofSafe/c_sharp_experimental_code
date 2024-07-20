@@ -24,7 +24,7 @@ interface IOdcBaseClass
     DateTime P_last_validation_attempt { get; }
     bool P_last_validation_result { get; }
 
-    List<ISdoBaseClass> P_Sdo_child_objects { get; }
+    List<IDcoBaseClass> P_Sdo_child_objects { get; }
 
     List<IOdcBaseClass> P_odc_child_objects { get; }
 
@@ -36,12 +36,12 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
     public static DateTime C_unset_time = DateTime.MinValue;
     private bool IV_allow_disabling_instance = false;
     private bool IV_instance_not_used = false;
-    private readonly List<ISdoBaseClass> IV_Sdo_child_objects = new List<ISdoBaseClass>();
+    private readonly List<IDcoBaseClass> IV_Sdo_child_objects = new List<IDcoBaseClass>();
     private readonly List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
     //TODO add to SBD
     protected Dictionary<string, IEnumerable<IOdcBaseClass>> IV_named_odc_lists = new Dictionary<string, IEnumerable<IOdcBaseClass>>();
     //TODO add to SBD
-    protected Dictionary<string, IEnumerable<ISdoBaseClass>> IV_named_sdo_lists = new Dictionary<string, IEnumerable<ISdoBaseClass>>();
+    protected Dictionary<string, IEnumerable<IDcoBaseClass>> IV_named_sdo_lists = new Dictionary<string, IEnumerable<IDcoBaseClass>>();
 
     private Dictionary<string, List<string>> IV_last_validation_result_details = new Dictionary<string, List<string>>();
 
@@ -60,7 +60,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         get { return this.IV_Odc_child_objects; }
     }
     //TODO add to SBD
-    public List<ISdoBaseClass> P_Sdo_child_objects
+    public List<IDcoBaseClass> P_Sdo_child_objects
     {
         get { return this.IV_Sdo_child_objects; }
     }
@@ -144,7 +144,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         //// check all individual Sdo objects 
         Dictionary<string, byte> individual_sdo_data_ids = new Dictionary<string, byte>();
         int instance_index = -1;
-        foreach (ISdoBaseClass sdo_instance in this.IV_Sdo_child_objects)
+        foreach (IDcoBaseClass sdo_instance in this.IV_Sdo_child_objects)
         {
             instance_index++;
             if (sdo_instance == null)
@@ -179,7 +179,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         int loop1 = -1;
         foreach (string sdo_list_key in this.IV_named_sdo_lists.Keys)
         {
-            IEnumerable<ISdoBaseClass> child_class_list;
+            IEnumerable<IDcoBaseClass> child_class_list;
             if (this.IV_named_sdo_lists.TryGetValue(sdo_list_key, out child_class_list) == false)
             {
                 null_value_errors.Add(activity_name_prefix + "> " + sdo_list_key + "> child_class_list is null.");
@@ -193,7 +193,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
 
 
 
-            foreach (ISdoBaseClass sdo_instance in child_class_list)
+            foreach (IDcoBaseClass sdo_instance in child_class_list)
             {
                 if (sdo_instance == null)
                 {
@@ -342,9 +342,9 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             if (field_value == null) { continue; }
 
             /// register individual Sdo class instances
-            if (field_value.GetType().GetInterfaces().Contains(typeof(ISdoBaseClass)))
+            if (field_value.GetType().GetInterfaces().Contains(typeof(IDcoBaseClass)))
             {
-                this.IV_Sdo_child_objects.Add(field_value as ISdoBaseClass);
+                this.IV_Sdo_child_objects.Add(field_value as IDcoBaseClass);
                 continue;
             }
             ///</end> register individual Sdo class instances
@@ -384,7 +384,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         
         if (allow_empty_data_identifier == false)
         {
-            validator.AddEntry(new DataVR(organized_data_identifier, "organized_data_identifier").AddRule(SDC.R_not_null).AddRule(SDC.R_len_greater_0));
+            validator.AddEntry(new DataVR(organized_data_identifier, "organized_data_identifier").AddRule(SDV.R_not_null).AddRule(SDV.R_len_greater_0));
         }
 
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)

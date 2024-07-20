@@ -40,9 +40,9 @@ class DyanmicMsSqlTable
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".Constructor1");
-        validator.AddEntry(new DataVR(replicate_from_table_name).AddRule(SDC.R_len_greater_2));
-        validator.AddEntry(new DataVR(client_id).AddRule(SDC.R_client_id));
-        validator.AddEntry(new DataVR(replicate_to_table_name).AddRule(SDC.R_len_greater_2));
+        validator.AddEntry(new DataVR(replicate_from_table_name).AddRule(SDV.R_len_greater_2));
+        validator.AddEntry(new DataVR(client_id).AddRule(SDV.R_client_id));
+        validator.AddEntry(new DataVR(replicate_to_table_name).AddRule(SDV.R_len_greater_2));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
@@ -74,7 +74,7 @@ class DyanmicMsSqlTable
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".getSchemaData");
-        validator.AddEntry(new DataVR(connection_instance).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(connection_instance).AddRule(SDV.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
@@ -152,10 +152,10 @@ class DyanmicMsSqlTable
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(this.GetType().Name + ".PutDataInColumns");
-        validator.AddEntry(new DataVR(data_set).AddRule(SDC.R_not_null));
+        validator.AddEntry(new DataVR(data_set).AddRule(SDV.R_not_null));
         if (data_set != null)
         {
-            validator.AddEntry(new DataVR(data_set.Tables.Count).AddRule(SDC.R_greater_0));
+            validator.AddEntry(new DataVR(data_set.Tables.Count).AddRule(SDV.R_greater_0));
         }
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {

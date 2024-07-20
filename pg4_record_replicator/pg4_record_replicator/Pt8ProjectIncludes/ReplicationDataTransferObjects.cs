@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 
 class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 {
-    protected Sdo<byte> IV_replication_type = new Sdo<byte>("IV_replication_type",
+    protected Dco<byte> IV_replication_type = new Dco<byte>("IV_replication_type",
         ProjectValidationRuleLists.R_replication_type);
         
     public List<ReplicationRecord> IV_replication_records = new List<ReplicationRecord>();
-    protected Sdo<double> IV_software_verison = new Sdo<double>("IV_software_verison",ProjectValidationRuleLists.R_software_version);
-    protected Sdo<string> IV_client_id = new Sdo<string>("IV_client_id",ProjectValidationRuleLists.R_client_id);
-    protected Sdo<DateTime> IV_replication_start_time = new Sdo<DateTime>("IV_replication_start_time");
+    protected Dco<double> IV_software_verison = new Dco<double>("IV_software_verison",ProjectValidationRuleLists.R_software_version);
+    protected Dco<string> IV_client_id = new Dco<string>("IV_client_id",ProjectValidationRuleLists.R_client_id);
+    protected Dco<DateTime> IV_replication_start_time = new Dco<DateTime>("IV_replication_start_time");
 
     public DateTime P_replication_start_time
     {
@@ -104,10 +104,10 @@ class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 //TODO add to SBD and finish implementing
 class ReplicationRecord: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 {
-    private Sdo<string> IV_select_statement = new Sdo<string>("IV_select_statement",ProjectValidationRuleLists.R_sql_select_string);
-    private Sdo<string> IV_insert_statement = new Sdo<string>("IV_insert_statement", ProjectValidationRuleLists.R_sql_insert_string);
-    private Sdo<string> IV_update_statement = new Sdo<string>("IV_update_statement", ProjectValidationRuleLists.R_sql_update_string);
-    private Sdo<string> IV_combined_statement = new Sdo<string>("IV_combined_statement", ProjectValidationRuleLists.R_sql_combined_string);
+    private Dco<string> IV_select_statement = new Dco<string>("IV_select_statement",ProjectValidationRuleLists.R_sql_select_string);
+    private Dco<string> IV_insert_statement = new Dco<string>("IV_insert_statement", ProjectValidationRuleLists.R_sql_insert_string);
+    private Dco<string> IV_update_statement = new Dco<string>("IV_update_statement", ProjectValidationRuleLists.R_sql_update_string);
+    private Dco<string> IV_combined_statement = new Dco<string>("IV_combined_statement", ProjectValidationRuleLists.R_sql_combined_string);
 
     public string P_select_statement
     {

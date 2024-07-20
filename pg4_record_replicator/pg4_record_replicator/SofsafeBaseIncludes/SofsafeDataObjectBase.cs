@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 
 //TODO add activity_name_prefix arugment on all methods needed in SBD
-interface ISdoBaseClass
+interface IDcoBaseClass
 {
     bool RunValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
-    void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDC.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
+    void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDV.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
     List<string> P_last_validation_result_details { get; }
     bool P_last_validation_result { get; }
     bool P_value_not_used { get; }
@@ -25,20 +25,20 @@ interface ISdoBaseClass
 }
 
 //Sofsafe data object
-class Sdo<type_of_generic> : ISdoBaseClass
+class Dco<type_of_generic> : IDcoBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     protected type_of_generic IV_value = default(type_of_generic);
     protected string IV_data_identifier = "Data Identifier Not Set";
     protected bool IV_instance_not_used = false;
     protected bool IV_allow_disabling_instance = false;
-    protected DateTime IV_last_set_time = Sdo<type_of_generic>.C_unset_time;
-    protected DateTime IV_last_validation_time = Sdo<type_of_generic>.C_unset_time;
+    protected DateTime IV_last_set_time = Dco<type_of_generic>.C_unset_time;
+    protected DateTime IV_last_validation_time = Dco<type_of_generic>.C_unset_time;
     protected List<string> IV_last_validation_result_details = new List<string>();
     protected bool IV_last_validation_result = false;
     protected bool IV_value_in_valid_values_list = false;
     protected List<SDR> IV_validation_rules_list = new List<SDR>();
-    protected SDC.CVD_validation_method_delegate IV_validator_method = SDC.ValidateData;
+    protected SDV.CVD_validation_method_delegate IV_validator_method = SDV.ValidateData;
     public List<type_of_generic> IV_valid_values_list = new List<type_of_generic>();
     protected Type IV_data_type = typeof(type_of_generic);
 
@@ -119,7 +119,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
     }
 
     public void ClearValue() { 
-        this.IV_last_set_time = Sdo<type_of_generic>.C_unset_time;
+        this.IV_last_set_time = Dco<type_of_generic>.C_unset_time;
         
         if(default(type_of_generic) != null)
         {
@@ -130,7 +130,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
         this.IV_last_validation_result_details.Clear();
         this.IV_last_validation_result = false;
         this.IV_value_in_valid_values_list = false;
-        this.IV_last_validation_time = Sdo<type_of_generic>.C_unset_time;
+        this.IV_last_validation_time = Dco<type_of_generic>.C_unset_time;
     }
 
     //todo add obersvability
@@ -161,7 +161,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
         return true;
     }
 
-    public void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDC.CVD_validation_method_delegate method_reference,string activity_name_prefix="")
+    public void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDV.CVD_validation_method_delegate method_reference,string activity_name_prefix="")
     {
 
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
@@ -186,7 +186,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
         this.IV_last_validation_result_details.Clear();
         this.IV_last_validation_result = false;
         this.IV_value_in_valid_values_list = false;
-        this.IV_last_validation_time = Sdo<type_of_generic>.C_unset_time;
+        this.IV_last_validation_time = Dco<type_of_generic>.C_unset_time;
         ////</end> reset to default safe value in case method doesn't finish
 
         /// disabled values always fail validation checks
@@ -200,7 +200,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
 
 
         //can't validate without setting data at least once
-        if (this.IV_last_set_time == Sdo<type_of_generic>.C_unset_time)
+        if (this.IV_last_set_time == Dco<type_of_generic>.C_unset_time)
         {
             ETR.SetTag("IV_data_identifier", this.IV_data_identifier);
             OTSH.AddEventThenEndActivity(ETR, activity_name_prefix + "IV_value has never been set", ErrorTagsCodes.C_input_validation);
@@ -267,7 +267,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
 
 
     //todo add obersavability
-    public Sdo(type_of_generic new_value, string data_identifier,
+    public Dco(type_of_generic new_value, string data_identifier,
      List<type_of_generic> valid_values_list = null,List < SDR> rules_list = null,
      bool allow_disabling_instance = false)
     {
@@ -277,7 +277,7 @@ class Sdo<type_of_generic> : ISdoBaseClass
     }
 
     //todo add obersavability
-    public Sdo(string data_identifier, List<SDR> rules_list = null,
+    public Dco(string data_identifier, List<SDR> rules_list = null,
         List<type_of_generic> valid_values_list = null, bool allow_disabling_instance = false)
     {
         this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance);      
@@ -305,6 +305,3 @@ class Sdo<type_of_generic> : ISdoBaseClass
         return true;
     }
 }
-
-
-
