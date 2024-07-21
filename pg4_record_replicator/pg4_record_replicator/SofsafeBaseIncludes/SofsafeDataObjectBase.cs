@@ -1,11 +1,15 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 
 //TODO add activity_name_prefix arugment on all methods needed in SBD
 interface IDcoBaseClass
 {
+
+    string GetJsonString(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
     bool RunValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
     void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDV.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
@@ -27,7 +31,21 @@ interface IDcoBaseClass
 //Sofsafe data container
 class Dco<type_of_generic> : IDcoBaseClass
 {
+    protected static Type[] C_number_types = [
+        typeof(byte)
+        ,typeof(sbyte)
+        ,typeof(int)
+        ,typeof(uint)
+        ,typeof(Int64)
+        ,typeof(Int32)
+        ,typeof(Int16)
+        ,typeof(double)
+        ,typeof(long)
+        ,typeof(ulong)
+        ,typeof(ushort)
+        ];
     public static DateTime C_unset_time = DateTime.MinValue;
+    //todo check if default method can creates an exception when using certain types
     protected type_of_generic IV_value = default(type_of_generic);
     protected string IV_data_identifier = "Data Identifier Not Set";
     protected bool IV_instance_not_used = false;
@@ -39,8 +57,11 @@ class Dco<type_of_generic> : IDcoBaseClass
     protected bool IV_value_in_valid_values_list = false;
     protected List<SDR> IV_validation_rules_list = new List<SDR>();
     protected SDV.CVD_validation_method_delegate IV_validator_method = SDV.ValidateData;
-    public List<type_of_generic> IV_valid_values_list = new List<type_of_generic>();
-    protected Type IV_data_type = typeof(type_of_generic);
+    public readonly List<type_of_generic> IV_valid_values_list = new List<type_of_generic>();
+    protected readonly Type IV_data_type = typeof(type_of_generic);
+    //TODO add to SBD
+    protected bool IV_export_to_json = true;
+    protected bool IV_import_from_json = true;
 
 
 
@@ -143,6 +164,86 @@ class Dco<type_of_generic> : IDcoBaseClass
         return true;
     }
 
+
+    public string GetJsonString(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    {
+
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".GetJsonString");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
+        ///</end> observability template
+
+        string return_value = "";
+
+        if(this.IV_export_to_json == false
+            || this.IV_instance_not_used == true
+            || this.IV_last_set_time == Dco<type_of_generic>.C_unset_time) {
+            OTSH.SetSuccessEndActivity(ETR);
+            return return_value; 
+        }
+
+
+        //// type specific JSON logic
+        Type[] value_interfaces = this.P_type.GetType().GetInterfaces();
+        if (Dco<type_of_generic>.C_number_types.Contains(this.P_type) == true
+            || this.P_type == typeof(bool))
+        {
+            return_value = $"\"{this.P_data_identifier}\"= {this.P_value_as_object.ToString()}";
+        }
+        else if (this.P_type == typeof(DateTime))
+        {
+            DateTime date_value = (DateTime)this.P_value_as_object;
+            return_value = $"\"{this.P_data_identifier}\"= \"{date_value.ToUniversalTime().ToString("F")}\"";
+        }
+        else if (this.P_type == typeof(string)
+            || value_interfaces.Contains(typeof(IFormattable)) == true)
+        {
+            try
+            {
+                return_value = $"\"{this.P_data_identifier}\" = \"{this.P_value_as_object.ToString()}\"";
+            }
+            catch (Exception error_object)
+            {
+                return_value = "";
+                OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > ToString failed with error {error_object.Message}", ErrorTagsCodes.C_input_validation);
+                return return_value;
+            }
+        }
+        ////</end> type specific JSON logic
+
+        if (return_value.Length > 0)
+        {
+            OTSH.SetSuccessEndActivity(ETR);
+            return return_value;
+        }
+
+        //// see if we get an exception style JSON logic
+        try
+        {
+            return_value = $"\"{this.P_data_identifier}\" = \"{this.P_value_as_object.ToString()}\"";
+        }
+        catch (Exception error_object)
+        {
+            return_value = "";
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > ToString failed with error {error_object.Message}", ErrorTagsCodes.C_input_validation);
+            return return_value;
+        }
+        ////</end> see if we get an exception style JSON logic
+
+
+        if (return_value != null && return_value.Length > 0)
+        {
+            OTSH.SetSuccessEndActivity(ETR);
+            return return_value;
+        } else
+        {
+            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > no way found to create JSON output", ErrorTagsCodes.C_input_validation);
+            return return_value;
+        }
+        
+    }
 
     public bool SetValueNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,bool new_disable_setting,string activity_name_prefix="")
     {
@@ -269,18 +370,18 @@ class Dco<type_of_generic> : IDcoBaseClass
     //todo add obersavability
     public Dco(type_of_generic new_value, string data_identifier,
      List<type_of_generic> valid_values_list = null,List < SDR> rules_list = null,
-     bool allow_disabling_instance = false)
+     bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
     {
         this.SetValue(new_value);
-        this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance);
+        this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance, export_to_json, import_from_json);
 
     }
 
     //todo add obersavability
     public Dco(string data_identifier, List<SDR> rules_list = null,
-        List<type_of_generic> valid_values_list = null, bool allow_disabling_instance = false)
+        List<type_of_generic> valid_values_list = null, bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
     {
-        this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance);      
+        this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance, export_to_json, import_from_json);      
     }
 
 
@@ -288,8 +389,10 @@ class Dco<type_of_generic> : IDcoBaseClass
 
     private bool SharedInitilizationLogic(string data_identifier,
      List<SDR> rules_list = null, List<type_of_generic> valid_values_list = null,
-     bool allow_disabling_instance = false)
+     bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
     {
+        this.IV_import_from_json = import_from_json;
+        this.IV_export_to_json = export_to_json;
         this.IV_allow_disabling_instance = allow_disabling_instance;
         this.IV_data_identifier = data_identifier;
         if (rules_list != null)

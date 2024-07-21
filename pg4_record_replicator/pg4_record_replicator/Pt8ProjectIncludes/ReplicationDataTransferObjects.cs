@@ -54,7 +54,7 @@ class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
     }
 
 
-    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
         List<string> return_value = new List<string>();        
         return return_value;
@@ -63,19 +63,21 @@ class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
     public ReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string client_id, double software_version, DateTime replication_start_time, byte replication_type, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "ReplicationBatch", false,true, activity_name_prefix)
     {
 
-        // check if the base class constructor created an error
-        if (method_activity_pointer != null && method_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
-        {
-            return;
-        }
-
-        /// observability template
+        /// observability template for constructor in an ODC inheritor
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
+
+        // check if the base class constructor created an error
+        if (method_activity_pointer != null && method_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, method_activity_pointer.P_pointer);
+            return;
+        }
+
         if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new();
-        ///</end> observability template
+        /// observability template for constructor in an ODC inheritor
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
@@ -127,7 +129,7 @@ class ReplicationRecord: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         get { return this.IV_combined_statement.P_value; }
     }
 
-    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer)
+    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
         List<string> return_value = new List<string>();
         return return_value;

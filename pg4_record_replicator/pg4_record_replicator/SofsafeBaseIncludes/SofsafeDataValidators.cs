@@ -118,6 +118,8 @@ static class SDV
     public static SDR R_len_greater_2 = new SDR("length greater than 2");
     public static SDR R_client_id = new SDR("4 digit client id");
     public static SDR R_populated_nested_iterable = new SDR("nested array with atleast 1 entry");
+    public static SDR R_greater_1200 = new SDR("value greater than 1200");
+
     public static SDR R_not_null = new SDR("not null");
     public static SDR R_1or2 = new SDR("int value of 1 or 2");
 
@@ -188,6 +190,7 @@ static class SDV
         List<SDR> int_rule_names = new List<SDR>();
         int_rule_names.Add(SDV.R_client_id);
         int_rule_names.Add(SDV.R_1or2);
+        int_rule_names.Add(SDV.R_greater_1200);
         SDV.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
         ////</end> rules for whole numbers only
 
@@ -229,6 +232,8 @@ static class SDV
 
         SDV.CV_rule_name_to_method.Add(SDV.R_len_greater_0.P_rule_name, SDV.ruleLenGreater0);
         SDV.CV_rule_name_to_method.Add(SDV.R_len_greater_2.P_rule_name, SDV.ruleLenGreater2);
+        SDV.CV_rule_name_to_method.Add(SDV.R_greater_1200.P_rule_name, SDV.ruleLenGreater1200);
+
 
         SDV.CV_rule_name_to_method.Add(SDV.R_client_id.P_rule_name, SDV.ruleClientId);
         SDV.CV_rule_name_to_method.Add(SDV.R_populated_nested_iterable.P_rule_name, SDV.rulePopulatedNestedArray);
@@ -322,6 +327,13 @@ static class SDV
     private static void ruleLenGreater0(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
         SDV.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 1);
+        return;
+    }
+    
+
+    private static void ruleLenGreater1200(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
+    {
+        SDV.childRuleLenChecker(ot_helper, method_activity_pointer, ref value_description, ref value_to_check, 1201);
         return;
     }
 
