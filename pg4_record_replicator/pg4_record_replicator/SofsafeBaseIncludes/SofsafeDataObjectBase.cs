@@ -186,43 +186,55 @@ class Dco<type_of_generic> : IDcoBaseClass
 
 
         //// type specific JSON logic
+        bool needs_escaping = false;
+        string string_value = String.Empty;
         Type[] value_interfaces = this.P_type.GetType().GetInterfaces();
         if (Dco<type_of_generic>.C_number_types.Contains(this.P_type) == true
             || this.P_type == typeof(bool))
         {
-            return_value = $"\"{this.P_data_identifier}\"= {this.P_value_as_object.ToString()}";
+            string_value = $"{this.P_value.ToString()}";
         }
         else if (this.P_type == typeof(DateTime))
         {
             DateTime date_value = (DateTime)this.P_value_as_object;
-            return_value = $"\"{this.P_data_identifier}\"= \"{date_value.ToUniversalTime().ToString("F")}\"";
+            string_value = $"{date_value.ToUniversalTime().ToString("F")}";
+            needs_escaping = true;
+
         }
         else if (this.P_type == typeof(string)
             || value_interfaces.Contains(typeof(IFormattable)) == true)
         {
             try
             {
-                return_value = $"\"{this.P_data_identifier}\" = \"{this.P_value_as_object.ToString()}\"";
+                string_value = $"\"{this.P_data_identifier}\" = \"{this.P_value.ToString()}\"";
             }
             catch (Exception error_object)
             {
-                return_value = "";
+                string_value = "";
                 OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > ToString failed with error {error_object.Message}", ErrorTagsCodes.C_input_validation);
                 return return_value;
             }
         }
         ////</end> type specific JSON logic
 
-        if (return_value.Length > 0)
+        
+        if(needs_escaping == true)
         {
+            string_value = $"\"{System.Text.Json.JsonEncodedText.Encode(string_value, System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping).Value}\"";
+        }
+
+
+        if (string_value.Length > 0)
+        {
+
             OTSH.SetSuccessEndActivity(ETR);
-            return return_value;
+            return $"\"{this.IV_data_identifier}\" = {string_value}";
         }
 
         //// see if we get an exception style JSON logic
         try
         {
-            return_value = $"\"{this.P_data_identifier}\" = \"{this.P_value_as_object.ToString()}\"";
+            return_value = $"\"{this.P_data_identifier}\" = \"{this.P_value.ToString()}\"";
         }
         catch (Exception error_object)
         {

@@ -254,7 +254,18 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
                     failed_flag = true;
                     continue;
                 }
-               
+
+                string json_value = odc_instance.ToJson(ot_helper, child_activity_pointer, activity_name_prefix);
+                if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+                {
+                    failed_flag = true;
+                }
+
+                if (json_value.Length == 0) { continue; }
+
+
+                if (return_value.Length > 0) { return_value += ","; }
+                return_value += json_value;
             }
         }
         ////</end> check all named Lists of Odc child objects
