@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -9,10 +11,18 @@ using System.Numerics;
 interface IDcoBaseClass
 {
 
-    string GetJsonString(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
     bool RunValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
     void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDV.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
+
+    //todo add to SBD
+    bool P_is_set { get; }
+    //todo add to SBD
+
+    bool P_is_set_and_valid { get; }
+    //todo add to SBD
+    bool P_is_valid { get; }
+
     List<string> P_last_validation_result_details { get; }
     bool P_last_validation_result { get; }
     bool P_value_not_used { get; }
@@ -31,19 +41,6 @@ interface IDcoBaseClass
 //Sofsafe data container
 class Dco<type_of_generic> : IDcoBaseClass
 {
-    protected static Type[] C_number_types = [
-        typeof(byte)
-        ,typeof(sbyte)
-        ,typeof(int)
-        ,typeof(uint)
-        ,typeof(Int64)
-        ,typeof(Int32)
-        ,typeof(Int16)
-        ,typeof(double)
-        ,typeof(long)
-        ,typeof(ulong)
-        ,typeof(ushort)
-        ];
     public static DateTime C_unset_time = DateTime.MinValue;
     //todo check if default method can creates an exception when using certain types
     protected type_of_generic IV_value = default(type_of_generic);
@@ -120,6 +117,38 @@ class Dco<type_of_generic> : IDcoBaseClass
         get { return this.IV_validation_rules_list;}
     }
 
+    //todo add to SBD
+    public bool P_is_set
+    {
+        get { if (this.IV_last_set_time != Dco<type_of_generic>.C_unset_time) { return true; }
+            return false;
+        } 
+    }
+
+    //todo add to SBD
+
+    public bool P_is_valid
+    {
+        get
+        {
+            if (this.IV_last_set_time <= this.IV_last_validation_time) { return true; }
+            return false;
+        }
+    }
+
+    //todo add to SBD
+    public bool P_is_set_and_valid
+    {
+        get
+        {
+            if (this.IV_last_set_time <= this.IV_last_validation_time
+            && this.IV_last_set_time != Dco<type_of_generic>.C_unset_time) 
+            {
+                return true; 
+            }
+            return false;
+        }
+    }
 
 
     private type_of_generic ConvertValue(object value)
@@ -164,98 +193,6 @@ class Dco<type_of_generic> : IDcoBaseClass
         return true;
     }
 
-
-    public string GetJsonString(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
-    {
-
-        /// observability template
-        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
-        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".GetJsonString");
-        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
-        ///</end> observability template
-
-        string return_value = "";
-
-        if(this.IV_export_to_json == false
-            || this.IV_instance_not_used == true
-            || this.IV_last_set_time == Dco<type_of_generic>.C_unset_time) {
-            OTSH.SetSuccessEndActivity(ETR);
-            return return_value; 
-        }
-
-
-        //// type specific JSON logic
-        bool needs_escaping = false;
-        string string_value = String.Empty;
-        Type[] value_interfaces = this.P_type.GetType().GetInterfaces();
-        if (Dco<type_of_generic>.C_number_types.Contains(this.P_type) == true
-            || this.P_type == typeof(bool))
-        {
-            string_value = $"{this.P_value.ToString()}";
-        }
-        else if (this.P_type == typeof(DateTime))
-        {
-            DateTime date_value = (DateTime)this.P_value_as_object;
-            string_value = $"{date_value.ToUniversalTime().ToString("F")}";
-            needs_escaping = true;
-
-        }
-        else if (this.P_type == typeof(string)
-            || value_interfaces.Contains(typeof(IFormattable)) == true)
-        {
-            try
-            {
-                string_value = $"\"{this.P_data_identifier}\" = \"{this.P_value.ToString()}\"";
-            }
-            catch (Exception error_object)
-            {
-                string_value = "";
-                OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > ToString failed with error {error_object.Message}", ErrorTagsCodes.C_input_validation);
-                return return_value;
-            }
-        }
-        ////</end> type specific JSON logic
-
-        
-        if(needs_escaping == true)
-        {
-            string_value = $"\"{System.Text.Json.JsonEncodedText.Encode(string_value, System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping).Value}\"";
-        }
-
-
-        if (string_value.Length > 0)
-        {
-
-            OTSH.SetSuccessEndActivity(ETR);
-            return $"\"{this.IV_data_identifier}\" = {string_value}";
-        }
-
-        //// see if we get an exception style JSON logic
-        try
-        {
-            return_value = $"\"{this.P_data_identifier}\" = \"{this.P_value.ToString()}\"";
-        }
-        catch (Exception error_object)
-        {
-            return_value = "";
-            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > ToString failed with error {error_object.Message}", ErrorTagsCodes.C_input_validation);
-            return return_value;
-        }
-        ////</end> see if we get an exception style JSON logic
-
-
-        if (return_value != null && return_value.Length > 0)
-        {
-            OTSH.SetSuccessEndActivity(ETR);
-            return return_value;
-        } else
-        {
-            OTSH.AddEventThenEndActivity(ETR, $"{activity_name_prefix} > {this.P_data_identifier} > no way found to create JSON output", ErrorTagsCodes.C_input_validation);
-            return return_value;
-        }
-        
-    }
 
     public bool SetValueNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,bool new_disable_setting,string activity_name_prefix="")
     {

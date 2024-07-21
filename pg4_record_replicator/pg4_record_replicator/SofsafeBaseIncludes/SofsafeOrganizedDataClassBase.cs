@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Bson;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -19,8 +22,9 @@ interface IOdcBaseClassInheritor: IOdcBaseClass
 //TODO update on SBD
 interface IOdcBaseClass
 {
+    string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
-    public string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = ""); 
+    void NotPublicJsonInternal(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref JsonWriter json_writer, string activity_name_prefix = "");
     bool SetInstanceNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "");
     bool ValidateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
     bool P_data_not_used { get; }
@@ -100,6 +104,21 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
 
     public string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
+        //because this is a wrapper method all observability and data vaidation is handled in NotPublicJsonInternal
+        StringBuilder string_builder = new StringBuilder();
+        StringWriter string_writer = new StringWriter(string_builder);
+        JsonWriter json_writer = new JsonTextWriter(string_writer);
+        json_writer.WriteStartObject();
+        
+        this.NotPublicJsonInternal(ot_helper,method_activity_pointer,ref json_writer, activity_name_prefix);
+        
+        json_writer.WriteEndObject();
+        json_writer.Close();
+        return string_writer.ToString();
+    }
+
+    public void NotPublicJsonInternal(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref JsonWriter json_writer, string activity_name_prefix = "")
+    {
 
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -109,20 +128,24 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-        string return_value = String.Empty;
         if (this.IV_instance_not_used == true)
         {
             OTSH.SetSuccessEndActivity(ETR);
-            return return_value;
+            return;
         }
 
         activity_name_prefix += this.IV_organized_data_identifier + "(" + this.GetType().Name + ") > ";
         List<string> duplicate_id_errors = new List<string>();
         List<string> null_value_errors = new List<string>();
+        List<string> failed_json_errors = new List<string>();
 
         Dictionary<string, List<string>> issues_found = new Dictionary<string, List<string>>();
         bool failed_flag = false;
         string error_msg;
+
+
+        json_writer.WritePropertyName(this.P_organized_data_identifier);
+        json_writer.WriteStartObject();
 
         //// get JSON values from all individual Sdo objects 
         Dictionary<string, byte> individual_dco_data_ids = new Dictionary<string, byte>();
@@ -147,23 +170,30 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             individual_dco_data_ids.Add(dco_instance.P_data_identifier, 1);
             ////</end> logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do            
 
-            string json_value = dco_instance.GetJsonString(ot_helper,child_activity_pointer,activity_name_prefix);
-            if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+            try
             {
-                failed_flag = true;              
+                json_writer.WritePropertyName(dco_instance.P_data_identifier);
+                if (dco_instance.P_is_set)
+                {
+                    json_writer.WriteValue(dco_instance.P_value_as_object);
+                }
+                else
+                {
+                    json_writer.WriteNull();
+                }                
+            } catch (Exception error_object)
+            {
+                failed_json_errors.Add($"failed to convert {dco_instance.P_data_identifier} with exception: {error_object.Message}");
+                failed_flag = true;
             }
-
-            if(json_value.Length == 0) {  continue; }
-            
-
-            if(return_value.Length > 0) { return_value += ","; }
-            return_value += json_value;
+                       
         }
         ////</end> get JSON values from all individual Sdo objects        
 
 
         //// get JSON values from all named Lists of Sdo child objects
         int loop1 = -1;
+        bool json_array_active = false;
         foreach (string dco_list_key in this.IV_named_dco_lists.Keys)
         {
             IEnumerable<IDcoBaseClass> child_class_list;
@@ -176,12 +206,10 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             loop1++;
 
             int loop2 = -1;
-            string loop_index = dco_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
-
-
-
             foreach (IDcoBaseClass dco_instance in child_class_list)
             {
+                loop2++;
+                string loop_index = dco_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
                 if (dco_instance == null)
                 {
                     null_value_errors.Add(activity_name_prefix + "> " + loop_index + "dco_instance is null.");
@@ -189,12 +217,43 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
                     continue;
                 }
 
-                if (dco_instance.P_value_not_used == true) { continue; }                                
+                if (dco_instance.P_value_not_used == true) { continue; }
+
+                if (loop2 == 0)
+                {
+                    json_writer.WritePropertyName(dco_list_key);
+                    json_writer.WriteStartArray();
+                    json_array_active = true;
+                }
+
+                try
+                {
+                    if (dco_instance.P_is_set)
+                    {
+                        json_writer.WriteValue(dco_instance.P_value_as_object);
+                    }
+                    else
+                    {
+                        json_writer.WriteNull();                        
+                    }
+                }
+                catch (Exception error_object)
+                {
+                    failed_json_errors.Add($"failed to convert dco list {loop_index} with exception: {error_object.Message}");
+                    failed_flag = true;
+                }
+
             }
+            if (json_array_active == true)
+            {
+                json_writer.WriteEndArray();
+                json_array_active = false;
+            }
+
         }
         ////</end> Get JSON values from all named Lists of Sdo child objects
 
-        //// check all Odc child objects
+        //// Get JSON values from all Odc child objects
         Dictionary<string, byte> individual_odc_data_ids = new Dictionary<string, byte>();
         instance_index = -1;
         foreach (IOdcBaseClass odc_instance in this.IV_Odc_child_objects)
@@ -209,7 +268,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             //// logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
             if (individual_odc_data_ids.ContainsKey(odc_instance.P_organized_data_identifier))
             {
-                error_msg = "duplicate grouped data instance id: " + odc_instance.P_organized_data_identifier;
+                error_msg = "duplicate organized data instance id: " + odc_instance.P_organized_data_identifier;
                 duplicate_id_errors.Add(error_msg);
                 OTSH.AddEventToActivity(ETR, error_msg);
                 failed_flag = true;
@@ -217,24 +276,21 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             }
             individual_odc_data_ids.Add(odc_instance.P_organized_data_identifier, 1);
             ////</end> logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
-            string json_value = odc_instance.ToJson(ot_helper, child_activity_pointer, activity_name_prefix);
+            odc_instance.NotPublicJsonInternal(ot_helper, child_activity_pointer, ref json_writer, activity_name_prefix);
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 failed_flag = true;
-            }
-
-            if (json_value.Length == 0) { continue; }
-            
-            if (return_value.Length > 0) { return_value += ","; }
-            return_value += json_value;
+            }           
         }
-        ////</end> check all Odc child objects
+        ////</end> Get JSON values from all Odc child objects
 
-        //// check all named Lists of Odc child objects
+        //// Get JSON values from all named Lists of Odc child objects
         loop1 = -1;
+        json_array_active = false;
         foreach (string odc_list_key in this.IV_named_odc_lists.Keys)
         {
             IEnumerable<IOdcBaseClass> child_class_list;
+            
             if (this.IV_named_odc_lists.TryGetValue(odc_list_key, out child_class_list) == false)
             {
                 null_value_errors.Add(activity_name_prefix + "> " + odc_list_key + "> child_class_list is null.");
@@ -255,22 +311,35 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
                     continue;
                 }
 
-                string json_value = odc_instance.ToJson(ot_helper, child_activity_pointer, activity_name_prefix);
+                if(loop2 == 0)
+                {
+                    json_writer.WritePropertyName(odc_list_key);
+
+                    json_writer.WriteStartArray();
+                    json_array_active = true;
+                }
+
+                json_writer.WriteStartObject();
+
+                odc_instance.NotPublicJsonInternal(ot_helper, child_activity_pointer, ref json_writer,activity_name_prefix);
                 if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
                 {
                     failed_flag = true;
                 }
+                json_writer.WriteEndObject();
 
-                if (json_value.Length == 0) { continue; }
-
-
-                if (return_value.Length > 0) { return_value += ","; }
-                return_value += json_value;
             }
+
+            if (json_array_active == true)
+            {
+                json_writer.WriteEndArray();
+                json_array_active = false;
+            }
+
         }
-        ////</end> check all named Lists of Odc child objects
+        ////</end> Get JSON values from all named Lists of Odc child objects
 
-
+        //// failed state logic
         if (failed_flag == true)
         {
 
@@ -278,6 +347,15 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             {
                 issues_found.Add(activity_name_prefix + " null instances", null_value_errors);
                 foreach (string error in null_value_errors)
+                {
+                    OTSH.AddEventToActivity(ETR, error);
+                }
+            }
+
+            if (failed_json_errors.Count > 0)
+            {
+                issues_found.Add(activity_name_prefix + " json errors", failed_json_errors);
+                foreach (string error in failed_json_errors)
                 {
                     OTSH.AddEventToActivity(ETR, error);
                 }
@@ -291,11 +369,16 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
                     OTSH.AddEventToActivity(ETR, error);
                 }
             }
+
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-            return return_value;
+            json_writer.WriteEndObject();
+            return;
         }
+        ////</end> failed state logic
+
         OTSH.SetSuccessEndActivity(ETR);
-        return $"\"{this.IV_organized_data_identifier}\" =  {{{return_value}}}"; 
+        json_writer.WriteEndObject();
+        return;
     }
 
     public bool SetInstanceNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
@@ -433,7 +516,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             //// logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
             if (individual_odc_data_ids.ContainsKey(odc_instance.P_organized_data_identifier))
             {
-                error_msg = "duplicate grouped data instance id: " + odc_instance.P_organized_data_identifier;
+                error_msg = "duplicate organized data instance id: " + odc_instance.P_organized_data_identifier;
                 duplicate_id_errors.Add(error_msg);
                 OTSH.AddEventToActivity(ETR, error_msg);
                 failed_flag = true; 
@@ -579,7 +662,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
         if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
-        ChildActivityPointer child_activity_pointer = new();
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
 

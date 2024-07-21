@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -112,7 +113,9 @@ namespace pg4_record_replicator
 
             }
 
+
             Console.WriteLine(replication_batch.ToJson(ot_helper, child_activity_pointer));
+
 
             return;
             int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch,"end of day batching");

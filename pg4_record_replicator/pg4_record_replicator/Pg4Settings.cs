@@ -39,7 +39,7 @@ class Pg4Settings: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         }
 
         if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
-        ChildActivityPointer child_activity_pointer = new();
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         /// observability template for constructor in an ODC inheritor
 
 
@@ -111,7 +111,7 @@ class Pg4DbSettingsEntry: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         }
 
         if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
-        ChildActivityPointer child_activity_pointer = new();
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         /// observability template for constructor in an ODC inheritor
          
 

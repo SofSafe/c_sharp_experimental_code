@@ -290,7 +290,7 @@ class DyanmicMsSqlTable
 
             // SET the replication_start_time here
             var param_start_time = replication_start_time_string;
-            string combined_statement = @$"DECLARE @pram_replication_start_time DATETIME = '{param_start_time}';
+            string combined_statement = $@"DECLARE @pram_replication_start_time DATETIME = '{param_start_time}';
 
                 IF NOT EXISTS (SELECT 1 FROM {this.IV_replicated_data_table_name} WHERE {where_statement})
                     BEGIN
