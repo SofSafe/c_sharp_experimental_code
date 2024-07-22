@@ -23,6 +23,12 @@ interface IDcoBaseClass
     //todo add to SBD
     bool P_is_valid { get; }
 
+    //todo add to SBD
+    bool P_import_from_json { get; }
+    //todo add to SBD
+    bool P_export_to_json { get; }
+
+
     List<string> P_last_validation_result_details { get; }
     bool P_last_validation_result { get; }
     bool P_value_not_used { get; }
@@ -56,7 +62,6 @@ class Dco<type_of_generic> : IDcoBaseClass
     protected SDV.CVD_validation_method_delegate IV_validator_method = SDV.ValidateData;
     public readonly List<type_of_generic> IV_valid_values_list = new List<type_of_generic>();
     protected readonly Type IV_data_type = typeof(type_of_generic);
-    //TODO add to SBD
     protected bool IV_export_to_json = true;
     protected bool IV_import_from_json = true;
 
@@ -117,15 +122,12 @@ class Dco<type_of_generic> : IDcoBaseClass
         get { return this.IV_validation_rules_list;}
     }
 
-    //todo add to SBD
     public bool P_is_set
     {
         get { if (this.IV_last_set_time != Dco<type_of_generic>.C_unset_time) { return true; }
             return false;
         } 
     }
-
-    //todo add to SBD
 
     public bool P_is_valid
     {
@@ -136,7 +138,6 @@ class Dco<type_of_generic> : IDcoBaseClass
         }
     }
 
-    //todo add to SBD
     public bool P_is_set_and_valid
     {
         get
@@ -150,6 +151,15 @@ class Dco<type_of_generic> : IDcoBaseClass
         }
     }
 
+    public bool P_export_to_json
+    {
+        get { return this.IV_export_to_json; }
+    }
+
+    public bool P_import_from_json
+    {
+        get { return this.IV_import_from_json; }
+    }
 
     private type_of_generic ConvertValue(object value)
     {

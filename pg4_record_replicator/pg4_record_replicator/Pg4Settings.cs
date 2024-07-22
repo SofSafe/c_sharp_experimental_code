@@ -114,7 +114,6 @@ class Pg4DbSettingsEntry: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         /// observability template for constructor in an ODC inheritor
          
-
         OTSH.SetSuccessEndActivity(ETR);
         return;
     }

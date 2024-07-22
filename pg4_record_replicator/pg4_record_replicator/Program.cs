@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -16,8 +17,10 @@ namespace pg4_record_replicator
         static void Main(string[] args)
         {
 
+            JsonDecodingTesting test22 = new JsonDecodingTesting();
+            test22.testing();
             //SimpleReplicationExampleCrushLogic();
-            ComplexReplicationExampleCrushLogic();
+            //ComplexReplicationExampleCrushLogic();
         }        
     
         static void SimpleReplicationExampleCrushLogic()
@@ -113,11 +116,6 @@ namespace pg4_record_replicator
 
             }
 
-
-            Console.WriteLine(replication_batch.ToJson(ot_helper, child_activity_pointer));
-
-
-            return;
             int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch,"end of day batching");
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {

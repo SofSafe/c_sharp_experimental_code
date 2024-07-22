@@ -170,6 +170,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
             individual_dco_data_ids.Add(dco_instance.P_data_identifier, 1);
             ////</end> logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do            
 
+            if(dco_instance.P_export_to_json == false) { continue; }
             try
             {
                 json_writer.WritePropertyName(dco_instance.P_data_identifier);
@@ -217,7 +218,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
                     continue;
                 }
 
-                if (dco_instance.P_value_not_used == true) { continue; }
+                if (dco_instance.P_export_to_json == false) { continue; }
 
                 if (loop2 == 0)
                 {
@@ -228,7 +229,7 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
 
                 try
                 {
-                    if (dco_instance.P_is_set)
+                    if (dco_instance.P_is_set == true && dco_instance.P_value_not_used == false)
                     {
                         json_writer.WriteValue(dco_instance.P_value_as_object);
                     }
