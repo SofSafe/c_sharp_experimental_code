@@ -21,13 +21,13 @@ namespace pg4_record_replicator
             test22.testing();
             //SimpleReplicationExampleCrushLogic();
             //ComplexReplicationExampleCrushLogic();
-        }        
+        }
     
         static void SimpleReplicationExampleCrushLogic()
         {
             string table_name = "Parts";
             string primary_key_value = "12";
-            double crush_version = 0;
+            double crush_version = 1;
             string client_id = "1102";
             HttpsRequestToSychonizerProgram(table_name, primary_key_value, crush_version, client_id);
         }
@@ -115,6 +115,12 @@ namespace pg4_record_replicator
                 //Console.WriteLine(request.P_combined_sql_statement);
 
             }
+            
+            //JSON testing
+            //Console.WriteLine(replication_batch.ToJson(ot_helper,child_activity_pointer));
+            string json_string = JsonConvert.SerializeObject(replication_batch);
+            Console.WriteLine(json_string);
+            //JsonConvert.DeserializeObject<ReplicationBatch>(json_string);
 
             int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch,"end of day batching");
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
