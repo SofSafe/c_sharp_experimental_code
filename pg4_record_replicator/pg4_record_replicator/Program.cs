@@ -117,9 +117,9 @@ namespace pg4_record_replicator
             }
             
             //JSON testing
-            //Console.WriteLine(replication_batch.ToJson(ot_helper,child_activity_pointer));
-            string json_string = JsonConvert.SerializeObject(replication_batch);
-            Console.WriteLine(json_string);
+            Console.WriteLine(replication_batch.ToJson(ot_helper,child_activity_pointer));
+            //string json_string = JsonConvert.SerializeObject(replication_batch);
+            //Console.WriteLine(json_string);
             //JsonConvert.DeserializeObject<ReplicationBatch>(json_string);
 
             int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch,"end of day batching");

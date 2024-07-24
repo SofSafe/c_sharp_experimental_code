@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-interface INamedListOfInstances 
+interface INamedListOfInstances: IList
 {
     bool setGroupName(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string group_name, string activity_name_prefix = "");
     string P_group_name { get; }

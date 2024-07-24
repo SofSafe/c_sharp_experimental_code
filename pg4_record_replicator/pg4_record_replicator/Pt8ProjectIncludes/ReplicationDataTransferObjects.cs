@@ -9,15 +9,15 @@ using System.Threading.Tasks;
 
 //TODO add to SBD and finish implementing
 
-class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
+class ReplicationBatch : OrganizedDataClassBase, IOdcBaseClassInheritor
 {
-    protected Dco<byte> IV_replication_type = new Dco<byte>("IV_replication_type",
+    protected Dco<byte> IV_replication_type = new Dco<byte>("replication_type",
         ProjectValidationRuleLists.R_replication_type);
 
-    public List<ReplicationRecord> IV_replication_records = new List<ReplicationRecord>();
-    protected Dco<double> IV_software_verison = new Dco<double>("IV_software_verison",ProjectValidationRuleLists.R_software_version);
-    protected Dco<string> IV_client_id = new Dco<string>("IV_client_id",ProjectValidationRuleLists.R_client_id);
-    protected Dco<DateTime> IV_replication_start_time = new Dco<DateTime>("IV_replication_start_time");
+    protected NamedListOfReplicationRecord IV_replication_records = new NamedListOfReplicationRecord("replication_records");
+    protected Dco<double> IV_software_verison = new Dco<double>("source_software_verison",ProjectValidationRuleLists.R_software_version);
+    protected Dco<string> IV_client_id = new Dco<string>("source_client_id",ProjectValidationRuleLists.R_client_id);
+    protected Dco<DateTime> IV_replication_start_time = new Dco<DateTime>("replication_read_time");
 
     public DateTime P_replication_start_time
     {
@@ -49,16 +49,34 @@ class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 
     }
 
-    public bool PopulateBatchFromJson()
-    {
-        return true;
-    }
-
-
+ 
     public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
         List<string> return_value = new List<string>();        
         return return_value;
+    }
+
+
+    public ReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,string activity_name_prefix="") : base(ot_helper, method_activity_pointer, organized_data_identifier, false, true, activity_name_prefix)
+    {
+        /// observability template for constructor in an ODC inheritor
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".Constructor1");
+
+        // check if the base class constructor created an error
+        if (method_activity_pointer != null && method_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, method_activity_pointer.P_pointer);
+            return;
+        }
+
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new();
+        /// observability template for constructor in an ODC inheritor
+
+        OTSH.SetSuccessEndActivity(ETR);
+
     }
 
     public ReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string client_id, double software_version, DateTime replication_start_time, byte replication_type, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "ReplicationBatch", false,true, activity_name_prefix)
@@ -99,13 +117,12 @@ class ReplicationBatch : SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
         this.IV_replication_type.P_value = replication_type;
         this.IV_client_id.P_value = client_id;
         this.IV_software_verison.P_value = software_version;
-        this.IV_named_odc_lists.Add("IV_replication_records", IV_replication_records);
         }
     }
 
 
 //TODO add to SBD and finish implementing
-class ReplicationRecord: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
+class ReplicationRecord: OrganizedDataClassBase, IOdcBaseClassInheritor
 {
     private Dco<string> IV_select_statement = new Dco<string>("IV_select_statement",ProjectValidationRuleLists.R_sql_select_string);
     private Dco<string> IV_insert_statement = new Dco<string>("IV_insert_statement", ProjectValidationRuleLists.R_sql_insert_string);

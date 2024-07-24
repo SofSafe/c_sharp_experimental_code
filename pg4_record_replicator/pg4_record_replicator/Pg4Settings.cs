@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-class Pg4Settings: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
+class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
 {
     public readonly Dco<string> IV_settings_file_location = new Dco<string>("IV_settings_file_location", ProjectValidationRuleLists.R_file_location);
     public readonly Dco<string> IV_endpoint_interface = new Dco<string>("IV_endpoint_interface", ProjectValidationRuleLists.R_populated_string);
@@ -76,7 +76,7 @@ class Pg4Settings: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
 }
 
 
-class Pg4DbSettingsEntry: SofsafeOrganizedDataClassBase, IOdcBaseClassInheritor
+class Pg4DbSettingsEntry: OrganizedDataClassBase, IOdcBaseClassInheritor
 {
 
     public readonly Dco<string> IV_server_address = new Dco<string>("IV_server_address", ProjectValidationRuleLists.R_populated_string);
