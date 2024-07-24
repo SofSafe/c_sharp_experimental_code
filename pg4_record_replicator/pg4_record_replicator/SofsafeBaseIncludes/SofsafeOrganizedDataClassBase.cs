@@ -44,7 +44,7 @@ interface IOdcBaseClass
     DateTime P_last_validation_attempt { get; }
     bool P_last_validation_result { get; }
 
-    List<IDcoBaseClass> P_Dco_child_objects { get; }
+    Dictionary<string,IDcoBaseClass> P_Dco_child_objects { get; }
 
     List<IOdcBaseClass> P_odc_child_objects { get; }
 
@@ -56,7 +56,7 @@ class OrganizedDataClassBase : IOdcBaseClass
     public static DateTime C_unset_time = DateTime.MinValue;
     private bool IV_allow_disabling_instance = false;
     private bool IV_instance_not_used = false;
-    private readonly List<IDcoBaseClass> IV_Dco_child_objects = new List<IDcoBaseClass>();
+    private readonly Dictionary<string,IDcoBaseClass> IV_Dco_child_objects = new Dictionary<string,IDcoBaseClass>();
     private readonly List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
     //TODO add to SBD
     protected Dictionary<string, INamedListOfOdcInstances> IV_named_odc_lists = new Dictionary<string, INamedListOfOdcInstances>();
@@ -80,7 +80,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         get { return this.IV_Odc_child_objects; }
     }
     //TODO add to SBD
-    public List<IDcoBaseClass> P_Dco_child_objects
+    public Dictionary<string,IDcoBaseClass> P_Dco_child_objects
     {
         get { return this.IV_Dco_child_objects; }
     }
@@ -159,7 +159,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         //// get JSON values from all individual Dco objects 
         Dictionary<string, byte> individual_dco_data_ids = new Dictionary<string, byte>();
         int instance_index = -1;
-        foreach (IDcoBaseClass dco_instance in this.IV_Dco_child_objects)
+        foreach (IDcoBaseClass dco_instance in this.IV_Dco_child_objects.Values)
         {
             instance_index++;
             if (dco_instance == null)
@@ -431,9 +431,21 @@ class OrganizedDataClassBase : IOdcBaseClass
         if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
-        ///
+        
         string last_property_name = "";
         string current_property_name = "";
+
+
+        //// create structured pointers to things need to reference alot
+        Dictionary<string, IDcoBaseClass> child_dco_instances_by_id = new Dictionary<string, IDcoBaseClass>();
+
+        foreach(IDcoBaseClass child_odc in this.IV_Dco_child_objects.Values)
+        {
+            child_dco_instances_by_id[child_odc.P_data_identifier] = child_odc;
+        }
+        ////</end> create structured pointers to things need to reference alot
+
+
         JsonToken last_token_type = JsonToken.None;
         JsonToken current_token_type = JsonToken.None;
 
@@ -441,6 +453,9 @@ class OrganizedDataClassBase : IOdcBaseClass
         int arrays_found = 0;
         string json_array_name = "";
         bool fail_flag = false;
+        List<JsonToken> ignored_token_types = new List<JsonToken>() {
+        JsonToken.Comment, JsonToken.None, JsonToken.Undefined
+        };
         while (reader.Read())
         {
             last_token_type = current_token_type;
@@ -451,6 +466,8 @@ class OrganizedDataClassBase : IOdcBaseClass
                 current_property_name = reader.Value.ToString();
                 continue;
             }
+            //last_property_name = current_property_name;
+
 
             if (last_property_name == current_property_name)
             {
@@ -464,7 +481,7 @@ class OrganizedDataClassBase : IOdcBaseClass
             //handle a dco instance in an array
             if (reader.TokenType == JsonToken.StartArray && within_array == true)
             {
-                Console.WriteLine($"handling  dco instance for array: {json_array_name}");
+                //Console.WriteLine($"handling  dco instance for array: {json_array_name}");
                 //todo add dco list support
                 continue;
             }
@@ -472,7 +489,7 @@ class OrganizedDataClassBase : IOdcBaseClass
             //handle an Odc instance in an array
             if (reader.TokenType == JsonToken.StartObject && within_array == true)
             {
-                Console.WriteLine($"calling ProcessJsonToken for array: {json_array_name},  property: {current_property_name}");
+                //Console.WriteLine($"calling ProcessJsonToken for array: {json_array_name},  property: {current_property_name}");
                 foreach(string odc_list_key in this.IV_named_odc_lists.Keys)
                 {
                     if (odc_list_key != json_array_name
@@ -508,10 +525,9 @@ class OrganizedDataClassBase : IOdcBaseClass
             {                
                 continue;
             }
-            //only return when we find a }}
-            if (reader.TokenType == JsonToken.EndObject && last_token_type == JsonToken.EndObject)
+
+            if (reader.TokenType == JsonToken.EndObject)
             {
-                Console.WriteLine("returing");
                 return;
             }
 
@@ -520,33 +536,79 @@ class OrganizedDataClassBase : IOdcBaseClass
                 continue;
             }
 
-            foreach(IDcoBaseClass dco_instance in this.IV_Dco_child_objects)
+            if(reader.Value == null || ignored_token_types.Contains(reader.TokenType) == true)
             {
-                if (dco_instance.P_data_identifier != current_property_name)
-                {
-                    continue;
-                }
-                ////check value compatbility and convert value
-                ////</end>check value compatbility  and convert value
-                object json_value = null;
-                try
-                {
-                    json_value = JsonConvert.DeserializeObject(reader.Value.ToString(), dco_instance.P_type);
-                } catch
-                {
-                    //todo add error handling
-                    fail_flag = true;                    
-                    continue;
-                }
-                dco_instance.SetValueFromObject(json_value);
-                Console.WriteLine($"{current_property_name}: Type: {dco_instance.P_value_as_object}");
+                continue;
             }
 
-            last_property_name = current_property_name;
-            Console.WriteLine($"{current_property_name}: Type: {reader.TokenType}");
+            /// handle the data identifier for the current Odc instance
+            if(current_property_name == "P_organized_data_identifier")
+            {
+                string data_id = System.String.Empty;
+                try
+                {
+                    this.IV_organized_data_identifier = reader.Value.ToString();
+                }
+                catch
+                {
+                    //todo add error handling
+                    this.IV_organized_data_identifier = "json failed to set";
+                    fail_flag = true;                    
+                }
+                continue;
+            }
+            ///</end> handle the data identifier for the current Odc instance
+
+
+            //// this can only be a value, so put it in Dco
+            IDcoBaseClass dco_instance = null;
+            //find by instance variable name
+            if(this.IV_Dco_child_objects.ContainsKey(current_property_name) == true)
+            {
+                dco_instance = this.IV_Dco_child_objects[current_property_name];
+            } 
+            else if(child_dco_instances_by_id.ContainsKey(current_property_name) == true)
+            {
+                dco_instance = child_dco_instances_by_id[current_property_name];
+            } 
+            else
+            {
+                //todo add error handling for failing to find a value
+                continue; 
+            }
+            //Console.WriteLine(dco_instance.P_data_identifier);
+            object json_value = null;            
+            
+            try
+            {
+                if (dco_instance.P_type == typeof(System.String))
+                {
+                    json_value = reader.Value.ToString();
+                }
+                else if (dco_instance.P_type == typeof(DateTime)) {
+                    json_value = DateTime.Parse(reader.Value.ToString());
+                } 
+                else
+                { 
+                    json_value = JsonConvert.DeserializeObject(reader.Value.ToString(),dco_instance.P_type);                    
+                }
+
+                
+            } catch (Exception error_object)
+            {
+                //todo add error handling
+                fail_flag = true;
+                continue;
+            }
+            dco_instance.SetValueFromObject(json_value);
+            //Console.WriteLine($"{current_property_name}");
+
+            //Console.WriteLine($"{current_property_name}: Data: {dco_instance.P_value_as_object}");            
+            ////</end> this can only be a value, so put it in Dco/
+
         }
 
-        Console.WriteLine("returing2");
+        //Console.WriteLine("returing2");
     }
 
     public bool SetInstanceNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
@@ -600,7 +662,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         //// check all individual Dco objects 
         Dictionary<string, byte> individual_dco_data_ids = new Dictionary<string, byte>();
         int instance_index = -1;
-        foreach (IDcoBaseClass dco_instance in this.IV_Dco_child_objects)
+        foreach (IDcoBaseClass dco_instance in this.IV_Dco_child_objects.Values)
         {
             instance_index++;
             if (dco_instance == null)
@@ -800,7 +862,7 @@ class OrganizedDataClassBase : IOdcBaseClass
             /// register individual Dco class instances
             if (field_value.GetType().GetInterfaces().Contains(typeof(IDcoBaseClass)))
             {
-                this.IV_Dco_child_objects.Add(field_value as IDcoBaseClass);
+                this.IV_Dco_child_objects.Add(field_info.Name, field_value as IDcoBaseClass);
                 continue;
             }
             ///</end> register individual Dco class instances

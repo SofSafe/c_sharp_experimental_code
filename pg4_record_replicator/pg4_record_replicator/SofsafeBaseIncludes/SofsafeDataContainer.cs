@@ -169,6 +169,7 @@ class Dco<type_of_generic> : IDcoBaseClass
     //todo add obersvability
     public bool SetValueFromObject(object value)
     {
+        if(value == null) { return false; }
         if (value.GetType() == this.IV_data_type)
         {
             this.SetValue(this.ConvertValue(value));

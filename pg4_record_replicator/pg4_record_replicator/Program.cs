@@ -18,9 +18,9 @@ namespace pg4_record_replicator
         {
 
             JsonDecodingTesting test22 = new JsonDecodingTesting();
-            test22.testing();
+            //test22.testing();
             //SimpleReplicationExampleCrushLogic();
-            //ComplexReplicationExampleCrushLogic();
+            ComplexReplicationExampleCrushLogic();
         }
     
         static void SimpleReplicationExampleCrushLogic()
@@ -114,15 +114,9 @@ namespace pg4_record_replicator
                 //Console.WriteLine(request.P_update_statement);
                 //Console.WriteLine(request.P_combined_sql_statement);
 
-            }
-            
-            //JSON testing
-            Console.WriteLine(replication_batch.ToJson(ot_helper,child_activity_pointer));
-            //string json_string = JsonConvert.SerializeObject(replication_batch);
-            //Console.WriteLine(json_string);
-            //JsonConvert.DeserializeObject<ReplicationBatch>(json_string);
+            } 
 
-            int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch,"end of day batching");
+            int replication_count = replicator.replicateSqlStatements(ot_helper, child_activity_pointer, dest_db, connection, replication_batch, "end of day batching");
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
