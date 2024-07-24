@@ -18,9 +18,9 @@ namespace pg4_record_replicator
         {
 
             JsonDecodingTesting test22 = new JsonDecodingTesting();
-            //test22.testing();
+            test22.testing();
             //SimpleReplicationExampleCrushLogic();
-            ComplexReplicationExampleCrushLogic();
+            //ComplexReplicationExampleCrushLogic();
         }
     
         static void SimpleReplicationExampleCrushLogic()
