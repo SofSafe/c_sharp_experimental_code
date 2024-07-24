@@ -13,7 +13,7 @@ class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
     public readonly Dco<string> IV_endpoint_interface = new Dco<string>("EndpointInterface", ProjectValidationRuleLists.R_populated_string);
     public readonly Dco<short> IV_endpoint_port = new Dco<short>("EndpointPort", ProjectValidationRuleLists.R_port_above_1200);
 
-    public readonly List<Pg4DbSettingsEntry> IV_db_settings = new List<Pg4DbSettingsEntry>();
+    public readonly NamedListOfPg4DbSettingsEntry IV_db_settings = new NamedListOfPg4DbSettingsEntry("DBSettings");
 
     public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
@@ -121,4 +121,45 @@ class Pg4DbSettingsEntry: OrganizedDataClassBase, IOdcBaseClassInheritor
     }
 
 }
-     
+
+
+class NamedListOfPg4DbSettingsEntry : NamedListOfOdcInstances<Pg4DbSettingsEntry>, INamedListOfOdcInstances
+{
+    public NamedListOfPg4DbSettingsEntry(string group_name, bool allow_disabling_instances = false, bool allow_empty_data_identifiers = false) : base(group_name, allow_disabling_instances, allow_empty_data_identifiers)
+    {
+    }
+
+    public bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".CreateNewEntry");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+
+
+        new_instance = null;
+        //// input data validation
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".CreateNewEntry");
+        validator.AddEntry(new DataVR(organized_data_identifier).AddRule(SDV.R_len_greater_0));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return false;
+        }
+        ///</end> input data validation
+
+        Pg4DbSettingsEntry new_entry = new Pg4DbSettingsEntry(ot_helper, child_activity_pointer, organized_data_identifier);
+        this.Add(new_entry);
+        new_instance = new_entry;
+        if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == true)
+        {
+            return false;
+        }
+
+        OTSH.SetSuccessEndActivity(ETR);
+        return true;
+    }
+}
