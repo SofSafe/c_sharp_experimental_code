@@ -9,19 +9,24 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 
 
 interface IOdcBaseClassInheritor: IOdcBaseClass
 {
     List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
+
+    
 }
 
 //TODO update on SBD
 interface IOdcBaseClass
-{
+{    
     string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
     void NotPublicJsonInternal(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref JsonWriter json_writer, string activity_name_prefix = "");
@@ -99,7 +104,6 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
     {
         get { return this.IV_last_validation_result_details; }
     }
-
 
 
     public string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
@@ -651,7 +655,8 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         }
     }
 
-    //todo add class_type argument to SBD
+
+
     public SofsafeOrganizedDataClassBase(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,
         bool allow_disabling_instance = false,
         //todo add argument to SBD
@@ -691,5 +696,21 @@ class SofsafeOrganizedDataClassBase : IOdcBaseClass
         
         this.RegisterSdoOdcIndividualVariables();
         OTSH.SetSuccessEndActivity(ETR);
+    }
+}
+
+
+interface INamedListOfOdcInstances: INamedListOfInstances
+{
+    bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "");
+}
+class NamedListOfOdcInstances<organized_data_class>: NamedListOfInstances<organized_data_class>
+{
+    protected bool IV_allow_disabling_instances = false;
+    protected bool IV_allow_empty_data_identifiers = false;
+    public NamedListOfOdcInstances(string group_name, bool allow_disabling_instances,bool allow_empty_data_identifiers) : base(group_name)
+    {
+        this.IV_allow_disabling_instances = allow_disabling_instances;
+        this.IV_allow_empty_data_identifiers = allow_empty_data_identifiers;
     }
 }
