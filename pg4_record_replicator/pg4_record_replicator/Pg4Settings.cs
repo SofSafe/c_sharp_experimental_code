@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
 {
-    public readonly Dco<string> IV_settings_file_location = new Dco<string>("IV_settings_file_location", ProjectValidationRuleLists.R_file_location);
+    public readonly Dco<string> IV_settings_file_location = new Dco<string>("IV_settings_file_location", ProjectValidationRuleLists.R_file_location,null,false,false,false);
     public readonly Dco<string> IV_endpoint_interface = new Dco<string>("EndpointInterface", ProjectValidationRuleLists.R_populated_string);
     public readonly Dco<short> IV_endpoint_port = new Dco<short>("EndpointPort", ProjectValidationRuleLists.R_port_above_1200);
 
