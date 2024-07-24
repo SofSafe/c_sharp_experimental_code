@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
 {
     public readonly Dco<string> IV_settings_file_location = new Dco<string>("IV_settings_file_location", ProjectValidationRuleLists.R_file_location);
-    public readonly Dco<string> IV_endpoint_interface = new Dco<string>("IV_endpoint_interface", ProjectValidationRuleLists.R_populated_string);
-    public readonly Dco<short> IV_endpoint_port = new Dco<short>("IV_endpoint_port", ProjectValidationRuleLists.R_port_above_1200);
+    public readonly Dco<string> IV_endpoint_interface = new Dco<string>("EndpointInterface", ProjectValidationRuleLists.R_populated_string);
+    public readonly Dco<short> IV_endpoint_port = new Dco<short>("EndpointPort", ProjectValidationRuleLists.R_port_above_1200);
 
     public readonly List<Pg4DbSettingsEntry> IV_db_settings = new List<Pg4DbSettingsEntry>();
 
@@ -79,15 +79,17 @@ class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
 class Pg4DbSettingsEntry: OrganizedDataClassBase, IOdcBaseClassInheritor
 {
 
-    public readonly Dco<string> IV_server_address = new Dco<string>("IV_server_address", ProjectValidationRuleLists.R_populated_string);
+    public readonly Dco<string> IV_server_address = new Dco<string>("ServerAddress", ProjectValidationRuleLists.R_populated_string);
+    //todo add to SBD
+    public readonly Dco<string> IV_description = new Dco<string>("Description", ProjectValidationRuleLists.R_populated_string);
 
-    public readonly Dco<string> IV_username = new Dco<string>("IV_username", ProjectValidationRuleLists.R_populated_string);
+    public readonly Dco<string> IV_username = new Dco<string>("UserName", ProjectValidationRuleLists.R_populated_string);
 
-    public readonly Dco<string> IV_password = new Dco<string>("IV_password", ProjectValidationRuleLists.R_populated_string);
+    public readonly Dco<string> IV_password = new Dco<string>("Password", ProjectValidationRuleLists.R_populated_string);
 
-    public readonly Dco<string> IV_database_name = new Dco<string>("IV_database_name", ProjectValidationRuleLists.R_populated_string);
+    public readonly Dco<string> IV_database_name = new Dco<string>("DatabaseName", ProjectValidationRuleLists.R_populated_string);
 
-    public readonly Dco<byte> IV_authentication_type = new Dco<byte>("IV_password", ProjectValidationRuleLists.R_1or2,new List<byte> {1,2});
+    public readonly Dco<byte> IV_authentication_type = new Dco<byte>("AuthenticationType", ProjectValidationRuleLists.R_1or2,new List<byte> {1,2});
  
 
     public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
