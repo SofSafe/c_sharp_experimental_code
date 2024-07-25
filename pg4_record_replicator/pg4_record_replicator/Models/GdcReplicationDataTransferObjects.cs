@@ -16,7 +16,7 @@ class GdcReplicationBatch : GroupedDataClassBase
 
     protected NamedListOfReplicationRecord IV_replication_records = new NamedListOfReplicationRecord("replication_records");
     protected Dco<double> IV_software_verison = new Dco<double>("source_software_verison",ProjectValidationRuleLists.R_software_version);
-    protected Dco<string> IV_client_id = new Dco<string>("source_client_id",ProjectValidationRuleLists.R_client_id);
+    protected Dco<string> IV_client_id = new Dco<string>("source_client_id",ProjectValidationRuleLists.R_source_id);
     protected Dco<DateTime> IV_replication_start_time = new Dco<DateTime>("replication_read_time");
 
     public DateTime P_replication_start_time

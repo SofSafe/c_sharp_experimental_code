@@ -78,7 +78,7 @@ class ReplicationRequestProcessor
         GdcPg4DbSettingsEntry source_server = null;
         foreach (GdcPg4DbSettingsEntry server_entry in settings_object.IV_db_settings)
         {
-            if(server_entry.IV_database_name.P_value == rep_data.IV_client_id.P_value)
+            if(server_entry.IV_database_name.P_value == rep_data.IV_source_id.P_value)
             {
                 source_server = server_entry;
                 source_server_found = true;
@@ -88,7 +88,7 @@ class ReplicationRequestProcessor
 
         if(source_server_found == false)
         {
-            OTSH.AddEventThenEndActivity(ETR, $"source server for database: {rep_data.IV_client_id.P_value} not found", ErrorTagsCodes.C_input_validation);
+            OTSH.AddEventThenEndActivity(ETR, $"source server for database: {rep_data.IV_source_id.P_value} not found", ErrorTagsCodes.C_input_validation);
             return false;
         }
 
@@ -128,7 +128,7 @@ class ReplicationRequestProcessor
                 rep_data.IV_primary_table.P_value,
                 rep_data.IV_primary_key_value.P_value,
                 secondary_tables,
-                rep_data.IV_client_id.P_value,
+                rep_data.IV_source_id.P_value,
                 rep_data.IV_software_version.P_value,
                 rep_data.IV_sql_join.P_value,
                 "Remote");
@@ -138,7 +138,7 @@ class ReplicationRequestProcessor
             replicator = new DynamicRecordsReplicator(ot_helper, child_activity_pointer,
                 rep_data.IV_primary_table.P_value,
                 rep_data.IV_primary_key_value.P_value,
-                rep_data.IV_client_id.P_value,
+                rep_data.IV_source_id.P_value,
                 rep_data.IV_software_version.P_value,
                 "Remote");
                 

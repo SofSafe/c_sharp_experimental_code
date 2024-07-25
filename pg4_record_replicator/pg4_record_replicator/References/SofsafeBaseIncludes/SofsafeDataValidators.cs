@@ -116,7 +116,7 @@ static class SDV
     public static SDR R_greater_0 = new SDR("value greater than zero");
     public static SDR R_len_greater_0 = new SDR("length greater than zero");
     public static SDR R_len_greater_2 = new SDR("length greater than 2");
-    public static SDR R_client_id = new SDR("4 digit client id");
+    public static SDR R_source_id = new SDR("crush client id");
     public static SDR R_populated_nested_iterable = new SDR("nested array with atleast 1 entry");
     public static SDR R_greater_1200 = new SDR("value greater than 1200");
 
@@ -215,7 +215,7 @@ static class SDV
         SDV.CV_general_types_to_language_types.Add("text", text_langage_types);
 
         List<SDR> text_type_rule_names = new List<SDR>();
-        text_type_rule_names.Add(SDV.R_client_id);
+        text_type_rule_names.Add(SDV.R_source_id);
         text_type_rule_names.Add(SDV.R_len_greater_0);
         text_type_rule_names.Add(SDV.R_len_greater_2);
 
@@ -234,7 +234,7 @@ static class SDV
         SDV.CV_rule_name_to_method.Add(SDV.R_greater_1200.P_rule_name, SDV.ruleLenGreater1200);
 
 
-        SDV.CV_rule_name_to_method.Add(SDV.R_client_id.P_rule_name, SDV.ruleClientId);
+        SDV.CV_rule_name_to_method.Add(SDV.R_source_id.P_rule_name, SDV.ruleClientId);
         SDV.CV_rule_name_to_method.Add(SDV.R_populated_nested_iterable.P_rule_name, SDV.rulePopulatedNestedArray);
         SDV.CV_rule_name_to_method.Add(SDV.R_not_null.P_rule_name, SDV.ruleNotNull);
         ////</end> associate rule names with methods

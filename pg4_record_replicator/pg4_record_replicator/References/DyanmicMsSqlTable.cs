@@ -12,7 +12,7 @@ using Microsoft.Data.SqlClient;
 class DyanmicMsSqlTable
 {
     //todo add a flag to indicate the instnace is in an un-usable state due to validation errors
-    protected string IV_client_id_number_as_string = String.Empty;
+    protected string IV_source_id_number_as_string = String.Empty;
     protected string IV_replicated_data_table_name = String.Empty;
     protected DataTable IV_table = new DataTable();
     protected Dictionary<string, DynamicMsSqlColumn> IV_columns_meta_data = new Dictionary<string, DynamicMsSqlColumn>();
@@ -28,7 +28,7 @@ class DyanmicMsSqlTable
         get { return this.IV_table_name; }
     }
 
-    public DyanmicMsSqlTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string replicate_from_table_name, string client_id , string replicate_to_table_name, string activity_name_prefix = "")
+    public DyanmicMsSqlTable(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string replicate_from_table_name, string source_id , string replicate_to_table_name, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -41,7 +41,7 @@ class DyanmicMsSqlTable
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
         validator.AddEntry(new DataVR(replicate_from_table_name).AddRule(SDV.R_len_greater_2));
-        validator.AddEntry(new DataVR(client_id).AddRule(SDV.R_client_id));
+        validator.AddEntry(new DataVR(source_id).AddRule(SDV.R_source_id));
         validator.AddEntry(new DataVR(replicate_to_table_name).AddRule(SDV.R_len_greater_2));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
@@ -50,7 +50,7 @@ class DyanmicMsSqlTable
         }
         ///</end> input data validation
 
-        this.IV_client_id_number_as_string = client_id.Replace("CRUSH_","");
+        this.IV_source_id_number_as_string = source_id.Replace("CRUSH_","");
         this.IV_table_name = replicate_from_table_name;
         this.IV_table.TableName = replicate_from_table_name;
         this.IV_replicated_data_table_name = replicate_to_table_name;
@@ -267,14 +267,14 @@ class DyanmicMsSqlTable
 
                 if (this.IV_columns_meta_data[column.ColumnName].P_is_primary_key == true)
                 {                   
-                    where_primary_key_statement = $" clientID={this.IV_client_id_number_as_string} AND {equals_statement}";
+                    where_primary_key_statement = $" sourceID={this.IV_source_id_number_as_string} AND {equals_statement}";
                 }
             }
 
             string select_statement = "";
             string where_statement = "";
             if (where_primary_key_statement.Length == 0) {
-                where_statement = $" clientID={this.IV_client_id_number_as_string} AND {select_by_all_fields};";
+                where_statement = $" sourceID={this.IV_source_id_number_as_string} AND {select_by_all_fields};";
             } else
             {
                 where_statement = where_primary_key_statement ;
@@ -284,9 +284,9 @@ class DyanmicMsSqlTable
 
             DateTime replication_start_time = DateTime.Now;
             string replication_start_time_string = replication_start_time.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss:fff");
-            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , {this.IV_client_id_number_as_string}, GETUTCDATE() );";
+            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , sourceID , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , {this.IV_source_id_number_as_string}, GETUTCDATE() );";
             
-            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id_number_as_string} , ReplicationFinishTime=GETUTCDATE() WHERE {where_statement};";
+            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', sourceID={this.IV_source_id_number_as_string} , ReplicationFinishTime=GETUTCDATE() WHERE {where_statement};";
 
             // SET the replication_start_time here
             var param_start_time = replication_start_time_string;
@@ -298,12 +298,12 @@ class DyanmicMsSqlTable
                         INSERT INTO {this.IV_replicated_data_table_name} 
                         (   {insert_columns}, 
                             ReplicationStartTime, 
-                            ClientId, 
+                            sourceID, 
                             ReplicationFinishTime )
                         VALUES (
                         {insert_values},
                         '{replication_start_time_string}' , 
-                        {this.IV_client_id_number_as_string}, 
+                        {this.IV_source_id_number_as_string}, 
                          GETUTCDATE() );
                     END
 
@@ -318,7 +318,7 @@ class DyanmicMsSqlTable
                     )
                     BEGIN
                         UPDATE {this.IV_replicated_data_table_name} 
-                            SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id_number_as_string} , ReplicationFinishTime=GETUTCDATE() 
+                            SET {update_part2},ReplicationStartTime='{replication_start_time_string}', sourceID={this.IV_source_id_number_as_string} , ReplicationFinishTime=GETUTCDATE() 
                             WHERE {where_statement};
                     END
                 ;";

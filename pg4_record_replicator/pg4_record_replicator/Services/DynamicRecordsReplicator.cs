@@ -18,7 +18,7 @@ class DynamicRecordsReplicator
     protected string IV_primary_record_uid = "";
     protected string IV_primary_table_name = "";
     protected byte IV_replication_mode = 0;
-    protected string IV_client_id = "";
+    protected string IV_source_id = "";
     protected double IV_software_version = 0;
     protected string IV_replicated_table_name_prefix = "";
     //todo add to SBD
@@ -26,7 +26,7 @@ class DynamicRecordsReplicator
     protected List<DyanmicMsSqlTable> IV_tables = new List<DyanmicMsSqlTable> ();
 
 
-    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, string client_id, double software_version, string replication_table_prefix, string activity_name_prefix = "")
+    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, string source_id, double software_version, string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -36,7 +36,7 @@ class DynamicRecordsReplicator
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
         
-        if(this.SharedConstructorLogic(ot_helper,child_activity_pointer,1,primary_table_name,primary_key_value,client_id,software_version,replication_table_prefix) == false)
+        if(this.SharedConstructorLogic(ot_helper,child_activity_pointer,1,primary_table_name,primary_key_value,source_id,software_version,replication_table_prefix) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
@@ -47,7 +47,7 @@ class DynamicRecordsReplicator
     }
 
 
-    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, List<string> secondary_table_names, string client_id, double software_version, string join_statement, string replication_table_prefix, string activity_name_prefix = "")
+    public DynamicRecordsReplicator(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string primary_table_name, string primary_key_value, List<string> secondary_table_names, string source_id, double software_version, string join_statement, string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -76,7 +76,7 @@ class DynamicRecordsReplicator
         List<Activity> method_activites_list = new List<Activity>();
         foreach(string table_name in secondary_table_names)
         {
-            DyanmicMsSqlTable table_entry = new DyanmicMsSqlTable(ot_helper, child_activity_pointer, table_name, client_id, replication_table_prefix + table_name, activity_name_prefix);
+            DyanmicMsSqlTable table_entry = new DyanmicMsSqlTable(ot_helper, child_activity_pointer, table_name, source_id, replication_table_prefix + table_name, activity_name_prefix);
             method_activites_list.Add(child_activity_pointer.P_pointer);
             if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok) { continue; }
             this.IV_tables.Add(table_entry);
@@ -91,7 +91,7 @@ class DynamicRecordsReplicator
         ////</end> create all tables associated with the primary table
 
 
-        if (this.SharedConstructorLogic(ot_helper, child_activity_pointer, 2, primary_table_name, primary_key_value, client_id, software_version, replication_table_prefix) == false)
+        if (this.SharedConstructorLogic(ot_helper, child_activity_pointer, 2, primary_table_name, primary_key_value, source_id, software_version, replication_table_prefix) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return;
@@ -102,7 +102,7 @@ class DynamicRecordsReplicator
         return;
     }
 
-    private bool SharedConstructorLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,byte replication_type,string primary_table_name, string primary_key_value, string client_id, double software_version,string replication_table_prefix, string activity_name_prefix = "")
+    private bool SharedConstructorLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,byte replication_type,string primary_table_name, string primary_key_value, string source_id, double software_version,string replication_table_prefix, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -117,7 +117,7 @@ class DynamicRecordsReplicator
         validator.AddEntry(new DataVR(replication_type, "replication_type").AddRule(SDV.R_1or2));
         validator.AddEntry(new DataVR(primary_table_name, "primary_table_name").AddRule(SDV.R_len_greater_0));
         validator.AddEntry(new DataVR(primary_key_value, "primary_key_value").AddRule(SDV.R_len_greater_0));
-        validator.AddEntry(new DataVR(client_id, "client_id").AddRule(SDV.R_client_id));
+        validator.AddEntry(new DataVR(source_id, "source_id").AddRule(SDV.R_source_id));
         validator.AddEntry(new DataVR(software_version, "software_version").AddRule(SDV.R_greater_0));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
@@ -126,7 +126,7 @@ class DynamicRecordsReplicator
         }
         ///</end> input data validation
       
-        DyanmicMsSqlTable primary_table = new DyanmicMsSqlTable(ot_helper, child_activity_pointer, primary_table_name, client_id, replication_table_prefix + primary_table_name, activity_name_prefix);
+        DyanmicMsSqlTable primary_table = new DyanmicMsSqlTable(ot_helper, child_activity_pointer, primary_table_name, source_id, replication_table_prefix + primary_table_name, activity_name_prefix);
         if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -134,7 +134,7 @@ class DynamicRecordsReplicator
         }
 
         this.IV_software_version = software_version;
-        this.IV_client_id = client_id;
+        this.IV_source_id = source_id;
         this.IV_replication_mode = replication_type;
         this.IV_primary_table_name = primary_table_name;
         this.IV_primary_record_uid = primary_key_value;
@@ -156,7 +156,7 @@ class DynamicRecordsReplicator
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-        GdcReplicationBatch return_value = new GdcReplicationBatch(ot_helper,child_activity_pointer,this.IV_client_id,this.IV_software_version,DateTime.Now,this.IV_replication_mode, activity_name_prefix);
+        GdcReplicationBatch return_value = new GdcReplicationBatch(ot_helper,child_activity_pointer,this.IV_source_id,this.IV_software_version,DateTime.Now,this.IV_replication_mode, activity_name_prefix);
                 
 
         //// input data validation

@@ -49,8 +49,8 @@ namespace pg4_record_replicator
             GdcReplicationRequest sent_rep = new GdcReplicationRequest(ot_helper, child_activity_pointer, "simple test client data");
             activity_list.Add(child_activity_pointer.P_pointer);
 
-            sent_rep.IV_client_id.P_value = "CRUSH_1102";
-
+            /// logic that happens in the Database records replication library within the Crush POS software
+            sent_rep.IV_source_id.P_value = "CRUSH_1102";
             sent_rep.IV_software_version.P_value = 4.71;
             sent_rep.IV_primary_key_value.P_value = "12";
             sent_rep.IV_primary_table.P_value = "Parts";
@@ -60,16 +60,17 @@ namespace pg4_record_replicator
 
             sent_rep.ValidateData(ot_helper, child_activity_pointer);
 
-            string json_text = sent_rep.ToJson(ot_helper, child_activity_pointer, "simple test");
+            string json_to_send_to_server = sent_rep.ToJson(ot_helper, child_activity_pointer, "simple test");
             activity_list.Add(child_activity_pointer.P_pointer);
+            ///</end> logic that happens in the Database records replication library within the Crush POS software
 
-            //// client sending data to server
+            //// crush client sending data to server
 
-
+            //// the same logic the server does with the json data
             GdcReplicationRequest received_rep = new GdcReplicationRequest(ot_helper, child_activity_pointer, "simple test data on server");
             activity_list.Add(child_activity_pointer.P_pointer);
 
-            received_rep.PopulateFromJson(ot_helper, child_activity_pointer, json_text, "simple test");
+            received_rep.PopulateFromJson(ot_helper, child_activity_pointer, json_to_send_to_server, "simple test");
             activity_list.Add(child_activity_pointer.P_pointer);
 
             if (received_rep.IV_replication_type.P_value == 1)
@@ -81,6 +82,7 @@ namespace pg4_record_replicator
 
             ReplicationRequestProcessor.processRequest(ot_helper, child_activity_pointer, received_rep, "simple test");
             activity_list.Add(child_activity_pointer.P_pointer);
+            ////</end> the same logic the server does with the json data
 
 
         }
@@ -99,7 +101,7 @@ namespace pg4_record_replicator
             GdcReplicationRequest sent_rep = new GdcReplicationRequest(ot_helper, child_activity_pointer, "complex test client data");
             activity_list.Add(child_activity_pointer.P_pointer);
 
-            sent_rep.IV_client_id.P_value = "CRUSH_1102";
+            sent_rep.IV_source_id.P_value = "CRUSH_1102";
             sent_rep.IV_software_version.P_value = 4.71;
             sent_rep.IV_primary_key_value.P_value = "15";
             sent_rep.IV_primary_table.P_value = ReplicationTableHelper.PosSalesHdr.P_primary_table_name;
