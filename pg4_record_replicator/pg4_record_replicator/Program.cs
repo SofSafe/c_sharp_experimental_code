@@ -26,8 +26,6 @@ namespace pg4_record_replicator
             //CreateHostBuilder(args).Build().Run();
             //SimpleReplicationExampleCrushLogic();
             ComplexReplicationExampleCrushLogic();
-            //JsonDecodingTesting test22 = new JsonDecodingTesting();
-            //test22.testing();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
