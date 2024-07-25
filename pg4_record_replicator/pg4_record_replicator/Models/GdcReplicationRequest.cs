@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 class GdcReplicationRequest : GroupedDataClassBase
 {
     public readonly Dco<byte> IV_replication_type = new Dco<byte>("replication_type", ProjectValidationRuleLists.R_1or2, new List<byte>() {1, 2});
-    public readonly Dco<string> IV_source_id = new Dco<string>("client_id", ProjectValidationRuleLists.R_source_id);
+    public readonly Dco<string> IV_source_id = new Dco<string>("source_id", ProjectValidationRuleLists.R_source_id);
     public readonly Dco<string> IV_primary_table = new Dco<string>("table", ProjectValidationRuleLists.R_populated_string);
     public readonly Dco<string> IV_primary_key_value = new Dco<string>("primary_key_value", ProjectValidationRuleLists.R_populated_string);
     public readonly Dco<double> IV_software_version = new Dco<double>("crush_version", ProjectValidationRuleLists.R_software_version);

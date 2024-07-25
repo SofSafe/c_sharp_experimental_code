@@ -16,7 +16,7 @@ class GdcReplicationBatch : GroupedDataClassBase
 
     protected NamedListOfReplicationRecord IV_replication_records = new NamedListOfReplicationRecord("replication_records");
     protected Dco<double> IV_software_verison = new Dco<double>("source_software_verison",ProjectValidationRuleLists.R_software_version);
-    protected Dco<string> IV_client_id = new Dco<string>("source_client_id",ProjectValidationRuleLists.R_source_id);
+    protected Dco<string> IV_source_id = new Dco<string>("source_id",ProjectValidationRuleLists.R_source_id);
     protected Dco<DateTime> IV_replication_start_time = new Dco<DateTime>("replication_read_time");
 
     public DateTime P_replication_start_time
@@ -74,7 +74,7 @@ class GdcReplicationBatch : GroupedDataClassBase
 
     }
 
-    public GdcReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string client_id, double software_version, DateTime replication_start_time, byte replication_type, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "ReplicationBatch", false,true, activity_name_prefix)
+    public GdcReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string source_id, double software_version, DateTime replication_start_time, byte replication_type, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "ReplicationBatch", false,true, activity_name_prefix)
     {
 
         /// observability template for constructor in an ODC inheritor
@@ -95,7 +95,7 @@ class GdcReplicationBatch : GroupedDataClassBase
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
-        validator.AddEntry(new DataVR(client_id).AddRuleList(this.IV_client_id.P_validation_rules_list));
+        validator.AddEntry(new DataVR(source_id).AddRuleList(this.IV_source_id.P_validation_rules_list));
 
         validator.AddEntry(new DataVR(replication_start_time).AddRuleList(this.IV_replication_start_time.P_validation_rules_list));
 
@@ -110,7 +110,7 @@ class GdcReplicationBatch : GroupedDataClassBase
 
         this.IV_replication_start_time.P_value = replication_start_time;
         this.IV_replication_type.P_value = replication_type;
-        this.IV_client_id.P_value = client_id;
+        this.IV_source_id.P_value = source_id;
         this.IV_software_verison.P_value = software_version;
         }
     }
