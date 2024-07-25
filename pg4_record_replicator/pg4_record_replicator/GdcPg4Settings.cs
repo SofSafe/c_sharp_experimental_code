@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-class Pg4Settings: OrganizedDataClassBase
+class GdcPg4Settings: GroupedDataClassBase
 {
     public readonly Dco<string> IV_settings_file_location = new Dco<string>("IV_settings_file_location", ProjectValidationRuleLists.R_file_location,null,false,false,false);
     public readonly Dco<string> IV_endpoint_interface = new Dco<string>("EndpointInterface", ProjectValidationRuleLists.R_populated_string);
@@ -16,10 +16,7 @@ class Pg4Settings: OrganizedDataClassBase
     public readonly NamedListOfPg4DbSettingsEntry IV_db_settings = new NamedListOfPg4DbSettingsEntry("DBSettings");
 
 
-
-
-
-    public Pg4Settings(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier = null, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, organized_data_identifier, true, true, activity_name_prefix)
+    public GdcPg4Settings(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier = null, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, organized_data_identifier, true, true, activity_name_prefix)
     {
         /// observability template for constructor in an ODC inheritor
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -71,7 +68,7 @@ class Pg4Settings: OrganizedDataClassBase
 }
 
 
-class Pg4DbSettingsEntry: OrganizedDataClassBase
+class GdcPg4DbSettingsEntry: GroupedDataClassBase
 {
 
     public readonly Dco<string> IV_server_address = new Dco<string>("ServerAddress", ProjectValidationRuleLists.R_populated_string);
@@ -89,7 +86,7 @@ class Pg4DbSettingsEntry: OrganizedDataClassBase
 
   
 
-    public Pg4DbSettingsEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier=null, string activity_name_prefix = "") : base(ot_helper,method_activity_pointer,organized_data_identifier,true,true, activity_name_prefix)
+    public GdcPg4DbSettingsEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier=null, string activity_name_prefix = "") : base(ot_helper,method_activity_pointer,organized_data_identifier,true,true, activity_name_prefix)
     {
         /// observability template for constructor in an ODC inheritor
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -114,13 +111,13 @@ class Pg4DbSettingsEntry: OrganizedDataClassBase
 }
 
 
-class NamedListOfPg4DbSettingsEntry : NamedListOfOdcInstances<Pg4DbSettingsEntry>, INamedListOfOdcInstances
+class NamedListOfPg4DbSettingsEntry : NamedListOfGdcInstances<GdcPg4DbSettingsEntry>, INamedListOfGdcInstances
 {
     public NamedListOfPg4DbSettingsEntry(string group_name, bool allow_disabling_instances = false, bool allow_empty_data_identifiers = false) : base(group_name, allow_disabling_instances, allow_empty_data_identifiers)
     {
     }
 
-    public bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "")
+    public bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IGdcBaseClass new_instance, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -142,11 +139,12 @@ class NamedListOfPg4DbSettingsEntry : NamedListOfOdcInstances<Pg4DbSettingsEntry
         }
         ///</end> input data validation
 
-        Pg4DbSettingsEntry new_entry = new Pg4DbSettingsEntry(ot_helper, child_activity_pointer, organized_data_identifier);
+        GdcPg4DbSettingsEntry new_entry = new GdcPg4DbSettingsEntry(ot_helper, child_activity_pointer, organized_data_identifier);
         this.Add(new_entry);
         new_instance = new_entry;
-        if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == true)
+        if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == false)
         {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
             return false;
         }
 

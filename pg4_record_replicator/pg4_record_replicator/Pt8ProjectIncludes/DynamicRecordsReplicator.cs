@@ -146,7 +146,7 @@ class DynamicRecordsReplicator
 
 
     //TODO update return type on SBD
-    public ReplicationBatch GetReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
+    public GdcReplicationBatch GetReplicationSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string source_db_name,SqlConnection sql_connection, string activity_name_prefix="")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -156,7 +156,7 @@ class DynamicRecordsReplicator
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
 
-        ReplicationBatch return_value = new ReplicationBatch(ot_helper,child_activity_pointer,this.IV_client_id,this.IV_software_version,DateTime.Now,this.IV_replication_mode, activity_name_prefix);
+        GdcReplicationBatch return_value = new GdcReplicationBatch(ot_helper,child_activity_pointer,this.IV_client_id,this.IV_software_version,DateTime.Now,this.IV_replication_mode, activity_name_prefix);
                 
 
         //// input data validation
@@ -281,7 +281,7 @@ class DynamicRecordsReplicator
     }
 
 
-    public int replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, ReplicationBatch replication_batch, string activity_name_prefix = "")
+    public int replicateSqlStatements(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string dest_db_name, SqlConnection sql_connection, GdcReplicationBatch replication_batch, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -332,7 +332,7 @@ class DynamicRecordsReplicator
 
         //// replicate the records using the combined select, insert, update statements
         SqlDataAdapter adapter = new SqlDataAdapter();
-        foreach (ReplicationRecord request in replication_batch.P_replication_records)
+        foreach (GdcReplicationRecord request in replication_batch.P_replication_records)
         {
             SqlCommand combined_command = sql_connection.CreateCommand();
             combined_command.CommandText = request.P_combined_sql_statement;

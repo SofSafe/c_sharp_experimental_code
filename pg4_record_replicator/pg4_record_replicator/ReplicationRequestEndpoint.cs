@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 
 public class ReplicationRequestEndpoint
@@ -33,25 +35,49 @@ public class ReplicationRequestEndpoint
 
 public class JsonInput
 {
-    public string Message { get; set; }
+    public string json_input { get; set; }
 }
 
 [ApiController]
 [Route("api/[controller]")]
-public class JsonEndpointController : ControllerBase
+public class P1s1e1CreateReplicationRequest : ControllerBase
 {
     [HttpPost]
-    public ActionResult<string> Post([FromBody] JsonInput input)
+    public ActionResult<string> Post([FromBody] JsonInput post_keys)
     {
+        // setup open telemetry and activity top level objects
+        OpenTelemetryConfigHelper ot_helper = new OpenTelemetryConfigHelper("pg4-lan-replication", "0.0.1");
+        Activity ETR = ot_helper.StartActivityWrapper("p1s1e1");
 
-        if (input == null || string.IsNullOrEmpty(input.Message))
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        //do runtime setup for data validation class
+        SDV.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
+        // create objects used for monitoring activities
+        List<Activity> activity_list = new List<Activity>();
+
+        /// populate and validate data in request
+        GdcReplicationRequest request_data = new GdcReplicationRequest(ot_helper, child_activity_pointer, "p1s1e1");
+        activity_list.Add(child_activity_pointer.P_pointer);
+
+        request_data.PopulateFromJson(ot_helper, child_activity_pointer, post_keys.json_input);
+        activity_list.Add(child_activity_pointer.P_pointer);
+        
+        request_data.ValidateData(ot_helper,child_activity_pointer);
+        activity_list.Add(child_activity_pointer.P_pointer);
+
+        ChildActivityPointer first_failed_activity1;
+        if(OTSH.CheckActivityList(ETR,activity_list,out first_failed_activity1) == false)
         {
-            return BadRequest("Invalid input");
+            OTSH.PassStatusAndEndActivity(ETR, first_failed_activity1.P_pointer);
+            return StatusCode(ErrorTagsCodes.ConvertErrorToHttpsCode(ETR),ETR.TraceId);
         }
+        ///</end> populate and validate data in request
 
-        // Process the input JSON here
-        string response = $"Received message: {input.Message}";
 
-        return Ok(response);
+        
+
+
+        OTSH.SetSuccessEndActivity(ETR);
+        return Ok();
     }
 }

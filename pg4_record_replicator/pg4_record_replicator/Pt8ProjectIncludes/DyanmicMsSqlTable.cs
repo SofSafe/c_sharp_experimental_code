@@ -12,7 +12,7 @@ using Microsoft.Data.SqlClient;
 class DyanmicMsSqlTable
 {
     //todo add a flag to indicate the instnace is in an un-usable state due to validation errors
-    protected string IV_client_id = String.Empty;
+    protected string IV_client_id_number_as_string = String.Empty;
     protected string IV_replicated_data_table_name = String.Empty;
     protected DataTable IV_table = new DataTable();
     protected Dictionary<string, DynamicMsSqlColumn> IV_columns_meta_data = new Dictionary<string, DynamicMsSqlColumn>();
@@ -50,7 +50,7 @@ class DyanmicMsSqlTable
         }
         ///</end> input data validation
 
-        this.IV_client_id = client_id;
+        this.IV_client_id_number_as_string = client_id.Replace("CRUSH_","");
         this.IV_table_name = replicate_from_table_name;
         this.IV_table.TableName = replicate_from_table_name;
         this.IV_replicated_data_table_name = replicate_to_table_name;
@@ -179,7 +179,7 @@ class DyanmicMsSqlTable
 
 
     //TODO change return type on SBD
-    public List<ReplicationRecord> GenerateSqlStatementsFromData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    public List<GdcReplicationRecord> GenerateSqlStatementsFromData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
     {
 
         /// observability template
@@ -191,7 +191,7 @@ class DyanmicMsSqlTable
 
         ///</end> observability template
 
-        List<ReplicationRecord> return_value  = new List<ReplicationRecord>();
+        List<GdcReplicationRecord> return_value  = new List<GdcReplicationRecord>();
 
         //// build the parts of the select, insert and update statements that will use data from the replicated data
         foreach (DataRow row in this.IV_table.Rows)
@@ -267,14 +267,14 @@ class DyanmicMsSqlTable
 
                 if (this.IV_columns_meta_data[column.ColumnName].P_is_primary_key == true)
                 {                   
-                    where_primary_key_statement = $" clientID={this.IV_client_id} AND {equals_statement}";
+                    where_primary_key_statement = $" clientID={this.IV_client_id_number_as_string} AND {equals_statement}";
                 }
             }
 
             string select_statement = "";
             string where_statement = "";
             if (where_primary_key_statement.Length == 0) {
-                where_statement = $" clientID={this.IV_client_id} AND {select_by_all_fields};";
+                where_statement = $" clientID={this.IV_client_id_number_as_string} AND {select_by_all_fields};";
             } else
             {
                 where_statement = where_primary_key_statement ;
@@ -284,9 +284,9 @@ class DyanmicMsSqlTable
 
             DateTime replication_start_time = DateTime.Now;
             string replication_start_time_string = replication_start_time.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss:fff");
-            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , {this.IV_client_id}, GETUTCDATE() );";
+            string insert_statement = $"INSERT into {this.IV_replicated_data_table_name} ({insert_columns}, ReplicationStartTime , ClientId , ReplicationFinishTime ) VALUES ({insert_values} ,'{replication_start_time_string}' , {this.IV_client_id_number_as_string}, GETUTCDATE() );";
             
-            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id} , ReplicationFinishTime=GETUTCDATE() WHERE {where_statement};";
+            string update_statement = $"UPDATE {this.IV_replicated_data_table_name} SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id_number_as_string} , ReplicationFinishTime=GETUTCDATE() WHERE {where_statement};";
 
             // SET the replication_start_time here
             var param_start_time = replication_start_time_string;
@@ -303,7 +303,7 @@ class DyanmicMsSqlTable
                         VALUES (
                         {insert_values},
                         '{replication_start_time_string}' , 
-                        {this.IV_client_id}, 
+                        {this.IV_client_id_number_as_string}, 
                          GETUTCDATE() );
                     END
 
@@ -318,13 +318,13 @@ class DyanmicMsSqlTable
                     )
                     BEGIN
                         UPDATE {this.IV_replicated_data_table_name} 
-                            SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id} , ReplicationFinishTime=GETUTCDATE() 
+                            SET {update_part2},ReplicationStartTime='{replication_start_time_string}', ClientId={this.IV_client_id_number_as_string} , ReplicationFinishTime=GETUTCDATE() 
                             WHERE {where_statement};
                     END
                 ;";
 
 
-            return_value.Add(new ReplicationRecord(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement,null, activity_name_prefix));
+            return_value.Add(new GdcReplicationRecord(ot_helper,child_activity_pointer,select_statement,insert_statement,update_statement, combined_statement,null, activity_name_prefix));
         }
         ////</end> build the parts of the select, insert and update statements that will use data from the replicated data
 

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 //TODO add to SBD and finish implementing
 
-class ReplicationBatch : OrganizedDataClassBase
+class GdcReplicationBatch : GroupedDataClassBase
 {
     protected Dco<byte> IV_replication_type = new Dco<byte>("replication_type",
         ProjectValidationRuleLists.R_replication_type);
@@ -37,7 +37,7 @@ class ReplicationBatch : OrganizedDataClassBase
         this.IV_replication_type.P_value = 2;
     }
 
-    public List<ReplicationRecord> P_replication_records
+    public List<GdcReplicationRecord> P_replication_records
     {
         get { return this.IV_replication_records; }
     }
@@ -52,7 +52,7 @@ class ReplicationBatch : OrganizedDataClassBase
 
 
 
-    public ReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,string activity_name_prefix="") : base(ot_helper, method_activity_pointer, organized_data_identifier, false, true, activity_name_prefix)
+    public GdcReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,string activity_name_prefix="") : base(ot_helper, method_activity_pointer, organized_data_identifier, false, true, activity_name_prefix)
     {
         /// observability template for constructor in an ODC inheritor
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -74,7 +74,7 @@ class ReplicationBatch : OrganizedDataClassBase
 
     }
 
-    public ReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string client_id, double software_version, DateTime replication_start_time, byte replication_type, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "ReplicationBatch", false,true, activity_name_prefix)
+    public GdcReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string client_id, double software_version, DateTime replication_start_time, byte replication_type, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, "ReplicationBatch", false,true, activity_name_prefix)
     {
 
         /// observability template for constructor in an ODC inheritor
@@ -116,13 +116,13 @@ class ReplicationBatch : OrganizedDataClassBase
     }
 
 
-//TODO add to SBD and finish implementing
-class ReplicationRecord: OrganizedDataClassBase
+//TODO add to SBD
+class GdcReplicationRecord: GroupedDataClassBase
 {
-    private Dco<string> IV_select_statement = new Dco<string>("IV_select_statement",ProjectValidationRuleLists.R_sql_select_string);
-    private Dco<string> IV_insert_statement = new Dco<string>("IV_insert_statement", ProjectValidationRuleLists.R_sql_insert_string);
-    private Dco<string> IV_update_statement = new Dco<string>("IV_update_statement", ProjectValidationRuleLists.R_sql_update_string);
-    private Dco<string> IV_combined_statement = new Dco<string>("IV_combined_statement", ProjectValidationRuleLists.R_sql_combined_string);
+    private Dco<string> IV_select_statement = new Dco<string>("select_statement",ProjectValidationRuleLists.R_sql_select_string);
+    private Dco<string> IV_insert_statement = new Dco<string>("insert_statement", ProjectValidationRuleLists.R_sql_insert_string);
+    private Dco<string> IV_update_statement = new Dco<string>("update_statement", ProjectValidationRuleLists.R_sql_update_string);
+    private Dco<string> IV_combined_statement = new Dco<string>("combined_statement", ProjectValidationRuleLists.R_sql_combined_string);
 
     public string P_select_statement
     {
@@ -143,7 +143,7 @@ class ReplicationRecord: OrganizedDataClassBase
     }
 
 
-    public ReplicationRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, organized_data_identifier, false, true, activity_name_prefix)
+    public GdcReplicationRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, organized_data_identifier, false, true, activity_name_prefix)
     {
         /// observability template for constructor in an ODC inheritor
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -165,7 +165,7 @@ class ReplicationRecord: OrganizedDataClassBase
 
     }
 
-    public ReplicationRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string select_statment, string insert_statement, string update_statement, string combined_statement, string replication_id, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, replication_id, false,true, activity_name_prefix)
+    public GdcReplicationRecord(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string select_statment, string insert_statement, string update_statement, string combined_statement, string replication_id, string activity_name_prefix = "") : base(ot_helper, method_activity_pointer, replication_id, false,true, activity_name_prefix)
     {
 
 
@@ -212,14 +212,15 @@ class ReplicationRecord: OrganizedDataClassBase
 }
 
 
+//TODO add to SBD
 
-class NamedListOfReplicationRecord: NamedListOfOdcInstances<ReplicationRecord> , INamedListOfOdcInstances
+class NamedListOfReplicationRecord : NamedListOfGdcInstances<GdcReplicationRecord> , INamedListOfGdcInstances
 {
     public NamedListOfReplicationRecord(string group_name,bool allow_disabling_instances = false,bool allow_empty_data_identifiers=false) : base(group_name,allow_disabling_instances,allow_empty_data_identifiers)
     {
     }
 
-    public bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "")
+    public bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IGdcBaseClass new_instance, string activity_name_prefix = "")
     {
         /// observability template
         if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
@@ -241,7 +242,7 @@ class NamedListOfReplicationRecord: NamedListOfOdcInstances<ReplicationRecord> ,
         }
         ///</end> input data validation
 
-        ReplicationRecord new_entry = new ReplicationRecord(ot_helper, child_activity_pointer, organized_data_identifier);
+        GdcReplicationRecord new_entry = new GdcReplicationRecord(ot_helper, child_activity_pointer, organized_data_identifier);
         this.Add(new_entry);
         new_instance = new_entry;
         if(OTSH.CheckStatusAndEndActivity(ETR,child_activity_pointer.P_pointer) == true)

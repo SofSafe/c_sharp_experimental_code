@@ -188,7 +188,6 @@ static class SDV
         SDV.CV_general_types_to_language_types.Add("int", int_rules_types);
 
         List<SDR> int_rule_names = new List<SDR>();
-        int_rule_names.Add(SDV.R_client_id);
         int_rule_names.Add(SDV.R_1or2);
         int_rule_names.Add(SDV.R_greater_1200);
         SDV.CV_compatible_rules_by_general_types.Add("int", int_rule_names);
@@ -345,45 +344,43 @@ static class SDV
 
     private static void ruleClientId(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref string value_description, ref object value_to_check)
     {
-
-
-        if (value_to_check.GetType().GetInterfaces().Contains(typeof(IComparable)))
-        {
-            SDV.childRuleNumberChecker(ot_helper, method_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
-            return;
-        }
-
-        //we only need these activity variables if the value can't be handled by a child rule directly
         Activity ETR = ot_helper.StartActivityWrapper("SDC.ruleClientId");
         method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        //// handle string representation of numbers
-        if (value_to_check.GetType() == typeof(string) || value_to_check.GetType() == typeof(char))
+        ETR.AddTag("value_to_check", value_to_check);
+
+        //verify prefix
+        string value_as_string = value_to_check as string;       
+        if(value_as_string.IndexOf("CRUSH_") != 0)
         {
-            ETR.AddTag("value_to_check", value_to_check);
-            int value_as_number = -1;
-            try
-            {
-                value_as_number = int.Parse((string)value_to_check);
-            }
-            catch
-            {
-                OTSH.AddEventThenEndActivity(ETR, "value_to_check could not be converted to a nubmer", ErrorTagsCodes.C_input_validation);
-            }
-            
-            SDV.childRuleNumberChecker(ot_helper, child_activity_pointer, ref value_description, (IComparable)value_to_check, 1000, 9999);
-            
-            if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
-            {
-                OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
-                return;
-            }            
+            OTSH.AddEventThenEndActivity(ETR, "value_to_check doesnt' start with \"CRUSH_\"", ErrorTagsCodes.C_input_validation);
+            return;
         }
-        ////</end> handle string representation of numbers
+
+        /// make sure numbers are in the right range
+        int value_as_number = -1;
+        try
+        {
+            value_as_number = int.Parse(value_as_string.Remove(0, 6));
+        }
+        catch(Exception error_object)
+        {
+            OTSH.AddEventThenEndActivity(ETR, $"value_to_check could not be converted to a number. Error: {error_object.Message}", ErrorTagsCodes.C_input_validation);
+            return;
+        }
+            
+        SDV.childRuleNumberChecker(ot_helper, child_activity_pointer, ref value_description, (IComparable)value_as_number, 1000, 9999);
+            
+        if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+        {
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
+            return;
+        }
 
 
-        OTSH.AddEventThenEndActivity(ETR, "value_to_check didn't match a type this rule supports", ErrorTagsCodes.C_input_validation);
+
+        OTSH.SetSuccessEndActivity(ETR);
         return;
     }
 

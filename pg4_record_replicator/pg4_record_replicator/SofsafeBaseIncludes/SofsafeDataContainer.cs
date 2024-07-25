@@ -372,9 +372,9 @@ class Dco<type_of_generic> : IDcoBaseClass
 
 interface INamedListOfDcoInstances : INamedListOfInstances
 {
-    bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "");
+    bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IDcoBaseClass new_instance, string activity_name_prefix = "");
 }
-class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of_generic>> 
+class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of_generic>>, INamedListOfDcoInstances
 {
 
     protected readonly List<SDR> IV_rules_list = new List<SDR>();
@@ -430,7 +430,7 @@ class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of
         Dco<type_of_generic> new_entry = new Dco<type_of_generic>(data_identifier);
         this.Add(new_entry);
         new_instance = new_entry;
-        if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == true)
+        if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == false)
         {
             return false;
         }

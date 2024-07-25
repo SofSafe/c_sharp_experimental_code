@@ -20,7 +20,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 //TODO update on SBD
-interface IOdcBaseClass
+interface IGdcBaseClass
 {    
     string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
@@ -38,26 +38,26 @@ interface IOdcBaseClass
 
     Dictionary<string,IDcoBaseClass> P_Dco_child_objects { get; }
 
-    List<IOdcBaseClass> P_odc_child_objects { get; }
+    List<IGdcBaseClass> P_odc_child_objects { get; }
 
     Dictionary<string, List<string>> P_last_validation_result_details { get; }
 }
 
-class OrganizedDataClassBase : IOdcBaseClass
+class GroupedDataClassBase : IGdcBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     private bool IV_allow_disabling_instance = false;
     private bool IV_instance_not_used = false;
     private readonly Dictionary<string,IDcoBaseClass> IV_Dco_child_objects = new Dictionary<string,IDcoBaseClass>();
-    private readonly List<IOdcBaseClass> IV_Odc_child_objects = new List<IOdcBaseClass>();
+    private readonly List<IGdcBaseClass> IV_Odc_child_objects = new List<IGdcBaseClass>();
     //TODO add to SBD
-    protected Dictionary<string, INamedListOfOdcInstances> IV_named_odc_lists = new Dictionary<string, INamedListOfOdcInstances>();
+    protected Dictionary<string, INamedListOfGdcInstances> IV_named_odc_lists = new Dictionary<string, INamedListOfGdcInstances>();
     //TODO add to SBD
-    protected Dictionary<string, INamedListOfDcoInstances> IV_named_dco_lists = new Dictionary<string, INamedListOfDcoInstances>();
+    protected Dictionary<string, INamedListOfDcoInstances> IV_named_Dco_lists = new Dictionary<string, INamedListOfDcoInstances>();
 
     private Dictionary<string, List<string>> IV_last_validation_result_details = new Dictionary<string, List<string>>();
 
-    private DateTime IV_last_validation_time = OrganizedDataClassBase.C_unset_time;
+    private DateTime IV_last_validation_time = GroupedDataClassBase.C_unset_time;
     private bool IV_last_validation_result = false;
 
     private string IV_organized_data_identifier = "Unset Odc Identifier";
@@ -67,7 +67,7 @@ class OrganizedDataClassBase : IOdcBaseClass
 
 
 
-    public List<IOdcBaseClass> P_odc_child_objects
+    public List<IGdcBaseClass> P_odc_child_objects
     {
         get { return this.IV_Odc_child_objects; }
     }
@@ -149,35 +149,35 @@ class OrganizedDataClassBase : IOdcBaseClass
         json_writer.WriteValue(this.P_organized_data_identifier);
 
         //// get JSON values from all individual Dco objects 
-        Dictionary<string, byte> individual_dco_data_ids = new Dictionary<string, byte>();
+        Dictionary<string, byte> individual_Dco_data_ids = new Dictionary<string, byte>();
         int instance_index = -1;
-        foreach (IDcoBaseClass dco_instance in this.IV_Dco_child_objects.Values)
+        foreach (IDcoBaseClass Dco_instance in this.IV_Dco_child_objects.Values)
         {
             instance_index++;
-            if (dco_instance == null)
+            if (Dco_instance == null)
             {
                 null_value_errors.Add(activity_name_prefix + "> IV_Dco_child_objects index:" + instance_index.ToString() + " is null.");
                 failed_flag = true;
                 continue;
             }
-            if (dco_instance.P_value_not_used == true) { continue; }
+            if (Dco_instance.P_value_not_used == true) { continue; }
             //// logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
-            if (individual_dco_data_ids.ContainsKey(dco_instance.P_data_identifier))
+            if (individual_Dco_data_ids.ContainsKey(Dco_instance.P_data_identifier))
             {
-                duplicate_id_errors.Add("duplicate data object instance id: " + dco_instance.P_data_identifier);
+                duplicate_id_errors.Add("duplicate data object instance id: " + Dco_instance.P_data_identifier);
                 failed_flag = true;
                 continue;
             }
-            individual_dco_data_ids.Add(dco_instance.P_data_identifier, 1);
+            individual_Dco_data_ids.Add(Dco_instance.P_data_identifier, 1);
             ////</end> logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do            
 
-            if(dco_instance.P_export_to_json == false) { continue; }
+            if(Dco_instance.P_export_to_json == false) { continue; }
             try
             {
-                json_writer.WritePropertyName(dco_instance.P_data_identifier);
-                if (dco_instance.P_is_set)
+                json_writer.WritePropertyName(Dco_instance.P_data_identifier);
+                if (Dco_instance.P_is_set)
                 {
-                    json_writer.WriteValue(dco_instance.P_value_as_object);
+                    json_writer.WriteValue(Dco_instance.P_value_as_object);
                 }
                 else
                 {
@@ -185,7 +185,7 @@ class OrganizedDataClassBase : IOdcBaseClass
                 }                
             } catch (Exception error_object)
             {
-                failed_json_errors.Add($"failed to convert {dco_instance.P_data_identifier} with exception: {error_object.Message}");
+                failed_json_errors.Add($"failed to convert {Dco_instance.P_data_identifier} with exception: {error_object.Message}");
                 failed_flag = true;
             }
                        
@@ -196,47 +196,45 @@ class OrganizedDataClassBase : IOdcBaseClass
         //// get JSON values from all named Lists of Dco child objects
         int loop1 = -1;
         bool json_array_active = false;
-        foreach (string dco_list_key in this.IV_named_dco_lists.Keys)
+        foreach (string _Dco_list_key in this.IV_named_Dco_lists.Keys)
         {
             INamedListOfDcoInstances child_class_list;
-            if (this.IV_named_dco_lists.TryGetValue(dco_list_key, out child_class_list) == false)
+            if (this.IV_named_Dco_lists.TryGetValue(_Dco_list_key, out child_class_list) == false)
             {
-                null_value_errors.Add(activity_name_prefix + "> " + dco_list_key + "> child_class_list is null.");
+                null_value_errors.Add(activity_name_prefix + "> " + _Dco_list_key + "> child_class_list is null.");
                 failed_flag = true;
                 continue;
             }
             loop1++;
 
             int loop2 = -1;
-            foreach (IDcoBaseClass dco_instance in child_class_list)
+            foreach (IDcoBaseClass _Dco_instance in child_class_list)
             {
                 loop2++;
-                string loop_index = dco_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
-                if (dco_instance == null)
+                string loop_index = _Dco_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
+                if (_Dco_instance == null)
                 {
-                    null_value_errors.Add(activity_name_prefix + "> " + loop_index + "dco_instance is null.");
+                    null_value_errors.Add(activity_name_prefix + "> " + loop_index + "_Dco_instance is null.");
                     failed_flag = true;
                     continue;
                 }
 
-                if (dco_instance.P_export_to_json == false) { continue; }
+                if (_Dco_instance.P_export_to_json == false) { continue; }
 
                 if (loop2 == 0)
                 {
-                    json_writer.WritePropertyName(dco_list_key);
+                    json_writer.WritePropertyName(_Dco_list_key);
                     json_writer.WriteStartArray();
                     json_array_active = true;
                 }
 
 
-                json_writer.WriteStartArray();
-                json_writer.WriteValue(dco_instance.P_data_identifier);
                 try
                 {
 
-                    if (dco_instance.P_is_set == true && dco_instance.P_value_not_used == false)
+                    if (_Dco_instance.P_is_set == true && _Dco_instance.P_value_not_used == false)
                     {
-                        json_writer.WriteValue(dco_instance.P_value_as_object);
+                        json_writer.WriteValue(_Dco_instance.P_value_as_object);
                     }
                     else
                     {
@@ -248,7 +246,6 @@ class OrganizedDataClassBase : IOdcBaseClass
                     failed_json_errors.Add($"failed to convert dco list {loop_index} with exception: {error_object.Message}");
                     failed_flag = true;
                 }
-                json_writer.WriteEndArray();
 
             }
             if (json_array_active == true)
@@ -263,7 +260,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         //// Get JSON values from all Odc child objects
         Dictionary<string, byte> individual_odc_data_ids = new Dictionary<string, byte>();
         instance_index = -1;
-        foreach (IOdcBaseClass odc_instance in this.IV_Odc_child_objects)
+        foreach (IGdcBaseClass odc_instance in this.IV_Odc_child_objects)
         {
             if (odc_instance == null)
             {
@@ -296,7 +293,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         json_array_active = false;
         foreach (string odc_list_key in this.IV_named_odc_lists.Keys)
         {
-            INamedListOfOdcInstances child_class_list;
+            INamedListOfGdcInstances child_class_list;
             
             if (this.IV_named_odc_lists.TryGetValue(odc_list_key, out child_class_list) == false)
             {
@@ -306,7 +303,7 @@ class OrganizedDataClassBase : IOdcBaseClass
             }
             loop1++;
             int loop2 = -1;            
-            foreach (IOdcBaseClass odc_instance in child_class_list)
+            foreach (IGdcBaseClass odc_instance in child_class_list)
             {
                 loop2++;
                 string loop_index = odc_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
@@ -374,8 +371,8 @@ class OrganizedDataClassBase : IOdcBaseClass
                 }
             }
 
-            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             json_writer.WriteEndObject();
+            OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
             return;
         }
         ////</end> failed state logic
@@ -409,9 +406,15 @@ class OrganizedDataClassBase : IOdcBaseClass
         StringReader string_reader = new StringReader(json_text);
         JsonTextReader reader = new JsonTextReader(string_reader);
 
+        activity_name_prefix += " | top level";
+        this.NotPublicFromJson(ot_helper, child_activity_pointer, ref reader, activity_name_prefix);
+        if(child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return false;
+        }
 
-        this.NotPublicFromJson(ot_helper, method_activity_pointer, ref reader, "top-level");
-
+        OTSH.SetSuccessEndActivity(ETR);
         return true;
     }
     public void NotPublicFromJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, ref JsonTextReader reader, string activity_name_prefix = "")
@@ -427,13 +430,13 @@ class OrganizedDataClassBase : IOdcBaseClass
         string last_property_name = "";
         string current_property_name = "";
 
-
+        activity_name_prefix += ">" + this.IV_organized_data_identifier;
         //// create structured pointers to things need to reference alot
-        Dictionary<string, IDcoBaseClass> child_dco_instances_by_id = new Dictionary<string, IDcoBaseClass>();
+        Dictionary<string, IDcoBaseClass> child_Dco_instances_by_id = new Dictionary<string, IDcoBaseClass>();
 
         foreach(IDcoBaseClass child_odc in this.IV_Dco_child_objects.Values)
         {
-            child_dco_instances_by_id[child_odc.P_data_identifier] = child_odc;
+            child_Dco_instances_by_id[child_odc.P_data_identifier] = child_odc;
         }
         ////</end> create structured pointers to things need to reference alot
 
@@ -448,8 +451,14 @@ class OrganizedDataClassBase : IOdcBaseClass
         List<JsonToken> ignored_token_types = new List<JsonToken>() {
         JsonToken.Comment, JsonToken.None, JsonToken.Undefined
         };
+        List<Activity> activity_list = new List<Activity>();
         while (reader.Read())
         {
+            if (ignored_token_types.Contains(reader.TokenType) == true)
+            {
+                continue;
+            }
+
             last_token_type = current_token_type;
             current_token_type = reader.TokenType;
             if (reader.TokenType == JsonToken.PropertyName)
@@ -467,21 +476,63 @@ class OrganizedDataClassBase : IOdcBaseClass
                 last_property_name = "";
             }
 
+            if (reader.TokenType == JsonToken.StartArray && within_array == false)
+            {
+                json_array_name = current_property_name;
+                arrays_found++;
+                within_array = true;
+                continue;
+            }
+
             //Console.WriteLine($"{current_property_name}: Type: {reader.TokenType}");
 
 
-            //handle a dco instance in an array
-            if (reader.TokenType == JsonToken.StartArray && within_array == true)
-            {
-             
+            ////handle a dco instance in an array
+            if (within_array == true && reader.Value != null)
+            {             
+                if(this.IV_named_Dco_lists.ContainsKey(current_property_name) == false)
+                {
+                    //todo add error message
+                    fail_flag = true;
+                    continue;
+                }
+
+                IDcoBaseClass _Dco_instance_in_list = null;
+                this.IV_named_Dco_lists[current_property_name].CreateNewEntry(ot_helper, child_activity_pointer, "unset", out _Dco_instance_in_list);
+                activity_list.Add(child_activity_pointer.P_pointer);
+                object json_value1 = null;
+
+                try
+                {
+                    if (_Dco_instance_in_list.P_type == typeof(System.String))
+                    {
+                        json_value1 = reader.Value.ToString();
+                    }
+                    else if (_Dco_instance_in_list.P_type == typeof(DateTime))
+                    {
+                        json_value1 = DateTime.Parse(reader.Value.ToString());
+                    }
+                    else
+                    {
+                        json_value1 = JsonConvert.DeserializeObject(reader.Value.ToString(), _Dco_instance_in_list.P_type);
+                    }
+                }
+                catch (Exception error_object)
+                {
+                    //todo add error handling
+                    fail_flag = true;
+                    continue;
+                }
+                _Dco_instance_in_list.SetValueFromObject(json_value1);
                 //dco instances create at most 2 entries one for the data id and one for the value
-                               
+
                 //Console.WriteLine($"handling  dco instance for array: {json_array_name}");
                 //todo add dco list support
                 continue;
             }
+            ////</end>handle a dco instance in an array
 
-            //handle an Odc instance in an array
+            ////handle an Odc instance in an array
             if (reader.TokenType == JsonToken.StartObject && within_array == true)
             {
                 //Console.WriteLine($"calling ProcessJsonToken for array: {json_array_name},  property: {current_property_name}");
@@ -489,23 +540,17 @@ class OrganizedDataClassBase : IOdcBaseClass
                 {
                     if (odc_list_key != json_array_name
                         && this.IV_named_odc_lists[odc_list_key].P_group_name != json_array_name) { continue; }
-                    IOdcBaseClass odc_instance;
+                    IGdcBaseClass odc_instance;
                     this.IV_named_odc_lists[odc_list_key].CreateNewEntry(ot_helper,child_activity_pointer,"not set by json",out odc_instance,activity_name_prefix);
+                    activity_list.Add(child_activity_pointer.P_pointer);
 
                     odc_instance.NotPublicFromJson(ot_helper, method_activity_pointer, ref reader, activity_name_prefix);
+                    activity_list.Add(child_activity_pointer.P_pointer);
                     break;
                 }
                 continue;
             }
-
-
-            if (reader.TokenType == JsonToken.StartArray)
-            {
-                json_array_name = current_property_name;
-                arrays_found++;
-                within_array = true;
-                continue;
-            }
+            ////</end>handle an Odc instance in an array
 
             if (reader.TokenType == JsonToken.EndArray)
             {
@@ -523,7 +568,7 @@ class OrganizedDataClassBase : IOdcBaseClass
 
             if (reader.TokenType == JsonToken.EndObject)
             {
-                return;
+                break;
             }
 
             if (current_property_name.Length == 0)
@@ -531,10 +576,7 @@ class OrganizedDataClassBase : IOdcBaseClass
                 continue;
             }
 
-            if(reader.Value == null || ignored_token_types.Contains(reader.TokenType) == true)
-            {
-                continue;
-            }
+            
 
             /// handle the data identifier for the current Odc instance
             if(current_property_name == "P_organized_data_identifier")
@@ -555,55 +597,64 @@ class OrganizedDataClassBase : IOdcBaseClass
             ///</end> handle the data identifier for the current Odc instance
 
 
+            if (reader.Value == null)
+            {
+                continue;
+            }
+
             //// this can only be a value, so put it in Dco
-            IDcoBaseClass dco_instance = null;
+            IDcoBaseClass Dco_instance = null;
             //find by instance variable name
             if(this.IV_Dco_child_objects.ContainsKey(current_property_name) == true)
             {
-                dco_instance = this.IV_Dco_child_objects[current_property_name];
+                Dco_instance = this.IV_Dco_child_objects[current_property_name];
             } 
-            else if(child_dco_instances_by_id.ContainsKey(current_property_name) == true)
+            else if(child_Dco_instances_by_id.ContainsKey(current_property_name) == true)
             {
-                dco_instance = child_dco_instances_by_id[current_property_name];
+                Dco_instance = child_Dco_instances_by_id[current_property_name];
             }
             else
             {
                 //todo add error handling for failing to find a value
                 continue; 
             }
-            //Console.WriteLine(dco_instance.P_data_identifier);
+            //Console.WriteLine(_Dco_instance.P_data_identifier);
             object json_value = null;            
             
             try
             {
-                if (dco_instance.P_type == typeof(System.String))
+                if (Dco_instance.P_type == typeof(System.String))
                 {
                     json_value = reader.Value.ToString();
                 }
-                else if (dco_instance.P_type == typeof(DateTime)) {
+                else if (Dco_instance.P_type == typeof(DateTime)) {
                     json_value = DateTime.Parse(reader.Value.ToString());
                 } 
                 else
                 { 
-                    json_value = JsonConvert.DeserializeObject(reader.Value.ToString(),dco_instance.P_type);                    
-                }
-
-                
+                    json_value = JsonConvert.DeserializeObject(reader.Value.ToString(),Dco_instance.P_type);                    
+                }                
             } catch (Exception error_object)
             {
                 //todo add error handling
                 fail_flag = true;
                 continue;
             }
-            dco_instance.SetValueFromObject(json_value);
-            //Console.WriteLine($"{current_property_name}");
+            Dco_instance.SetValueFromObject(json_value);
 
-            //Console.WriteLine($"{current_property_name}: Data: {dco_instance.P_value_as_object}");            
             ////</end> this can only be a value, so put it in Dco/
 
         }
 
-        //Console.WriteLine("returing2");
+        ChildActivityPointer first_failed_method;
+        if(OTSH.CheckActivityList(ETR, activity_list, out first_failed_method) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, first_failed_method.P_pointer);
+            return;
+        }
+
+        OTSH.SetSuccessEndActivity(ETR);
+        return;
     }
 
     public bool SetInstanceNotUsed(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, bool new_disable_setting, string activity_name_prefix = "")
@@ -655,32 +706,32 @@ class OrganizedDataClassBase : IOdcBaseClass
         }
 
         //// check all individual Dco objects 
-        Dictionary<string, byte> individual_dco_data_ids = new Dictionary<string, byte>();
+        Dictionary<string, byte> individual_Dco_data_ids = new Dictionary<string, byte>();
         int instance_index = -1;
-        foreach (IDcoBaseClass dco_instance in this.IV_Dco_child_objects.Values)
+        foreach (IDcoBaseClass Dco_instance in this.IV_Dco_child_objects.Values)
         {
             instance_index++;
-            if (dco_instance == null)
+            if (Dco_instance == null)
             {
                 null_value_errors.Add(activity_name_prefix + "> IV_Dco_child_objects index:" + instance_index.ToString() +  " is null.");
                 failed_flag = true;
                 continue;
             }
-            if(dco_instance.P_value_not_used == true) { continue; }
+            if(Dco_instance.P_value_not_used == true) { continue; }
             //// logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
-            if (individual_dco_data_ids.ContainsKey(dco_instance.P_data_identifier))
+            if (individual_Dco_data_ids.ContainsKey(Dco_instance.P_data_identifier))
             {
-                duplicate_id_errors.Add("duplicate data object instance id: " + dco_instance.P_data_identifier);
+                duplicate_id_errors.Add("duplicate data object instance id: " + Dco_instance.P_data_identifier);
                 failed_flag = true;
                 continue;
             }
-            individual_dco_data_ids.Add(dco_instance.P_data_identifier, 1);
+            individual_Dco_data_ids.Add(Dco_instance.P_data_identifier, 1);
             ////</end> logic to detect when someone duplicated a data identifier in the same class, which they shouldn't do
 
-            if (!dco_instance.RunValidationMethod(ot_helper, child_activity_pointer, activity_name_prefix))
+            if (!Dco_instance.RunValidationMethod(ot_helper, child_activity_pointer, activity_name_prefix))
             {
-                issues_found.Add(activity_name_prefix + dco_instance.P_data_identifier,
-                dco_instance.P_last_validation_result_details);
+                issues_found.Add(activity_name_prefix + Dco_instance.P_data_identifier,
+                Dco_instance.P_last_validation_result_details);
                 failed_flag = true;
             }
 
@@ -690,36 +741,36 @@ class OrganizedDataClassBase : IOdcBaseClass
 
         //// check all named Lists of Dco child objects
         int loop1 = -1;
-        foreach (string dco_list_key in this.IV_named_dco_lists.Keys)
+        foreach (string Dco_list_key in this.IV_named_Dco_lists.Keys)
         {
             INamedListOfDcoInstances child_class_list;
-            if (this.IV_named_dco_lists.TryGetValue(dco_list_key, out child_class_list) == false)
+            if (this.IV_named_Dco_lists.TryGetValue(Dco_list_key, out child_class_list) == false)
             {
-                null_value_errors.Add(activity_name_prefix + "> " + dco_list_key + "> child_class_list is null.");
+                null_value_errors.Add(activity_name_prefix + "> " + Dco_list_key + "> child_class_list is null.");
                 failed_flag = true;
                 continue;
             }
             loop1++;
             
             int loop2 = -1;
-            string loop_index = dco_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
+            string loop_index = Dco_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() + "> ";
 
 
 
-            foreach (IDcoBaseClass dco_instance in child_class_list)
+            foreach (IDcoBaseClass Dco_instance in child_class_list)
             {
-                if (dco_instance == null)
+                if (Dco_instance == null)
                 {
-                    null_value_errors.Add(activity_name_prefix + "> " + loop_index + "dco_instance is null.");
+                    null_value_errors.Add(activity_name_prefix + "> " + loop_index + "_Dco_instance is null.");
                     failed_flag = true;
                     continue;
                 }
 
-                if (dco_instance.P_value_not_used == true) { continue; }
-                if (!dco_instance.RunValidationMethod(ot_helper, child_activity_pointer, activity_name_prefix + loop_index))
+                if (Dco_instance.P_value_not_used == true) { continue; }
+                if (!Dco_instance.RunValidationMethod(ot_helper, child_activity_pointer, activity_name_prefix + loop_index))
                 {
-                    issues_found.Add(activity_name_prefix + dco_instance.P_data_identifier + ">" + loop_index,
-                    dco_instance.P_last_validation_result_details);
+                    issues_found.Add(activity_name_prefix + Dco_instance.P_data_identifier + ">" + loop_index,
+                    Dco_instance.P_last_validation_result_details);
                     failed_flag = true;
                 }
             }
@@ -729,7 +780,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         //// check all Odc child objects
         Dictionary<string, byte> individual_odc_data_ids = new Dictionary<string, byte>();
         instance_index = -1;
-        foreach (IOdcBaseClass odc_instance in this.IV_Odc_child_objects)
+        foreach (IGdcBaseClass odc_instance in this.IV_Odc_child_objects)
         {
             if (odc_instance == null)
             {
@@ -771,7 +822,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         loop1 = -1;
         foreach (string odc_list_key in this.IV_named_odc_lists.Keys)
         {
-            INamedListOfOdcInstances child_class_list;
+            INamedListOfGdcInstances child_class_list;
             if(this.IV_named_odc_lists.TryGetValue(odc_list_key, out child_class_list) == false)
             {
                 null_value_errors.Add(activity_name_prefix + "> " + odc_list_key + "> child_class_list is null.");
@@ -780,7 +831,7 @@ class OrganizedDataClassBase : IOdcBaseClass
             }
             loop1++;
             int loop2 = -1;
-            foreach(IOdcBaseClass odc_instance in child_class_list)
+            foreach(IGdcBaseClass odc_instance in child_class_list)
             {               
                 loop2++;
                 string loop_index = odc_list_key + " > loop index:" + loop1.ToString() + "-" + loop2.ToString() +"> ";
@@ -864,9 +915,9 @@ class OrganizedDataClassBase : IOdcBaseClass
 
 
             /// register individual Odc class instances
-            if (field_value.GetType().GetInterfaces().Contains(typeof(IOdcBaseClass)))
+            if (field_value.GetType().GetInterfaces().Contains(typeof(IGdcBaseClass)))
             {                
-                this.IV_Odc_child_objects.Add(field_value as IOdcBaseClass);
+                this.IV_Odc_child_objects.Add(field_value as IGdcBaseClass);
                 continue;
             }
             ///</end> register individual Odc class instances
@@ -883,15 +934,15 @@ class OrganizedDataClassBase : IOdcBaseClass
                 {
                     list_name = field_info.Name;
                 }               
-                this.IV_named_dco_lists.Add(list_name,field_value as INamedListOfDcoInstances);
+                this.IV_named_Dco_lists.Add(list_name,field_value as INamedListOfDcoInstances);
                 continue;
             }
             ///</end> register lists of Dco class instances
 
             /// register lists of Odc class instances
-            if (field_value.GetType().GetInterfaces().Contains(typeof(INamedListOfOdcInstances)))
+            if (field_value.GetType().GetInterfaces().Contains(typeof(INamedListOfGdcInstances)))
             {
-                INamedListOfOdcInstances named_list = field_value as INamedListOfOdcInstances;
+                INamedListOfGdcInstances named_list = field_value as INamedListOfGdcInstances;
                 string list_name = string.Empty;
                 if (System.String.IsNullOrEmpty(named_list.P_group_name) == false)
                 {
@@ -901,7 +952,7 @@ class OrganizedDataClassBase : IOdcBaseClass
                 {
                     list_name = field_info.Name;
                 }
-                this.IV_named_odc_lists.Add(list_name, field_value as INamedListOfOdcInstances);
+                this.IV_named_odc_lists.Add(list_name, field_value as INamedListOfGdcInstances);
                 continue;
             }
             ///</end> register lists of Odc class instances
@@ -912,7 +963,7 @@ class OrganizedDataClassBase : IOdcBaseClass
 
 
 
-    public OrganizedDataClassBase(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,
+    public GroupedDataClassBase(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,
         bool allow_disabling_instance = false,
         //todo add argument to SBD
         bool allow_empty_data_identifier = false,
@@ -955,15 +1006,15 @@ class OrganizedDataClassBase : IOdcBaseClass
 }
 
 
-interface INamedListOfOdcInstances: INamedListOfInstances
+interface INamedListOfGdcInstances: INamedListOfInstances
 {
-    bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "");
+    bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IGdcBaseClass new_instance, string activity_name_prefix = "");
 }
-class NamedListOfOdcInstances<organized_data_class>: NamedListOfInstances<organized_data_class>
+class NamedListOfGdcInstances<organized_data_class>: NamedListOfInstances<organized_data_class>
 {
     protected bool IV_allow_disabling_instances = false;
     protected bool IV_allow_empty_data_identifiers = false;    
-    public NamedListOfOdcInstances(string group_name, bool allow_disabling_instances,bool allow_empty_data_identifiers) : base(group_name)
+    public NamedListOfGdcInstances(string group_name, bool allow_disabling_instances,bool allow_empty_data_identifiers) : base(group_name)
     {
         this.IV_allow_disabling_instances = allow_disabling_instances;
         this.IV_allow_empty_data_identifiers = allow_empty_data_identifiers;
