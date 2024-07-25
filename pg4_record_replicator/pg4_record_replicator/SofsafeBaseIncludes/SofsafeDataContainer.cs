@@ -187,7 +187,6 @@ class Dco<type_of_generic> : IDcoBaseClass
             this.IV_value = default(type_of_generic);
         }
 
-        this.IV_last_validation_time = DateTime.Now;
         this.IV_last_validation_result_details.Clear();
         this.IV_last_validation_result = false;
         this.IV_value_in_valid_values_list = false;
@@ -242,12 +241,11 @@ class Dco<type_of_generic> : IDcoBaseClass
         method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
 
-        ////reset to default safe value in case method doesn't finish
         this.IV_last_validation_time = DateTime.Now;
+        ////reset to default safe value in case method doesn't finish
         this.IV_last_validation_result_details.Clear();
         this.IV_last_validation_result = false;
         this.IV_value_in_valid_values_list = false;
-        this.IV_last_validation_time = Dco<type_of_generic>.C_unset_time;
         ////</end> reset to default safe value in case method doesn't finish
 
         /// disabled values always fail validation checks

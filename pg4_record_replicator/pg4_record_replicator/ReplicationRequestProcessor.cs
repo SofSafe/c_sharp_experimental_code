@@ -114,9 +114,8 @@ class ReplicationRequestProcessor
         ///////<start> read all the records to replicate and generate replication records
         DynamicRecordsReplicator replicator;
 
-        //bug we should be using P_is_set_and_valid, but its causing only 1 record to work. KS thinks its logic in the Gdc ValidateData class
         if (rep_data.IV_secondary_tables.Count > 0
-            && rep_data.IV_sql_join.P_is_set == true
+            && rep_data.IV_sql_join.P_is_set_and_valid == true
             )
         {
             List<string> secondary_tables = new List<string>();
