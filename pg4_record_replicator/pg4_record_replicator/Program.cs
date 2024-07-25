@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,10 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace pg4_record_replicator
 {
@@ -19,10 +24,19 @@ namespace pg4_record_replicator
 
             JsonDecodingTesting test22 = new JsonDecodingTesting();
             test22.testing();
+
+            CreateHostBuilder(args).Build().Run();
             //SimpleReplicationExampleCrushLogic();
             //ComplexReplicationExampleCrushLogic();
         }
-    
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<ReplicationRequestEndpoint>();
+            });
+
         static void SimpleReplicationExampleCrushLogic()
         {
             string table_name = "Parts";

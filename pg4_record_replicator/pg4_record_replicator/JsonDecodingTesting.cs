@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 class JsonDecodingTesting
 {
 
-    NamedListOfReplicationRecord IV_records = new NamedListOfReplicationRecord("replication_records", false, false);
+   
     public void testing(OpenTelemetryConfigHelper ot_helper = null, ChildActivityPointer method_activity_pointer = null)
     {
         ot_helper = new OpenTelemetryConfigHelper("sofsafe-testing", "0.0.1");

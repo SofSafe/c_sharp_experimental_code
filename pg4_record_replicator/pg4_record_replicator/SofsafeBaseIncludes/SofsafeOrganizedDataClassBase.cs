@@ -19,14 +19,6 @@ using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
-
-interface IOdcBaseClassInheritor: IOdcBaseClass
-{
-    List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
-
-    
-}
-
 //TODO update on SBD
 interface IOdcBaseClass
 {    
@@ -61,7 +53,7 @@ class OrganizedDataClassBase : IOdcBaseClass
     //TODO add to SBD
     protected Dictionary<string, INamedListOfOdcInstances> IV_named_odc_lists = new Dictionary<string, INamedListOfOdcInstances>();
     //TODO add to SBD
-    protected Dictionary<string, IEnumerable<IDcoBaseClass>> IV_named_dco_lists = new Dictionary<string, IEnumerable<IDcoBaseClass>>();
+    protected Dictionary<string, INamedListOfDcoInstances> IV_named_dco_lists = new Dictionary<string, INamedListOfDcoInstances>();
 
     private Dictionary<string, List<string>> IV_last_validation_result_details = new Dictionary<string, List<string>>();
 
@@ -206,7 +198,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         bool json_array_active = false;
         foreach (string dco_list_key in this.IV_named_dco_lists.Keys)
         {
-            IEnumerable<IDcoBaseClass> child_class_list;
+            INamedListOfDcoInstances child_class_list;
             if (this.IV_named_dco_lists.TryGetValue(dco_list_key, out child_class_list) == false)
             {
                 null_value_errors.Add(activity_name_prefix + "> " + dco_list_key + "> child_class_list is null.");
@@ -481,6 +473,9 @@ class OrganizedDataClassBase : IOdcBaseClass
             //handle a dco instance in an array
             if (reader.TokenType == JsonToken.StartArray && within_array == true)
             {
+             
+                //dco instances create at most 2 entries one for the data id and one for the value
+                               
                 //Console.WriteLine($"handling  dco instance for array: {json_array_name}");
                 //todo add dco list support
                 continue;
@@ -570,7 +565,7 @@ class OrganizedDataClassBase : IOdcBaseClass
             else if(child_dco_instances_by_id.ContainsKey(current_property_name) == true)
             {
                 dco_instance = child_dco_instances_by_id[current_property_name];
-            } 
+            }
             else
             {
                 //todo add error handling for failing to find a value
@@ -697,7 +692,7 @@ class OrganizedDataClassBase : IOdcBaseClass
         int loop1 = -1;
         foreach (string dco_list_key in this.IV_named_dco_lists.Keys)
         {
-            IEnumerable<IDcoBaseClass> child_class_list;
+            INamedListOfDcoInstances child_class_list;
             if (this.IV_named_dco_lists.TryGetValue(dco_list_key, out child_class_list) == false)
             {
                 null_value_errors.Add(activity_name_prefix + "> " + dco_list_key + "> child_class_list is null.");
@@ -869,17 +864,17 @@ class OrganizedDataClassBase : IOdcBaseClass
 
 
             /// register individual Odc class instances
-            if (field_value.GetType().GetInterfaces().Contains(typeof(IOdcBaseClassInheritor)))
+            if (field_value.GetType().GetInterfaces().Contains(typeof(IOdcBaseClass)))
             {                
                 this.IV_Odc_child_objects.Add(field_value as IOdcBaseClass);
                 continue;
             }
             ///</end> register individual Odc class instances
             
-            /// register lists of Odc class instances
-            if (field_value.GetType().GetInterfaces().Contains(typeof(INamedListOfOdcInstances)))
+            /// register lists of Dco class instances
+            if (field_value.GetType().GetInterfaces().Contains(typeof(INamedListOfDcoInstances)))
             {
-                INamedListOfOdcInstances named_list = field_value as INamedListOfOdcInstances;
+                INamedListOfDcoInstances named_list = field_value as INamedListOfDcoInstances;
                 string list_name = string.Empty;
                 if(System.String.IsNullOrEmpty(named_list.P_group_name) == false)
                 {
@@ -888,11 +883,28 @@ class OrganizedDataClassBase : IOdcBaseClass
                 {
                     list_name = field_info.Name;
                 }               
-                this.IV_named_odc_lists.Add(list_name,field_value as INamedListOfOdcInstances);
+                this.IV_named_dco_lists.Add(list_name,field_value as INamedListOfDcoInstances);
+                continue;
+            }
+            ///</end> register lists of Dco class instances
+
+            /// register lists of Odc class instances
+            if (field_value.GetType().GetInterfaces().Contains(typeof(INamedListOfOdcInstances)))
+            {
+                INamedListOfOdcInstances named_list = field_value as INamedListOfOdcInstances;
+                string list_name = string.Empty;
+                if (System.String.IsNullOrEmpty(named_list.P_group_name) == false)
+                {
+                    list_name = named_list.P_group_name;
+                }
+                else
+                {
+                    list_name = field_info.Name;
+                }
+                this.IV_named_odc_lists.Add(list_name, field_value as INamedListOfOdcInstances);
                 continue;
             }
             ///</end> register lists of Odc class instances
-
 
 
         }

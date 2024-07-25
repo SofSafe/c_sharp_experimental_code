@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 //TODO add to SBD and finish implementing
 
-class ReplicationBatch : OrganizedDataClassBase, IOdcBaseClassInheritor
+class ReplicationBatch : OrganizedDataClassBase
 {
     protected Dco<byte> IV_replication_type = new Dco<byte>("replication_type",
         ProjectValidationRuleLists.R_replication_type);
@@ -49,12 +49,7 @@ class ReplicationBatch : OrganizedDataClassBase, IOdcBaseClassInheritor
 
     }
 
- 
-    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
-    {
-        List<string> return_value = new List<string>();        
-        return return_value;
-    }
+
 
 
     public ReplicationBatch(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier,string activity_name_prefix="") : base(ot_helper, method_activity_pointer, organized_data_identifier, false, true, activity_name_prefix)
@@ -122,7 +117,7 @@ class ReplicationBatch : OrganizedDataClassBase, IOdcBaseClassInheritor
 
 
 //TODO add to SBD and finish implementing
-class ReplicationRecord: OrganizedDataClassBase, IOdcBaseClassInheritor
+class ReplicationRecord: OrganizedDataClassBase
 {
     private Dco<string> IV_select_statement = new Dco<string>("IV_select_statement",ProjectValidationRuleLists.R_sql_select_string);
     private Dco<string> IV_insert_statement = new Dco<string>("IV_insert_statement", ProjectValidationRuleLists.R_sql_insert_string);
@@ -145,12 +140,6 @@ class ReplicationRecord: OrganizedDataClassBase, IOdcBaseClassInheritor
     public string P_combined_sql_statement
     {
         get { return this.IV_combined_statement.P_value; }
-    }
-
-    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
-    {
-        List<string> return_value = new List<string>();
-        return return_value;
     }
 
 

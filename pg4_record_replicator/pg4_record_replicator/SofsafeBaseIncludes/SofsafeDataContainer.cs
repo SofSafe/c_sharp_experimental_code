@@ -368,3 +368,75 @@ class Dco<type_of_generic> : IDcoBaseClass
         return true;
     }
 }
+
+
+interface INamedListOfDcoInstances : INamedListOfInstances
+{
+    bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IOdcBaseClass new_instance, string activity_name_prefix = "");
+}
+class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of_generic>> 
+{
+
+    protected readonly List<SDR> IV_rules_list = new List<SDR>();
+    protected readonly List<type_of_generic> IV_valid_values = new List<type_of_generic>();
+    protected readonly bool IV_allow_disabling_instances = false;
+    protected readonly bool IV_export_to_json = true;
+    protected readonly bool IV_import_from_json = true;
+
+    public NamedListOfDcoInstances(string group_name,List<SDR> rules_list_settings=null,
+         List<type_of_generic> valid_values_settings = null,bool allow_disabling_instances=false,
+         bool export_to_json_setting = true, bool import_from_json_setting = true
+        ): base(group_name)
+    {
+        this.IV_allow_disabling_instances = allow_disabling_instances;
+        this.IV_export_to_json = export_to_json_setting;
+        
+        if (rules_list_settings != null)
+        {
+            foreach (SDR rule in rules_list_settings)
+            {
+                if (rule == null) { continue; }
+                this.IV_rules_list.Add(rule);
+            }
+        }
+        if (valid_values_settings != null)
+        {
+            this.IV_valid_values.AddRange(valid_values_settings);
+        }
+    }
+
+    public bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string data_identifier, out IDcoBaseClass new_instance, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".CreateNewEntry");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+
+
+        new_instance = null;
+        //// input data validation
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".CreateNewEntry");
+        validator.AddEntry(new DataVR(data_identifier).AddRule(SDV.R_len_greater_0));
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return false;
+        }
+        ///</end> input data validation
+
+        Dco<type_of_generic> new_entry = new Dco<type_of_generic>(data_identifier);
+        this.Add(new_entry);
+        new_instance = new_entry;
+        if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == true)
+        {
+            return false;
+        }
+
+        OTSH.SetSuccessEndActivity(ETR);
+        return true;
+    }
+
+}

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
+class Pg4Settings: OrganizedDataClassBase
 {
     public readonly Dco<string> IV_settings_file_location = new Dco<string>("IV_settings_file_location", ProjectValidationRuleLists.R_file_location,null,false,false,false);
     public readonly Dco<string> IV_endpoint_interface = new Dco<string>("EndpointInterface", ProjectValidationRuleLists.R_populated_string);
@@ -15,11 +15,6 @@ class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
 
     public readonly NamedListOfPg4DbSettingsEntry IV_db_settings = new NamedListOfPg4DbSettingsEntry("DBSettings");
 
-    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
-    {
-        List<string> return_value = new List<string>();
-        return return_value;
-    }
 
 
 
@@ -76,7 +71,7 @@ class Pg4Settings: OrganizedDataClassBase, IOdcBaseClassInheritor
 }
 
 
-class Pg4DbSettingsEntry: OrganizedDataClassBase, IOdcBaseClassInheritor
+class Pg4DbSettingsEntry: OrganizedDataClassBase
 {
 
     public readonly Dco<string> IV_server_address = new Dco<string>("ServerAddress", ProjectValidationRuleLists.R_populated_string);
@@ -92,11 +87,7 @@ class Pg4DbSettingsEntry: OrganizedDataClassBase, IOdcBaseClassInheritor
     public readonly Dco<byte> IV_authentication_type = new Dco<byte>("AuthenticationType", ProjectValidationRuleLists.R_1or2,new List<byte> {1,2});
  
 
-    public List<string> SpecialValidationLogic(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
-    {
-        List<string> return_value = new List<string>();
-        return return_value;
-    }
+  
 
     public Pg4DbSettingsEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string organized_data_identifier=null, string activity_name_prefix = "") : base(ot_helper,method_activity_pointer,organized_data_identifier,true,true, activity_name_prefix)
     {
