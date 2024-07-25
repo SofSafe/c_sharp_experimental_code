@@ -18,3 +18,7 @@ sql_dataset_experiments/sql_dataset_experiments/.vs/sql_dataset_experiments/v17/
 pg4_record_replicator/pg4_record_replicator/.vs/pg4_record_replicator/v17/
 
 schema_class_generator/Sql_schema_class_generator/.vs/Sql_schema_class_generator/v17/
+/pg4_record_replicator/pg4_client/.vs/pg4_client/v17
+/pg4_record_replicator/pg4_client/PG4ClientLibrary/.vs
+/pg4_record_replicator/pg4_client/PG4ClientLibrary/bin/Debug
+/pg4_record_replicator/pg4_client/PG4ClientLibrary/obj/Debug
