@@ -128,7 +128,7 @@ class ReplicationRequestProcessor
                 rep_data.IV_primary_table.P_value,
                 rep_data.IV_primary_key_value.P_value,
                 secondary_tables,
-                rep_data.IV_client_id.P_value, 
+                rep_data.IV_client_id.P_value,
                 rep_data.IV_software_version.P_value,
                 rep_data.IV_sql_join.P_value,
                 "Remote");
@@ -137,7 +137,7 @@ class ReplicationRequestProcessor
         {
             replicator = new DynamicRecordsReplicator(ot_helper, child_activity_pointer,
                 rep_data.IV_primary_table.P_value,
-                rep_data.IV_primary_key_value.P_value,                   
+                rep_data.IV_primary_key_value.P_value,
                 rep_data.IV_client_id.P_value,
                 rep_data.IV_software_version.P_value,
                 "Remote");
