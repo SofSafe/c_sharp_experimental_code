@@ -9,7 +9,7 @@ using OpenTelemetry.Resources;
 using System.Reflection.Metadata.Ecma335;
 
 //OpenTelemetry Sofsafe Helper
-static class OTSH
+public static class OTSH
 {
     //TODO add to c# programing standards that C_ prefix means constant
     #pragma warning disable 0649
@@ -36,6 +36,12 @@ static class OTSH
         {
             parent_activity.SetTag(ErrorTagsCodes.C_tag_error_code, child_activity.GetTagItem(ErrorTagsCodes.C_tag_error_code));
         }
+        OTSH.AddEventToActivity(parent_activity, $"start of events for: {child_activity.DisplayName}");
+        foreach (var event_entry in child_activity.Events)
+        {            
+            parent_activity.AddEvent(event_entry);
+        }
+
         parent_activity.Stop();
         return;
 
@@ -107,9 +113,43 @@ static class OTSH
         return true;
     }
 
+    //todo add to SBD
+    public static string GenerateUIErrorString(Activity activity)
+    {
+        string return_value = String.Empty;
+        return_value = $"{activity.DisplayName}\n";
+        if (activity.GetTagItem(ErrorTagsCodes.C_tag_error_code) != null)
+        {
+            //todo create a file with error descriptions for code numbers
+            return_value += $"error type code: {activity.GetTagItem(ErrorTagsCodes.C_tag_error_code)}";
+        }
+        int loop1 = 0;
+        foreach (ActivityEvent event_entry in activity.Events) 
+        {
+            loop1++;
+            return_value += $"Event {loop1}: {event_entry.Name}\n"; 
+        }
+  
+        return return_value;
+    }
 
+
+    public static string CombineDictOfErrors(Dictionary<string,List<string>> errors) 
+    {
+        string return_value = String.Empty;
+        if(errors == null ) { return return_value; }
+        foreach(string entry_name in errors.Keys)
+        {
+            if (errors[entry_name] == null) { continue; }
+            foreach(string error_entry in errors[entry_name])
+            {
+                return_value += $"{entry_name}>{error_entry}\r\n";
+            }
+        }
+        return return_value;
+    }
 }
-class OpenTelemetryConfigHelper
+public class OpenTelemetryConfigHelper
 {
     private TracerProvider IV_tracer_provider;
     private ActivitySource IV_activity_source;
@@ -156,7 +196,7 @@ class OpenTelemetryConfigHelper
 
 
 
-class ChildActivityPointer
+public class ChildActivityPointer
 {
     #pragma warning disable 8618
     private Activity IV_child_activity_pointer;

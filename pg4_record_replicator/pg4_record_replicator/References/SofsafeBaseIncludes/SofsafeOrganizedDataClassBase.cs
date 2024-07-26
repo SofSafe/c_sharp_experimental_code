@@ -2,9 +2,11 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
+using SofsafeBaseIncludes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -17,10 +19,10 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-
+using SofsafeBaseIncludes;
 
 //TODO update on SBD
-interface IGdcBaseClass
+public interface IGdcBaseClass
 {    
     string ToJson(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
@@ -43,8 +45,9 @@ interface IGdcBaseClass
     Dictionary<string, List<string>> P_last_validation_result_details { get; }
 }
 
-class GroupedDataClassBase : IGdcBaseClass
+public class GroupedDataClassBase : IGdcBaseClass
 {
+    [Browsable(false)]
     public static DateTime C_unset_time = DateTime.MinValue;
     private bool IV_allow_disabling_instance = false;
     private bool IV_instance_not_used = false;
@@ -66,12 +69,13 @@ class GroupedDataClassBase : IGdcBaseClass
     protected CVD_validation_method_delegate IV_special_validation_method = null;
 
 
-
+    [Browsable(false)]
     public List<IGdcBaseClass> P_odc_child_objects
     {
         get { return this.IV_Odc_child_objects; }
     }
     //TODO add to SBD
+    [Browsable(false)]
     public Dictionary<string,IDcoBaseClass> P_Dco_child_objects
     {
         get { return this.IV_Dco_child_objects; }
@@ -80,25 +84,28 @@ class GroupedDataClassBase : IGdcBaseClass
 
 
     //TODO add P_data_not_used and all supporting logic to SBD
+    [Browsable(false)]
     public bool P_data_not_used
     {
         get { return this.IV_instance_not_used; }
     }
+    [Browsable(false)]
     public string P_organized_data_identifier
     {
         get { return this.IV_organized_data_identifier; }
     }
-
+    [Browsable(false)]
     public DateTime P_last_validation_attempt
     {
         get { return this.IV_last_validation_time; }
     }
 
-
+    [Browsable(false)]
     public bool P_last_validation_result
     {
         get { return this.IV_last_validation_result; }
     }
+    [Browsable(false)]
     public Dictionary<string, List<string>> P_last_validation_result_details
     {
         get { return this.IV_last_validation_result_details; }
@@ -177,7 +184,7 @@ class GroupedDataClassBase : IGdcBaseClass
                 json_writer.WritePropertyName(Dco_instance.P_data_identifier);
                 if (Dco_instance.P_is_set)
                 {
-                    json_writer.WriteValue(Dco_instance.P_value_as_object);
+                    json_writer.WriteValue(Dco_instance.content_as_object);
                 }
                 else
                 {
@@ -234,7 +241,7 @@ class GroupedDataClassBase : IGdcBaseClass
 
                     if (_Dco_instance.P_is_set == true && _Dco_instance.P_value_not_used == false)
                     {
-                        json_writer.WriteValue(_Dco_instance.P_value_as_object);
+                        json_writer.WriteValue(_Dco_instance.content_as_object);
                     }
                     else
                     {
@@ -392,10 +399,10 @@ class GroupedDataClassBase : IGdcBaseClass
         if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ///</end> observability template
-
+        
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".PopulateFromJson");
-        validator.AddEntry(new DataVR(json_text, "json_text").AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(json_text, "json_text").AddRule(RulesCommon.R_populated_string));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -661,7 +668,10 @@ class GroupedDataClassBase : IGdcBaseClass
     {
         if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
         Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".setInstanceDisable");
-        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
+        if (method_activity_pointer != null)
+        {
+            method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
+        }
         ETR.AddTag("new_disable_setting", new_disable_setting);
 
         if (new_disable_setting == true && this.IV_allow_disabling_instance == false)
@@ -679,7 +689,10 @@ class GroupedDataClassBase : IGdcBaseClass
     public bool ValidateData(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,string activity_name_prefix="")
     {
         Activity ETR = ot_helper.StartActivityWrapper("OrganizedDataClassBaseClass.validateData");
-        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
+        if (method_activity_pointer != null)
+        {
+            method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
+        }
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
         ETR.AddTag("Organized Data Id", this.IV_organized_data_identifier);
 
@@ -984,7 +997,7 @@ class GroupedDataClassBase : IGdcBaseClass
         
         if (allow_empty_data_identifier == false)
         {
-            validator.AddEntry(new DataVR(organized_data_identifier, "organized_data_identifier").AddRule(SDV.R_not_null).AddRule(SDV.R_len_greater_0));
+            validator.AddEntry(new DataVR(organized_data_identifier, "organized_data_identifier").AddRule(RulesCommon.R_populated_string));
         }
 
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
@@ -1006,11 +1019,14 @@ class GroupedDataClassBase : IGdcBaseClass
 }
 
 
-interface INamedListOfGdcInstances: INamedListOfInstances
+public interface INamedListOfGdcInstances : INamedListOfInstances
 {
     bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IGdcBaseClass new_instance, string activity_name_prefix = "");
+
+    //todo add to SBD and add to Dco and dictionary classes
+    bool ValidateAllListInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 }
-class NamedListOfGdcInstances<organized_data_class>: NamedListOfInstances<organized_data_class>
+public class NamedListOfGdcInstances<grouped_data_class>: NamedListOfInstances<grouped_data_class> where grouped_data_class : IGdcBaseClass
 {
     protected bool IV_allow_disabling_instances = false;
     protected bool IV_allow_empty_data_identifiers = false;    
@@ -1019,4 +1035,50 @@ class NamedListOfGdcInstances<organized_data_class>: NamedListOfInstances<organi
         this.IV_allow_disabling_instances = allow_disabling_instances;
         this.IV_allow_empty_data_identifiers = allow_empty_data_identifiers;
     }
+
+
+    public bool ValidateAllListInstances(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "")
+    {
+        /// observability template
+        if (ot_helper == null) { ot_helper = OpenTelemetryConfigHelper.P_default; }
+        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
+        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".CreateNewEntry");
+        if (method_activity_pointer != null) { method_activity_pointer.SetPointerValue(ETR, ETR.TraceId); }
+        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+        ///</end> observability template
+
+
+        //// input data validation
+        ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");        
+        validator.AddEntry(new DataVR(this, "instance list").AddRule(RulesCommon.R_enumerable_no_nulls));
+        
+        if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
+            return false;
+        }
+        ///</end> input data validation      
+
+        
+
+        List<Activity> activity_list = new List<Activity>();
+
+        foreach (IGdcBaseClass gdc_instance in this) { 
+            gdc_instance.ValidateData(ot_helper, child_activity_pointer, activity_name_prefix);
+            activity_list.Add(child_activity_pointer.P_pointer);
+        }
+
+        ChildActivityPointer first_failed_entry;
+        if(OTSH.CheckActivityList(ETR,activity_list, out first_failed_entry) == false)
+        {
+            OTSH.PassStatusAndEndActivity(ETR, first_failed_entry.P_pointer);
+            return false;
+
+        }
+
+
+        OTSH.SetSuccessEndActivity(ETR);
+        return true;
+    }
+
 }

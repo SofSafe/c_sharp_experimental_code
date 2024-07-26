@@ -8,6 +8,10 @@ using Microsoft.Extensions.Hosting;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using SQLReplicationConfigurator.Models;
+using SQLReplicationConfigurator;
+using SofsafeBaseIncludes;
+
 
 
 public class ReplicationRequestEndpoint
@@ -50,8 +54,6 @@ public class P1s1e1CreateReplicationRequest : ControllerBase
         Activity ETR = ot_helper.StartActivityWrapper("p1s1e1");
 
         ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        //do runtime setup for data validation class
-        SDV.runOnceAtRunTimeStart(ot_helper, child_activity_pointer);
         // create objects used for monitoring activities
         List<Activity> activity_list = new List<Activity>();
 
@@ -71,11 +73,15 @@ public class P1s1e1CreateReplicationRequest : ControllerBase
             OTSH.PassStatusAndEndActivity(ETR, first_failed_activity1.P_pointer);
             return StatusCode(ErrorTagsCodes.ConvertErrorToHttpsCode(ETR),ETR.TraceId);
         }
+        activity_list.Clear();
         ///</end> populate and validate data in request
 
 
-        
-
+        //ReplicationRequestProcessor.processRequest(ot_helper, child_activity_pointer, request_data, frmGlobalSettings.Pg4Setting.DBSettings, "p1s1e1");
+        if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
+        {            
+            return StatusCode(ErrorTagsCodes.ConvertErrorToHttpsCode(child_activity_pointer.P_pointer),OTSH.GenerateUIErrorString(child_activity_pointer.P_pointer));
+        }
 
         OTSH.SetSuccessEndActivity(ETR);
         return Ok();
