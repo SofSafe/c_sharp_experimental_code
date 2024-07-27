@@ -5,17 +5,18 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SofsafeBaseIncludes;
 
 
-interface INamedListOfInstances: IList
+public interface INamedListOfInstances : IList
 {
     bool setGroupName(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string group_name, string activity_name_prefix = "");
     string P_group_name { get; }
 }
 
-class NamedListOfInstances<type_of_list> : List<type_of_list>, INamedListOfInstances
+public class NamedListOfInstances<type_of_list> : List<type_of_list>, INamedListOfInstances
 {
-    protected string IV_group_name;
+    protected string IV_group_name = String.Empty;
     public NamedListOfInstances(string group_name)
     {
         if(group_name != null && group_name.Length > 0)
@@ -38,7 +39,7 @@ class NamedListOfInstances<type_of_list> : List<type_of_list>, INamedListOfInsta
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".setGroupName");
-        validator.AddEntry(new DataVR(group_name).AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(group_name).AddRule(RulesCommon.R_populated_string));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
+using SofsafeBaseIncludes;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
@@ -8,12 +9,13 @@ using System.Linq;
 using System.Numerics;
 
 //TODO add activity_name_prefix arugment on all methods needed in SBD
-interface IDcoBaseClass
+public interface IDcoBaseClass
 {
 
     bool RunValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix = "");
 
-    void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, SDV.CVD_validation_method_delegate method_reference, string activity_name_prefix = "");
+
+    //todo remove OverrideValidationMethod on the SBD from the Dco Class    
 
     //todo add to SBD
     bool P_is_set { get; }
@@ -37,7 +39,7 @@ interface IDcoBaseClass
     DateTime P_last_validation_attempt_time { get; }
     Type P_type { get; }    
     //todo add to SBD
-    object P_value_as_object {  get; }
+    object content_as_object {  get; }
     bool SetValueFromObject(object value);
 
     void ClearValue();
@@ -45,7 +47,7 @@ interface IDcoBaseClass
 }
 
 //Sofsafe data container
-class Dco<type_of_generic> : IDcoBaseClass
+public class Dco<type_of_generic> : IDcoBaseClass
 {
     public static DateTime C_unset_time = DateTime.MinValue;
     //todo check if default method can creates an exception when using certain types
@@ -59,7 +61,7 @@ class Dco<type_of_generic> : IDcoBaseClass
     protected bool IV_last_validation_result = false;
     protected bool IV_value_in_valid_values_list = false;
     protected List<SDR> IV_validation_rules_list = new List<SDR>();
-    protected SDV.CVD_validation_method_delegate IV_validator_method = SDV.ValidateData;
+    //todo remove IV_validator_method from SBD
     public readonly List<type_of_generic> IV_valid_values_list = new List<type_of_generic>();
     protected readonly Type IV_data_type = typeof(type_of_generic);
     protected bool IV_export_to_json = true;
@@ -72,12 +74,12 @@ class Dco<type_of_generic> : IDcoBaseClass
         }
     //add to SBD
 
-    public object P_value_as_object
+    public object content_as_object
     {
         get { return this.IV_value; }
     }
 
-    public type_of_generic P_value
+    public type_of_generic content
     {
         get { return this.IV_value; }
         set
@@ -221,20 +223,7 @@ class Dco<type_of_generic> : IDcoBaseClass
         return true;
     }
 
-    public void OverrideValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer,SDV.CVD_validation_method_delegate method_reference,string activity_name_prefix="")
-    {
-
-        if (activity_name_prefix.Length > 0) { activity_name_prefix += " | "; }
-        Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".overrideValidationMethod"); 
-        method_activity_pointer.SetPointerValue(ETR, ETR.TraceId);
-        ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
-        ETR.AddTag("Validation Method Reference", method_reference);
-
-        this.IV_validator_method = method_reference;
-        OTSH.SetSuccessEndActivity(ETR);
-        return;
-    }
-
+   
     public bool RunValidationMethod(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string activity_name_prefix="")
     {
         Activity ETR = ot_helper.StartActivityWrapper(activity_name_prefix + this.GetType().Name + ".runValidationMethod");
@@ -302,10 +291,10 @@ class Dco<type_of_generic> : IDcoBaseClass
         ////</end> check valid values list
 
 
-        //// run sofsafe datavalidation validator or whatever custom method has been set
+        //// run sofsafe datavalidation validator 
 
             List<string> rule_failures = new List<string>();
-            rule_failures = this.IV_validator_method(ot_helper, child_activity_pointer, this.IV_value, this.IV_validation_rules_list, activity_name_prefix + this.IV_data_identifier);
+            rule_failures = SDR.EvaluateRules(ot_helper, child_activity_pointer, this.IV_value, this.IV_validation_rules_list, activity_name_prefix + this.IV_data_identifier);
             if (child_activity_pointer.P_pointer.Status != ActivityStatusCode.Ok)
             {
                 this.IV_last_validation_result_details.AddRange(rule_failures);
@@ -324,10 +313,23 @@ class Dco<type_of_generic> : IDcoBaseClass
         return true;
     }
 
+    //todo add this simple initializer to SBD
+    public Dco(type_of_generic new_value, string data_identifier)
+    {
+        this.SetValue(new_value);
+        this.SharedInitilizationLogic(data_identifier, null, null, false, true, true);
+    }
+
+    //todo add this simple initializer to SBD
+    public Dco(string data_identifier)
+    {
+        this.SharedInitilizationLogic(data_identifier, null, null, false, true, true);
+    }
+
 
     //todo add obersavability
     public Dco(type_of_generic new_value, string data_identifier,
-     List<type_of_generic> valid_values_list = null,List < SDR> rules_list = null,
+     List<type_of_generic> valid_values_list = null,List <SDR> rules_list = null,
      bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
     {
         this.SetValue(new_value);
@@ -340,6 +342,26 @@ class Dco<type_of_generic> : IDcoBaseClass
         List<type_of_generic> valid_values_list = null, bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
     {
         this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance, export_to_json, import_from_json);      
+    }
+
+
+    //todo constructor with a single rule to SBD
+    public Dco(string data_identifier, SDR rule = null,
+    List<type_of_generic> valid_values_list = null, bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
+    {
+        List<SDR> rules_list = new List<SDR>() { rule };
+        this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance, export_to_json, import_from_json);
+    }
+
+    //todo constructor with a single rule to SBD
+
+    public Dco(type_of_generic new_value, string data_identifier,
+ List<type_of_generic> valid_values_list = null, SDR rule = null,
+ bool allow_disabling_instance = false, bool export_to_json = true, bool import_from_json = true)
+    {
+        this.SetValue(new_value);
+        List<SDR> rules_list = new List<SDR>() { rule };
+        this.SharedInitilizationLogic(data_identifier, rules_list, valid_values_list, allow_disabling_instance, export_to_json, import_from_json);
     }
 
 
@@ -368,11 +390,11 @@ class Dco<type_of_generic> : IDcoBaseClass
 }
 
 
-interface INamedListOfDcoInstances : INamedListOfInstances
+public interface INamedListOfDcoInstances : INamedListOfInstances
 {
     bool CreateNewEntry(OpenTelemetryConfigHelper ot_helper, ChildActivityPointer method_activity_pointer, string organized_data_identifier, out IDcoBaseClass new_instance, string activity_name_prefix = "");
 }
-class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of_generic>>, INamedListOfDcoInstances
+public class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of_generic>>, INamedListOfDcoInstances
 {
 
     protected readonly List<SDR> IV_rules_list = new List<SDR>();
@@ -417,7 +439,7 @@ class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of
         new_instance = null;
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".CreateNewEntry");
-        validator.AddEntry(new DataVR(data_identifier).AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(data_identifier).AddRule(RulesCommon.R_populated_string));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -425,7 +447,7 @@ class NamedListOfDcoInstances<type_of_generic>: NamedListOfInstances<Dco<type_of
         }
         ///</end> input data validation
 
-        Dco<type_of_generic> new_entry = new Dco<type_of_generic>(data_identifier);
+        Dco<type_of_generic> new_entry = new Dco<type_of_generic>(data_identifier,this.IV_rules_list,this.IV_valid_values,this.IV_allow_disabling_instances,this.IV_export_to_json,this.IV_import_from_json);
         this.Add(new_entry);
         new_instance = new_entry;
         if (OTSH.CheckStatusAndEndActivity(ETR, child_activity_pointer.P_pointer) == false)

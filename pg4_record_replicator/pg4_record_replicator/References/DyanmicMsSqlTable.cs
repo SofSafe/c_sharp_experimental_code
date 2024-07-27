@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using Microsoft.Data.SqlClient;
+using SQLReplicationConfigurator.Models;
+using SofsafeBaseIncludes;
 
 
 
@@ -40,9 +42,9 @@ class DyanmicMsSqlTable
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor1");
-        validator.AddEntry(new DataVR(replicate_from_table_name).AddRule(SDV.R_len_greater_2));
-        validator.AddEntry(new DataVR(source_id).AddRule(SDV.R_source_id));
-        validator.AddEntry(new DataVR(replicate_to_table_name).AddRule(SDV.R_len_greater_2));
+        validator.AddEntry(new DataVR(replicate_from_table_name).AddRule(RulesCommon.R_populated_string));
+        validator.AddEntry(new DataVR(source_id).AddRule(ProjectValidationRuleEnums.R_source_id));
+        validator.AddEntry(new DataVR(replicate_to_table_name).AddRule(RulesCommon.R_populated_string));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
@@ -74,7 +76,7 @@ class DyanmicMsSqlTable
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".getSchemaData");
-        validator.AddEntry(new DataVR(connection_instance).AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(connection_instance).AddRule(RulesCommon.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);
@@ -152,10 +154,10 @@ class DyanmicMsSqlTable
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".PutDataInColumns");
-        validator.AddEntry(new DataVR(data_set).AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(data_set).AddRule(RulesCommon.R_not_null));
         if (data_set != null)
         {
-            validator.AddEntry(new DataVR(data_set.Tables.Count).AddRule(SDV.R_greater_0));
+            validator.AddEntry(new DataVR(data_set.Tables.Count).AddRule(RulesCommon.R_greater_zero));
         }
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {

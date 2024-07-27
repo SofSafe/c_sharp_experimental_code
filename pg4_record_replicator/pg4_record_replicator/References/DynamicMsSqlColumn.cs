@@ -4,8 +4,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.Data.SqlClient;
-
-
+using SofsafeBaseIncludes;
+ 
 class DynamicMsSqlColumn
 {
     //todo add a flag to indicate the instnace is in an un-usable state due to validation errors
@@ -70,8 +70,8 @@ class DynamicMsSqlColumn
 
         this.IV_populating_attempted = true;
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".registerListOfOdcInstances");
-        validator.AddEntry(new DataVR(table).AddRule(SDV.R_not_null));
-        validator.AddEntry(new DataVR(schema_row).AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(table).AddRule(RulesCommon.R_not_null));
+        validator.AddEntry(new DataVR(schema_row).AddRule(RulesCommon.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.SetFailureEndActivity(ETR, ErrorTagsCodes.C_input_validation);

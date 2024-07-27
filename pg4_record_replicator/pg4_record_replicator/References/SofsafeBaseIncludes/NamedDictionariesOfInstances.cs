@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SofsafeBaseIncludes;
 
 
 interface INamedDictionaryOfInstances
@@ -37,7 +38,7 @@ class NamedDictionaryOfInstances<key_type,value_type> : Dictionary<key_type, val
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".setGroupName");
-        validator.AddEntry(new DataVR(group_name).AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(group_name).AddRule(RulesCommon.R_populated_string));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);

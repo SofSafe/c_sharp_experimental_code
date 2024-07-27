@@ -7,7 +7,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-
+using SQLReplicationConfigurator.Models;
+using SofsafeBaseIncludes;
 
 
 class DynamicRecordsReplicator
@@ -61,7 +62,7 @@ class DynamicRecordsReplicator
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".Constructor2");
         //TODO create a rule for a list of sql table names
         //SharedConstructorLogic validates all other arguments
-        validator.AddEntry(new DataVR(secondary_table_names).AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(secondary_table_names).AddRule(RulesCommon.R_populated_string));
 
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
@@ -114,11 +115,11 @@ class DynamicRecordsReplicator
 
         //// input data validation
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".sharedConstructorLogic");
-        validator.AddEntry(new DataVR(replication_type, "replication_type").AddRule(SDV.R_1or2));
-        validator.AddEntry(new DataVR(primary_table_name, "primary_table_name").AddRule(SDV.R_len_greater_0));
-        validator.AddEntry(new DataVR(primary_key_value, "primary_key_value").AddRule(SDV.R_len_greater_0));
-        validator.AddEntry(new DataVR(source_id, "source_id").AddRule(SDV.R_source_id));
-        validator.AddEntry(new DataVR(software_version, "software_version").AddRule(SDV.R_greater_0));
+        validator.AddEntry(new DataVR(replication_type, "replication_type").AddRule(ProjectValidationRuleEnums.R_1or2));
+        validator.AddEntry(new DataVR(primary_table_name, "primary_table_name").AddRule(RulesCommon.R_populated_string));
+        validator.AddEntry(new DataVR(primary_key_value, "primary_key_value").AddRule(RulesCommon.R_populated_string));
+        validator.AddEntry(new DataVR(source_id, "source_id").AddRule(ProjectValidationRuleEnums.R_source_id));
+        validator.AddEntry(new DataVR(software_version, "software_version").AddRule(RulesCommon.R_greater_zero));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -167,8 +168,8 @@ class DynamicRecordsReplicator
         }
 
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".getReplicationSqlStatements");
-        validator.AddEntry(new DataVR(sql_connection).AddRule(SDV.R_not_null));
-        validator.AddEntry(new DataVR(source_db_name).AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(sql_connection).AddRule(RulesCommon.R_not_null));
+        validator.AddEntry(new DataVR(source_db_name).AddRule(RulesCommon.R_populated_string));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
@@ -300,10 +301,10 @@ class DynamicRecordsReplicator
         }
 
         ArgumentValidator validator = new ArgumentValidator(activity_name_prefix + this.GetType().Name + ".replicateSqlStatements");
-        validator.AddEntry(new DataVR(sql_connection, "sql_connection").AddRule(SDV.R_not_null));
-        validator.AddEntry(new DataVR(dest_db_name, "dest_db_name").AddRule(SDV.R_len_greater_0));
+        validator.AddEntry(new DataVR(sql_connection, "sql_connection").AddRule(RulesCommon.R_not_null));
+        validator.AddEntry(new DataVR(dest_db_name, "dest_db_name").AddRule(RulesCommon.R_populated_string));
         //TODO make a more specific validation rule for replication lists
-        validator.AddEntry(new DataVR(replication_batch, "replication_batch").AddRule(SDV.R_not_null));
+        validator.AddEntry(new DataVR(replication_batch, "replication_batch").AddRule(RulesCommon.R_not_null));
         if (validator.ValidateData(ot_helper, child_activity_pointer) == false)
         {
             OTSH.PassStatusAndEndActivity(ETR, child_activity_pointer.P_pointer);
