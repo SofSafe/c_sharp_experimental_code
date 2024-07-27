@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PG4ClientLibrary", "PG4ClientLibrary\PG4ClientLibrary.csproj", "{29DC92EF-3F6C-42C4-AC23-FDF45FAFE681}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientCaller", "ClientCaller\ClientCaller.csproj", "{1D0715D4-C52B-4F2B-8E15-6052279B1DD2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{29DC92EF-3F6C-42C4-AC23-FDF45FAFE681}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29DC92EF-3F6C-42C4-AC23-FDF45FAFE681}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29DC92EF-3F6C-42C4-AC23-FDF45FAFE681}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D0715D4-C52B-4F2B-8E15-6052279B1DD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D0715D4-C52B-4F2B-8E15-6052279B1DD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D0715D4-C52B-4F2B-8E15-6052279B1DD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D0715D4-C52B-4F2B-8E15-6052279B1DD2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

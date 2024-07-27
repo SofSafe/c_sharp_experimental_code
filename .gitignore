@@ -22,3 +22,5 @@ schema_class_generator/Sql_schema_class_generator/.vs/Sql_schema_class_generator
 /pg4_record_replicator/pg4_client/PG4ClientLibrary/.vs
 /pg4_record_replicator/pg4_client/PG4ClientLibrary/bin/Debug
 /pg4_record_replicator/pg4_client/PG4ClientLibrary/obj/Debug
+/pg4_record_replicator/pg4_client/ClientCaller/bin/Debug
+/pg4_record_replicator/pg4_client/ClientCaller/obj/Debug

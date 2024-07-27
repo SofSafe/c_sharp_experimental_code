@@ -53,6 +53,8 @@ namespace PG4ClientLibrary
             }
         }
 
+        #region Complex Replicaiton
+
         /// <summary>
         /// Performs a complex replication operation.
         /// </summary>
@@ -63,7 +65,7 @@ namespace PG4ClientLibrary
         /// <param name="secondary_tables">A list of secondary tables involved in the replication.</param>
         /// <param name="join_statement">The SQL join statement used to link the primary and secondary tables.</param>
         /// <returns>Returns true if the replication is successful; otherwise, false.</returns>
-        public static bool DoComplexReplication(
+        public async Task<bool> DoComplexReplication(
             string client_id,
             double software_version,
             string primary_table,
@@ -71,7 +73,58 @@ namespace PG4ClientLibrary
             List<string> secondary_tables,
             string join_statement)
         {
+
             //TODO: use SOFSAFE validation
+
+            //SQLReplicationConfigurator.Models.GdcPg4Settings seting = new SQLReplicationConfigurator.Models.GdcPg4Settings(null, null) ;
+
+            
+
+            try
+            {
+                // Example of using the parameters (simulated operation)
+                Console.WriteLine($"Starting replication for client: {client_id}");
+                Console.WriteLine($"Software Version: {software_version}");
+                Console.WriteLine($"Primary Table: {primary_table}");
+                Console.WriteLine($"Primary Field Value: {primary_field_value}");
+                Console.WriteLine($"Secondary Tables: {string.Join(", ", secondary_tables)}");
+                Console.WriteLine($"Join Statement: {join_statement}");
+
+                // Implement the actual replication logic here
+                // ...
+
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log exception and return false
+                Console.WriteLine($"Replication failed: {ex.Message}");
+                return false;
+            }
+        }
+
+
+        #endregion
+
+
+
+        #region Simple Replicaiton
+
+        /// <summary>
+        /// Performs a simple replication operation.
+        /// </summary>
+        /// <param name="client_id">Crush client ID of the client performing the replication.</param>
+        /// <param name="software_version">The version of the Crush software.</param>
+        /// <param name="primary_table">The main table, which will be used in the SQL where statement.</param>
+        /// <param name="primary_field_value">The value to look for in the main table's primary key field.</param>
+        /// <returns>Returns true if the replication is successful; otherwise, false.</returns>
+        public async Task<bool> DoSimpleReplication(
+            string client_id,
+            double software_version,
+            string primary_table,
+            string primary_field_value)
+        {
             // Input validation
             if (string.IsNullOrEmpty(client_id))
             {
@@ -93,40 +146,33 @@ namespace PG4ClientLibrary
                 throw new ArgumentException("Primary field value is required.", nameof(primary_field_value));
             }
 
-            if (secondary_tables == null || secondary_tables.Count == 0)
-            {
-                throw new ArgumentException("At least one secondary table is required.", nameof(secondary_tables));
-            }
-
-            if (string.IsNullOrEmpty(join_statement))
-            {
-                throw new ArgumentException("Join statement is required.", nameof(join_statement));
-            }
-            
-            
             try
             {
-                // Example of using the parameters (simulated operation)
-                Console.WriteLine($"Starting replication for client: {client_id}");
+                
+                Console.WriteLine($"Starting simple replication for client: {client_id}");
                 Console.WriteLine($"Software Version: {software_version}");
                 Console.WriteLine($"Primary Table: {primary_table}");
                 Console.WriteLine($"Primary Field Value: {primary_field_value}");
-                Console.WriteLine($"Secondary Tables: {string.Join(", ", secondary_tables)}");
-                Console.WriteLine($"Join Statement: {join_statement}");
 
-                // Implement the actual replication logic here
+                // Implement the actual simple replication logic here
                 // ...
 
-               
                 return true;
             }
             catch (Exception ex)
             {
                 // Log exception and return false
-                Console.WriteLine($"Replication failed: {ex.Message}");
+                Console.WriteLine($"Simple replication failed: {ex.Message}");
                 return false;
             }
         }
+
+
+        #endregion
+
+
+
+
 
     }
 }
