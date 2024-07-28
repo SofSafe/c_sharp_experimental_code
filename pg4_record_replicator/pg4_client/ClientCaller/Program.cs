@@ -22,7 +22,7 @@ namespace ClientCaller
                 Pg4Client client = new Pg4Client();
 
                 Console.WriteLine("Setting SetConnectionSettings...");
-                bool connectionSet = client.SetConnectionSettings("127.0.0.1", 7000);
+                bool connectionSet = client.SetConnectionSettings("127.0.0.1", 1302);
 
                 if (!connectionSet)
                 {
@@ -32,7 +32,7 @@ namespace ClientCaller
                 }
 
                 Console.WriteLine("Calling Setting DoSimpleReplication....");
-                bool simpleReplicationSucceed = await client.DoSimpleReplication("CRUSH_101", 2.04, "table1", "1");
+                bool simpleReplicationSucceed = await client.DoSimpleReplication("CRUSH_1001", 2.04, "table1", "1");
 
                 if (!simpleReplicationSucceed)
                 {
@@ -44,8 +44,9 @@ namespace ClientCaller
                 Console.WriteLine("Calling DoComplexReplication....");
                 List<string> listSecondaryTables = new List<string>();
                 listSecondaryTables.Add("table2");
+                //listSecondaryTables.Add("table3");
 
-                bool complexReplicationSucceed = await client.DoComplexReplication("CRUSH_101", 2.04, "table1", "1", listSecondaryTables, "table1.id on table2.id");
+                bool complexReplicationSucceed = await client.DoComplexReplication("CRUSH_1001", 2.04, "table1", "1", listSecondaryTables, "table1.id on table2.id");
 
                 if (!complexReplicationSucceed)
                 {

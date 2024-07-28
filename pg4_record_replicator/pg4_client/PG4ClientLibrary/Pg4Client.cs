@@ -173,7 +173,9 @@ namespace PG4ClientLibrary
                 replicationRequest.IV_primary_table.content = primary_table;
                 replicationRequest.IV_primary_key_value.content = primary_field_value;
                 replicationRequest.IV_software_version.content = software_version;
-                
+                replicationRequest.IV_sql_join.SetValueNotUsed(ot_helper, child_activity_pointer ,true);
+
+
                 //Setting simple replication type
                 replicationRequest.IV_replication_type.content = 1;
 
@@ -202,12 +204,12 @@ namespace PG4ClientLibrary
             }
         }
 
-        private static async Task<bool> SendRequest(string jsonPayload)
+        private async Task<bool> SendRequest(string jsonPayload)
         {
             // Use HttpClient to send the request
             using (var client = new HttpClient())
             {
-                var url = "http://localhost:5000/api/P1s1e1CreateReplicationRequest";
+                var url = $"http://{IV_server_address}:{IV_server_port}/api/P1s1e1CreateReplicationRequest";
                 var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, content);
