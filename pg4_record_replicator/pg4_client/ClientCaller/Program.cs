@@ -32,20 +32,20 @@ namespace ClientCaller
                 }
 
                 Console.WriteLine("Calling Setting DoSimpleReplication....");
-                bool simpleReplicationSucceed = await client.DoSimpleReplication("101", 2.04, "table1" , "1");
+                bool simpleReplicationSucceed = await client.DoSimpleReplication("CRUSH_101", 2.04, "table1", "1");
 
                 if (!simpleReplicationSucceed)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("DoSimpleReplication was unsuccessful");
-                    EndProgram();                    ;
+                    EndProgram(); ;
                 }
 
-                Console.WriteLine("Calling DoSimpleReplication....");
+                Console.WriteLine("Calling DoComplexReplication....");
                 List<string> listSecondaryTables = new List<string>();
                 listSecondaryTables.Add("table2");
 
-                bool complexReplicationSucceed = await client.DoComplexReplication("101", 2.04, "table1", "1", listSecondaryTables, "table1.id on table2.id");
+                bool complexReplicationSucceed = await client.DoComplexReplication("CRUSH_101", 2.04, "table1", "1", listSecondaryTables, "table1.id on table2.id");
 
                 if (!complexReplicationSucceed)
                 {

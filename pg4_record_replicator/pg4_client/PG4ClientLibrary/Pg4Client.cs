@@ -1,6 +1,12 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Pg4DataTransferObjects;
+using SofsafeSharedComponents.CCL22;
+using SofsafeSharedComponents.CCL23;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -74,27 +80,50 @@ namespace PG4ClientLibrary
             string join_statement)
         {
 
-            //TODO: use SOFSAFE validation
-
-            //SQLReplicationConfigurator.Models.GdcPg4Settings seting = new SQLReplicationConfigurator.Models.GdcPg4Settings(null, null) ;
-
-            
-
             try
             {
-                // Example of using the parameters (simulated operation)
-                Console.WriteLine($"Starting replication for client: {client_id}");
-                Console.WriteLine($"Software Version: {software_version}");
-                Console.WriteLine($"Primary Table: {primary_table}");
-                Console.WriteLine($"Primary Field Value: {primary_field_value}");
-                Console.WriteLine($"Secondary Tables: {string.Join(", ", secondary_tables)}");
-                Console.WriteLine($"Join Statement: {join_statement}");
+ 
 
-                // Implement the actual replication logic here
-                // ...
+                string activity_prefix = "complex_replication";
+                OpenTelemetryConfigHelper ot_helper = new OpenTelemetryConfigHelper("pg4-lan-replication-client", "0.0.1");
+                //ChildActivityPointer method_activity_pointer = new ChildActivityPointer();
+                ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+                Activity ETR = ot_helper.StartActivityWrapper("Pg4Client.DoComplexReplication");
+                List<Activity> activity_list = new List<Activity>();
+                // Create a GdcReplicationRequest object
+                GdcReplicationRequest replicationRequest = new GdcReplicationRequest(ot_helper, child_activity_pointer, activity_prefix);
+
+                // Set the properties
+                replicationRequest.IV_source_id.content = client_id;
+                replicationRequest.IV_primary_table.content = primary_table;
+                replicationRequest.IV_primary_key_value.content = primary_field_value;
+                replicationRequest.IV_software_version.content = software_version;
+                replicationRequest.IV_sql_join.content = join_statement;
+
+                // Populate secondary tables
+                foreach (var table in secondary_tables)
+                {
+                    replicationRequest.IV_secondary_tables.Add(new Dco<string>(table));
+                }
+
+                //Setting complex replication type
+                replicationRequest.IV_replication_type.content = 2;
+
+                replicationRequest.ValidateData(ot_helper, child_activity_pointer, activity_prefix);
+                activity_list.Add(child_activity_pointer.P_pointer);
 
 
-                return true;
+                ChildActivityPointer validation_failure;
+                if (OTSH.CheckActivityList(ETR, activity_list, out validation_failure) == false)
+                {
+                    OTSH.PassStatusAndEndActivity(ETR, validation_failure.P_pointer);
+                    return false;
+                }
+
+                string json_data = replicationRequest.ToJson(ot_helper, child_activity_pointer, activity_prefix);
+
+                return await SendRequest(json_data);
             }
             catch (Exception ex)
             {
@@ -125,45 +154,67 @@ namespace PG4ClientLibrary
             string primary_table,
             string primary_field_value)
         {
-            // Input validation
-            if (string.IsNullOrEmpty(client_id))
-            {
-                throw new ArgumentException("Client ID is required.", nameof(client_id));
-            }
-
-            if (software_version <= 0)
-            {
-                throw new ArgumentException("Software version must be greater than zero.", nameof(software_version));
-            }
-
-            if (string.IsNullOrEmpty(primary_table))
-            {
-                throw new ArgumentException("Primary table is required.", nameof(primary_table));
-            }
-
-            if (string.IsNullOrEmpty(primary_field_value))
-            {
-                throw new ArgumentException("Primary field value is required.", nameof(primary_field_value));
-            }
+            
 
             try
             {
+                string activity_prefix = "simple_replication";
+                OpenTelemetryConfigHelper ot_helper = new OpenTelemetryConfigHelper("pg4-lan-replication-client", "0.0.1");
+                //ChildActivityPointer method_activity_pointer = new ChildActivityPointer();
+                ChildActivityPointer child_activity_pointer = new ChildActivityPointer();
+
+                Activity ETR = ot_helper.StartActivityWrapper("Pg4Client.DoSimpleReplication");
+                List<Activity> activity_list = new List<Activity>();
+                // Create a GdcReplicationRequest object
+                GdcReplicationRequest replicationRequest = new GdcReplicationRequest(ot_helper, child_activity_pointer, activity_prefix);
+
+                // Set the properties
+                replicationRequest.IV_source_id.content = client_id;
+                replicationRequest.IV_primary_table.content = primary_table;
+                replicationRequest.IV_primary_key_value.content = primary_field_value;
+                replicationRequest.IV_software_version.content = software_version;
                 
-                Console.WriteLine($"Starting simple replication for client: {client_id}");
-                Console.WriteLine($"Software Version: {software_version}");
-                Console.WriteLine($"Primary Table: {primary_table}");
-                Console.WriteLine($"Primary Field Value: {primary_field_value}");
+                //Setting simple replication type
+                replicationRequest.IV_replication_type.content = 1;
 
-                // Implement the actual simple replication logic here
-                // ...
+                replicationRequest.ValidateData(ot_helper, child_activity_pointer, activity_prefix);
+                activity_list.Add(child_activity_pointer.P_pointer);
 
-                return true;
+
+                ChildActivityPointer validation_failure;
+                if (OTSH.CheckActivityList(ETR, activity_list, out validation_failure) == false)
+                {
+                    OTSH.PassStatusAndEndActivity(ETR, validation_failure.P_pointer);
+                    return false;
+                }
+
+                string json_data = replicationRequest.ToJson(ot_helper, child_activity_pointer, activity_prefix);
+
+                return await SendRequest(json_data);
+
+                
             }
             catch (Exception ex)
             {
                 // Log exception and return false
                 Console.WriteLine($"Simple replication failed: {ex.Message}");
                 return false;
+            }
+        }
+
+        private static async Task<bool> SendRequest(string jsonPayload)
+        {
+            // Use HttpClient to send the request
+            using (var client = new HttpClient())
+            {
+                var url = "http://localhost:5000/api/P1s1e1CreateReplicationRequest";
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync(url, content);
+                var responseString = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Response: {responseString}");
+
+                return response.IsSuccessStatusCode;
             }
         }
 
