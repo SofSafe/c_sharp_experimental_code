@@ -47,5 +47,27 @@
   <ItemGroup>
     <Folder Include="Models\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\C_Sharp_Reusable_Components\CCL21_data_validation_library\DLL\CCL21\CCL21.csproj">
+      <Project>{0c5ea785-f818-42b3-9f9d-0972ccc09316}</Project>
+      <Name>CCL21</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\C_Sharp_Reusable_Components\CCL22_data_handling_framework\DLL\CCL22\CCL22.csproj">
+      <Project>{7bd6ed88-b3a9-4907-97b2-bd7b6bb65347}</Project>
+      <Name>CCL22</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\C_Sharp_Reusable_Components\CCL23_open_telemetry_helper\DLL\CCL23\CCL23.csproj">
+      <Project>{78701259-95b0-4e46-9d68-049bd43d05a8}</Project>
+      <Name>CCL23</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\C_Sharp_Reusable_Components\CCL24_mssql_dynamic_table_replicator\DLL\CCL24\CCL24.csproj">
+      <Project>{6d3eede4-30d9-4df1-b528-b024b6f9b224}</Project>
+      <Name>CCL24</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\C_Sharp_Reusable_Components\CCL25_common_method_result_codes\CCL25\CCL25.csproj">
+      <Project>{1b373222-5bb9-4cfa-8cfc-1a4aee19b87c}</Project>
+      <Name>CCL25</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
