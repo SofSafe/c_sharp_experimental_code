@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{29DC92EF-3F6C-42C4-AC23-FDF45FAFE681}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>PG4ClientLibrary</RootNamespace>
+    <AssemblyName>PG4ClientLibrary</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Pg4Client.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Models\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\sofsafe_tooling\C_Sharp_Reusable_Components\CCL21_data_validation_library\DLL\CCL21\CCL21.csproj">
+      <Project>{0c5ea785-f818-42b3-9f9d-0972ccc09316}</Project>
+      <Name>CCL21</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\sofsafe_tooling\C_Sharp_Reusable_Components\CCL22_data_handling_framework\DLL\CCL22\CCL22.csproj">
+      <Project>{7bd6ed88-b3a9-4907-97b2-bd7b6bb65347}</Project>
+      <Name>CCL22</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\sofsafe_tooling\C_Sharp_Reusable_Components\CCL23_open_telemetry_helper\DLL\CCL23\CCL23.csproj">
+      <Project>{78701259-95b0-4e46-9d68-049bd43d05a8}</Project>
+      <Name>CCL23</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\sofsafe_tooling\C_Sharp_Reusable_Components\CCL24_mssql_dynamic_table_replicator\DLL\CCL24\CCL24.csproj">
+      <Project>{6d3eede4-30d9-4df1-b528-b024b6f9b224}</Project>
+      <Name>CCL24</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\sofsafe_tooling\C_Sharp_Reusable_Components\CCL25_common_method_result_codes\CCL25\CCL25.csproj">
+      <Project>{1b373222-5bb9-4cfa-8cfc-1a4aee19b87c}</Project>
+      <Name>CCL25</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\pg4_lan_sql_replicator\Pg4DataTransferObjects\Pg4DataTransferObjects.csproj">
+      <Project>{fa3e48dc-d0f8-4c60-a766-9fbd39919df8}</Project>
+      <Name>Pg4DataTransferObjects</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
